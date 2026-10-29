@@ -92,14 +92,14 @@
             {{! Interactive Question Overlay - inside player container for seamless fullscreen }}
             <div id="secureVideoQuestionOverlay"
                  class="securevideo-question-overlay d-none">
-                <div class="securevideo-question-card card shadow-lg border-0 bg-white text-dark rounded-3">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2 px-3">
-                        <span class="fw-semibold securevideo-q-title">
-                            <i class="fa fa-question-circle me-2" aria-hidden="true"></i>Knowledge Check
+                <div class="sv-qmodal">
+                    <div class="sv-qmodal-header">
+                        <span class="sv-qmodal-title securevideo-q-title">
+                            <i class="fa fa-circle-question me-2" aria-hidden="true"></i>Knowledge Check
                         </span>
-                        <span class="badge bg-light text-primary securevideo-q-timecode">00:00</span>
+                        <span class="sv-qmodal-badge securevideo-q-timecode">00:00</span>
                     </div>
-                    <div class="card-body p-3 overflow-auto securevideo-q-body">
+                    <div class="sv-qmodal-body securevideo-q-body">
                         <div class="securevideo-q-loading text-center py-4">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading question...</span>
@@ -108,11 +108,11 @@
                         <div class="securevideo-q-content d-none">
                             {{! Injected Question Engine HTML }}
                         </div>
-                        <div class="securevideo-q-feedback d-none mt-3">
+                        <div class="securevideo-q-feedback d-none mt-2">
                             {{! Injected Graded Feedback HTML }}
                         </div>
                     </div>
-                    <div class="card-footer bg-light d-flex justify-content-between align-items-center py-2 px-3">
+                    <div class="sv-qmodal-footer">
                         <button type="button" class="btn btn-outline-secondary btn-sm securevideo-btn-retry d-none">
                             <i class="fa fa-rotate-left me-1" aria-hidden="true"></i>{{#str}}tryagain, mod_securevideo{{/str}}
                         </button>
