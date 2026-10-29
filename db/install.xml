@@ -60,6 +60,7 @@
         <FIELD NAME="requirecorrect" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 if student must pass to resume video, 0 if informational"/>
         <FIELD NAME="rewindonfail" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Seconds to rewind on failure, 0 for retry on spot"/>
         <FIELD NAME="rewindto" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="-1" SEQUENCE="false" COMMENT="Target timestamp to rewind to on failure, -1 for retry in place"/>
+        <FIELD NAME="questionstyle" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="compact" SEQUENCE="false" COMMENT="Display style: compact or native"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

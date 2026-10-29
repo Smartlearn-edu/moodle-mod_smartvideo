@@ -90,6 +90,7 @@ class get_question_attempt extends external_api {
             'requirecorrect' => new external_value(PARAM_INT, 'Require correct to continue'),
             'rewindonfail'   => new external_value(PARAM_INT, 'Seconds to rewind on fail'),
             'rewindto'       => new external_value(PARAM_INT, 'Target timestamp to rewind to, -1 for retry in place', VALUE_DEFAULT, -1),
+            'questionstyle'  => new external_value(PARAM_ALPHA, 'Display style: compact or native', VALUE_DEFAULT, 'compact'),
             'qubaid'         => new external_value(PARAM_INT, 'QUBA ID'),
             'slot'           => new external_value(PARAM_INT, 'Slot ID'),
             'passed'         => new external_value(PARAM_BOOL, 'Whether already passed'),

@@ -122,5 +122,25 @@ function xmldb_securevideo_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026102909, 'securevideo');
     }
 
+    if ($oldversion < 2026102910) {
+        $table = new xmldb_table('securevideo_questions');
+        $field = new xmldb_field(
+            'questionstyle',
+            XMLDB_TYPE_CHAR,
+            '20',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            'compact',
+            'rewindto'
+        );
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026102910, 'securevideo');
+    }
+
     return true;
 }

@@ -154,6 +154,7 @@ if (!$media || $media->status !== 'ready') {
             'requirecorrect' => (int)$q->requirecorrect,
             'rewindonfail'   => (int)($q->rewindonfail ?? 0),
             'rewindto'       => $rewindto,
+            'questionstyle'  => !empty($q->questionstyle) ? $q->questionstyle : 'compact',
             'passed'         => $passed,
         ];
     }

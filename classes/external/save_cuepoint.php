@@ -47,6 +47,7 @@ class save_cuepoint extends external_api {
             'requirecorrect'      => new external_value(PARAM_INT, '1 = require correct answer', VALUE_DEFAULT, 1),
             'rewindonfail'        => new external_value(PARAM_INT, 'Seconds to rewind on failure', VALUE_DEFAULT, 0),
             'rewindto'            => new external_value(PARAM_INT, 'Target timestamp to rewind to on failure, -1 for retry in place', VALUE_DEFAULT, -1),
+            'questionstyle'       => new external_value(PARAM_ALPHA, 'Display style: compact or native', VALUE_DEFAULT, 'compact'),
         ]);
     }
 
@@ -62,6 +63,7 @@ class save_cuepoint extends external_api {
      * @param int $requirecorrect 1 or 0.
      * @param int $rewindonfail Seconds to rewind.
      * @param int $rewindto Target timestamp to rewind to, or -1.
+     * @param string $questionstyle Style name ('compact' or 'native').
      * @return array
      */
     public static function execute(
@@ -73,7 +75,8 @@ class save_cuepoint extends external_api {
         string $title = '',
         int $requirecorrect = 1,
         int $rewindonfail = 0,
-        int $rewindto = -1
+        int $rewindto = -1,
+        string $questionstyle = 'compact'
     ): array {
         global $DB;
 
@@ -87,6 +90,7 @@ class save_cuepoint extends external_api {
             'requirecorrect'      => $requirecorrect,
             'rewindonfail'        => $rewindonfail,
             'rewindto'            => $rewindto,
+            'questionstyle'       => $questionstyle,
         ]);
 
         $cm = get_coursemodule_from_id('securevideo', $params['cmid'], 0, false, MUST_EXIST);
@@ -159,6 +163,7 @@ class save_cuepoint extends external_api {
         if ($rewindto > $timecode) {
             $rewindto = $timecode;
         }
+        $qstyle = (isset($params['questionstyle']) && $params['questionstyle'] === 'native') ? 'native' : 'compact';
 
         if ($params['cueid'] > 0) {
             $cue->questionbankentryid = $qbeid;
@@ -168,6 +173,7 @@ class save_cuepoint extends external_api {
             $cue->requirecorrect      = !empty($params['requirecorrect']) ? 1 : 0;
             $cue->rewindonfail        = max(0, $params['rewindonfail']);
             $cue->rewindto            = $rewindto;
+            $cue->questionstyle       = $qstyle;
             $cue->timemodified        = $now;
 
             $DB->update_record('securevideo_questions', $cue);
@@ -182,6 +188,7 @@ class save_cuepoint extends external_api {
             $cue->requirecorrect      = !empty($params['requirecorrect']) ? 1 : 0;
             $cue->rewindonfail        = max(0, $params['rewindonfail']);
             $cue->rewindto            = $rewindto;
+            $cue->questionstyle       = $qstyle;
             $cue->timecreated         = $now;
             $cue->timemodified        = $now;
 

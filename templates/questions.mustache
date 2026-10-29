@@ -107,14 +107,19 @@
                     </thead>
                     <tbody>
                         {{#questions}}
-                        <tr data-cueid="{{id}}" data-timecode="{{timecode}}" data-qid="{{questionid}}" data-qbeid="{{questionbankentryid}}" data-title="{{title}}" data-req="{{#requirecorrect}}1{{/requirecorrect}}{{^requirecorrect}}0{{/requirecorrect}}" data-rewindto="{{rewindto}}" data-rewind="{{rewindonfail}}">
+                        <tr data-cueid="{{id}}" data-timecode="{{timecode}}" data-qid="{{questionid}}" data-qbeid="{{questionbankentryid}}" data-title="{{title}}" data-req="{{#requirecorrect}}1{{/requirecorrect}}{{^requirecorrect}}0{{/requirecorrect}}" data-rewindto="{{rewindto}}" data-rewind="{{rewindonfail}}" data-style="{{questionstyle}}">
                             <td>
                                 <button type="button" class="btn btn-sm btn-outline-primary btn-jump-to-time font-monospace" data-timecode="{{timecode}}" title="{{#str}}jumpto, mod_securevideo{{/str}} {{timeformatted}}">
                                     <i class="fa fa-play fa-xs me-1" aria-hidden="true"></i>{{timeformatted}}
                                 </button>
                             </td>
                             <td>
-                                <div class="fw-semibold text-dark">{{title}}</div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-semibold text-dark">{{title}}</span>
+                                    {{#isnative}}
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle small py-0">Native Quiz</span>
+                                    {{/isnative}}
+                                </div>
                                 <div class="small text-secondary d-flex align-items-center gap-2 mt-1">
                                     <span class="badge bg-light text-dark border">{{qtype}}</span>
                                     <span class="fw-medium text-truncate" style="max-width: 320px;">{{questionname}}</span>
@@ -219,15 +224,26 @@
                                 </label>
                                 <input type="text" id="cueTitle" class="form-control" placeholder="{{#str}}questiontitle_default, mod_securevideo{{/str}}">
                             </div>
-                            <div class="col-sm-6 d-flex flex-column justify-content-center">
-                                <div class="form-check form-switch mt-2">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="cueRequireCorrect" checked>
-                                    <label class="form-check-label fw-semibold" for="cueRequireCorrect">
-                                        {{#str}}requirecorrect, mod_securevideo{{/str}}
-                                    </label>
-                                </div>
-                                <div class="form-text small">{{#str}}requirecorrect_help, mod_securevideo{{/str}}</div>
+                            <div class="col-sm-6">
+                                <label for="cueQuestionStyle" class="form-label fw-semibold">
+                                    {{#str}}questionstyle, mod_securevideo{{/str}}
+                                </label>
+                                <select id="cueQuestionStyle" class="form-select">
+                                    <option value="compact" selected>{{#str}}questionstyle_compact, mod_securevideo{{/str}}</option>
+                                    <option value="native">{{#str}}questionstyle_native, mod_securevideo{{/str}}</option>
+                                </select>
+                                <div class="form-text small">{{#str}}questionstyle_help, mod_securevideo{{/str}}</div>
                             </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="cueRequireCorrect" checked>
+                                <label class="form-check-label fw-semibold" for="cueRequireCorrect">
+                                    {{#str}}requirecorrect, mod_securevideo{{/str}}
+                                </label>
+                            </div>
+                            <div class="form-text small">{{#str}}requirecorrect_help, mod_securevideo{{/str}}</div>
                         </div>
 
                         <div class="mb-3">

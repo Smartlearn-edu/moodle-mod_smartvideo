@@ -810,9 +810,21 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
          * Clean up empty paragraphs, stray line breaks, and normalize option layout in Moodle Question Engine markup.
          *
          * @param {HTMLElement} containerEl
+         * @param {boolean} isNative Whether native Moodle quiz style is active.
          */
-        cleanQuestionMarkup: function(containerEl) {
+        cleanQuestionMarkup: function(containerEl, isNative) {
             if (!containerEl) {
+                return;
+            }
+
+            const answerEl = containerEl.querySelector('.answer');
+            if (isNative) {
+                if (answerEl) {
+                    answerEl.classList.remove('sv-answer-grid');
+                    answerEl.querySelectorAll('.r0, .r1').forEach(function(r) {
+                        r.classList.remove('is-selected');
+                    });
+                }
                 return;
             }
 
@@ -834,7 +846,6 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             });
 
             // 2. If answer options are short or multi-line vertical snippets, use 2-column grid layout.
-            const answerEl = containerEl.querySelector('.answer');
             if (answerEl) {
                 const rows = answerEl.querySelectorAll('.r0, .r1');
                 if (rows.length >= 2 && rows.length <= 4) {
@@ -895,6 +906,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             this.activeQuestion = question;
             this.video.pause();
 
+            const modalEl = overlay.querySelector('.sv-qmodal');
             const titleEl = overlay.querySelector('.securevideo-q-title');
             const timecodeEl = overlay.querySelector('.securevideo-q-timecode');
             const loadingEl = overlay.querySelector('.securevideo-q-loading');
@@ -903,6 +915,39 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             const submitBtn = overlay.querySelector('.securevideo-btn-submit');
             const continueBtn = overlay.querySelector('.securevideo-btn-continue');
             const retryBtn = overlay.querySelector('.securevideo-btn-retry');
+            const toggleStyleBtn = overlay.querySelector('.securevideo-btn-toggle-style');
+            const styleLabel = overlay.querySelector('.sv-current-style-label');
+
+            let currentStyle = question.questionstyle || 'compact';
+
+            const applyStyleMode = function(style) {
+                currentStyle = style;
+                if (modalEl) {
+                    if (style === 'native') {
+                        modalEl.classList.add('sv-style-native');
+                    } else {
+                        modalEl.classList.remove('sv-style-native');
+                    }
+                }
+                if (styleLabel) {
+                    styleLabel.textContent = (style === 'native') ? 'Native Quiz' : 'Compact';
+                }
+                if (contentEl && !contentEl.classList.contains('d-none')) {
+                    self.cleanQuestionMarkup(contentEl, style === 'native');
+                }
+            };
+
+            applyStyleMode(currentStyle);
+
+            if (toggleStyleBtn && !toggleStyleBtn._hasBoundClick) {
+                toggleStyleBtn._hasBoundClick = true;
+                toggleStyleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const newStyle = (currentStyle === 'native') ? 'compact' : 'native';
+                    question.questionstyle = newStyle;
+                    applyStyleMode(newStyle);
+                });
+            }
 
             if (titleEl) {
                 titleEl.innerHTML = '<i class="fa fa-question-circle me-2" aria-hidden="true"></i>' + question.title;
@@ -935,7 +980,15 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             }])[0].then(function(res) {
                 loadingEl.classList.add('d-none');
                 contentEl.innerHTML = res.html;
-                self.cleanQuestionMarkup(contentEl);
+
+                if (res.questionstyle) {
+                    question.questionstyle = res.questionstyle;
+                    applyStyleMode(res.questionstyle);
+                } else {
+                    applyStyleMode(currentStyle);
+                }
+
+                self.cleanQuestionMarkup(contentEl, currentStyle === 'native');
                 contentEl.classList.remove('d-none');
                 submitBtn.disabled = false;
 

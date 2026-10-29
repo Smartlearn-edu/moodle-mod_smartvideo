@@ -131,6 +131,8 @@ foreach ($questions as $q) {
         'rewindto'            => $rewindto,
         'rewindtoformatted'   => $rewindtoformatted,
         'hasrewind'           => $hasrewind,
+        'questionstyle'       => !empty($q->questionstyle) ? $q->questionstyle : 'compact',
+        'isnative'            => (!empty($q->questionstyle) && $q->questionstyle === 'native'),
     ];
 }
 

@@ -341,6 +341,10 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
 
             document.getElementById('cueRequireCorrect').checked = true;
             document.getElementById('cueRewindTo').value = '';
+            const styleSelect = document.getElementById('cueQuestionStyle');
+            if (styleSelect) {
+                styleSelect.value = 'compact';
+            }
 
             this.modalEl.querySelector('.modal-title-text').textContent = 'Add Question';
 
@@ -375,6 +379,10 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             document.getElementById('cueTitle').value = title;
             document.getElementById('cueRequireCorrect').checked = req;
             document.getElementById('cueRewindTo').value = (rewindTo >= 0) ? formatTime(rewindTo) : '';
+            const styleSelect = document.getElementById('cueQuestionStyle');
+            if (styleSelect) {
+                styleSelect.value = row.dataset.style || 'compact';
+            }
 
             this.modalEl.querySelector('.modal-title-text').textContent = 'Edit Question';
 
@@ -405,6 +413,8 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             const timecode = parseTime(document.getElementById('cueTimecode').value);
             const title = document.getElementById('cueTitle').value.trim();
             const requireCorrect = document.getElementById('cueRequireCorrect').checked ? 1 : 0;
+            const styleSelect = document.getElementById('cueQuestionStyle');
+            const questionStyle = styleSelect ? styleSelect.value : 'compact';
 
             const rewindToRaw = document.getElementById('cueRewindTo').value.trim();
             let rewindTo = -1;
@@ -446,7 +456,8 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     title: title,
                     requirecorrect: requireCorrect,
                     rewindonfail: 0,
-                    rewindto: rewindTo
+                    rewindto: rewindTo,
+                    questionstyle: questionStyle
                 }
             }])[0].then(function(res) {
                 if (res.status) {

@@ -371,3 +371,100 @@
     border-radius: 8px;
     font-size: 0.875rem;
 }
+
+/* ==========================================================================
+   Native Moodle Quiz Style Overrides (.sv-style-native)
+   ========================================================================== */
+#secureVideoContainer .sv-qmodal.sv-style-native {
+    max-width: 860px !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que {
+    display: block !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que .info {
+    display: block !important;
+    float: left !important;
+    width: 125px !important;
+    padding: 0.65rem 0.75rem !important;
+    margin: 0 1rem 0.75rem 0 !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    color: #475569 !important;
+    box-sizing: border-box !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que .info .no {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 0.35rem 0 !important;
+    color: #1e293b !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que .info .state {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.25rem !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que .info .grade {
+    font-size: 0.75rem !important;
+    color: #64748b !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que .content {
+    margin-left: 140px !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que .formulation {
+    background-color: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 1rem 1.25rem !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .answer {
+    display: block !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .answer div.r0,
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .answer div.r1 {
+    display: flex !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0.35rem 0 !important;
+    margin: 0 0 0.25rem 0 !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .answer div.r0:hover,
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .answer div.r1:hover {
+    background: transparent !important;
+    border-color: transparent !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .answer div.r0.is-selected,
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .answer div.r1.is-selected {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+#secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .answer .answernumber {
+    color: #1e293b !important;
+    font-weight: 600 !important;
+}
+
+@media (max-width: 600px) {
+    #secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que .info {
+        float: none !important;
+        width: 100% !important;
+        margin: 0 0 0.75rem 0 !important;
+    }
+    #secureVideoContainer .sv-qmodal.sv-style-native .securevideo-q-body .que .content {
+        margin-left: 0 !important;
+    }
+}

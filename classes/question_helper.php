@@ -268,6 +268,7 @@ class question_helper {
             'requirecorrect' => (int)$cue->requirecorrect,
             'rewindonfail'   => (int)$cue->rewindonfail,
             'rewindto'       => isset($cue->rewindto) ? (int)$cue->rewindto : -1,
+            'questionstyle'  => !empty($cue->questionstyle) ? $cue->questionstyle : 'compact',
             'qubaid'         => (int)$quba->get_id(),
             'slot'           => (int)$slot,
             'passed'         => !empty($attempt->passed),
