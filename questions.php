@@ -103,6 +103,16 @@ foreach ($questions as $q) {
     $qm = floor($q->timecode / 60);
     $qs = $q->timecode % 60;
     $timeformatted = sprintf('%02d:%02d', $qm, $qs);
+
+    $rewindto = isset($q->rewindto) ? (int)$q->rewindto : -1;
+    $hasrewind = ($rewindto >= 0);
+    $rewindtoformatted = '';
+    if ($hasrewind) {
+        $rm = floor($rewindto / 60);
+        $rs = $rewindto % 60;
+        $rewindtoformatted = sprintf('%02d:%02d', $rm, $rs);
+    }
+
     $percent = ($duration > 0) ? min(100, round(($q->timecode / $duration) * 100, 2)) : 0;
 
     $questionsdata[] = [
@@ -117,8 +127,10 @@ foreach ($questions as $q) {
         'qtype'               => $qtype,
         'snippet'             => $snippet,
         'requirecorrect'      => !empty($q->requirecorrect),
-        'rewindonfail'        => (int)$q->rewindonfail,
-        'hasrewind'           => ($q->rewindonfail > 0),
+        'rewindonfail'        => (int)($q->rewindonfail ?? 0),
+        'rewindto'            => $rewindto,
+        'rewindtoformatted'   => $rewindtoformatted,
+        'hasrewind'           => $hasrewind,
     ];
 }
 

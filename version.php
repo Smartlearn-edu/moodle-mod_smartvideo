@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_securevideo';
-$plugin->version   = 2026102908;
+$plugin->version   = 2026102909;
 $plugin->requires  = 2024100700; // Requires Moodle 5.0+.
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = 'v1.0.0';

@@ -98,6 +98,7 @@ class submit_question_attempt extends external_api {
             'passed'         => new external_value(PARAM_BOOL, 'Whether student has passed this question'),
             'can_continue'   => new external_value(PARAM_BOOL, 'Whether video playback can resume'),
             'rewind_seconds' => new external_value(PARAM_INT, 'Number of seconds to rewind if failed'),
+            'rewind_to'      => new external_value(PARAM_INT, 'Target timestamp to rewind to, or -1 if no rewind', VALUE_DEFAULT, -1),
             'feedback_html'  => new external_value(PARAM_RAW, 'Rendered question feedback HTML'),
         ]);
     }

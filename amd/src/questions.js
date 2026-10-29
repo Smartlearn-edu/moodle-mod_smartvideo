@@ -340,7 +340,7 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             }
 
             document.getElementById('cueRequireCorrect').checked = true;
-            document.getElementById('cueRewindOnFail').value = '15';
+            document.getElementById('cueRewindTo').value = '';
 
             this.modalEl.querySelector('.modal-title-text').textContent = 'Add Question';
 
@@ -365,7 +365,8 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             const qbeId = parseInt(row.dataset.qbeid, 10);
             const title = row.dataset.title || '';
             const req = row.dataset.req === '1';
-            const rewind = row.dataset.rewind || '0';
+            const rewindTo = (row.dataset.rewindto !== undefined && row.dataset.rewindto !== '') ?
+                parseInt(row.dataset.rewindto, 10) : -1;
 
             document.getElementById('cueId').value = cueId;
             document.getElementById('cueQid').value = qid;
@@ -373,7 +374,7 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             document.getElementById('cueTimecode').value = formatTime(timecode);
             document.getElementById('cueTitle').value = title;
             document.getElementById('cueRequireCorrect').checked = req;
-            document.getElementById('cueRewindOnFail').value = rewind;
+            document.getElementById('cueRewindTo').value = (rewindTo >= 0) ? formatTime(rewindTo) : '';
 
             this.modalEl.querySelector('.modal-title-text').textContent = 'Edit Question';
 
@@ -404,7 +405,21 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             const timecode = parseTime(document.getElementById('cueTimecode').value);
             const title = document.getElementById('cueTitle').value.trim();
             const requireCorrect = document.getElementById('cueRequireCorrect').checked ? 1 : 0;
-            const rewindOnFail = parseInt(document.getElementById('cueRewindOnFail').value, 10) || 0;
+
+            const rewindToRaw = document.getElementById('cueRewindTo').value.trim();
+            let rewindTo = -1;
+            if (rewindToRaw !== '' && rewindToRaw !== '-' && rewindToRaw !== '-1') {
+                rewindTo = parseTime(rewindToRaw);
+                if (rewindTo > timecode) {
+                    Notification.alert(
+                        'Invalid Rewind Time',
+                        'The time to go to on wrong answer (' + formatTime(rewindTo) +
+                        ') cannot be after the question time (' + formatTime(timecode) + ').',
+                        'OK'
+                    );
+                    return;
+                }
+            }
 
             if (qid <= 0 && qbeId <= 0 && cueId <= 0) {
                 Notification.alert('Error', 'Please select a question from the Question Bank.', 'OK');
@@ -430,7 +445,8 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     timecode: timecode,
                     title: title,
                     requirecorrect: requireCorrect,
-                    rewindonfail: rewindOnFail
+                    rewindonfail: 0,
+                    rewindto: rewindTo
                 }
             }])[0].then(function(res) {
                 if (res.status) {

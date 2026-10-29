@@ -144,6 +144,7 @@ if (!$media || $media->status !== 'ready') {
         $timeformatted = sprintf('%02d:%02d', $qm, $qs);
         $percent = ($media->duration > 0) ? min(100, round(($q->timecode / $media->duration) * 100, 2)) : 0;
 
+        $rewindto = isset($q->rewindto) ? (int)$q->rewindto : -1;
         $questionsdata[] = [
             'id'             => (int)$q->id,
             'timecode'       => (int)$q->timecode,
@@ -151,7 +152,8 @@ if (!$media || $media->status !== 'ready') {
             'percent'        => $percent,
             'title'          => !empty($q->title) ? format_string($q->title) : get_string('knowledgecheck', 'mod_securevideo'),
             'requirecorrect' => (int)$q->requirecorrect,
-            'rewindonfail'   => (int)$q->rewindonfail,
+            'rewindonfail'   => (int)($q->rewindonfail ?? 0),
+            'rewindto'       => $rewindto,
             'passed'         => $passed,
         ];
     }

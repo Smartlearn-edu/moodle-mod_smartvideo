@@ -1039,11 +1039,14 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                         }
                     }, 3000);
                 } else {
-                    if (res.rewind_seconds > 0) {
+                    const hasRewindTo = (res.rewind_to !== null && res.rewind_to !== undefined && res.rewind_to >= 0);
+                    if (hasRewindTo) {
+                        const rewindTargetTime = res.rewind_to;
+                        const targetFormatted = formatTime(rewindTargetTime);
                         feedbackEl.insertAdjacentHTML('afterbegin',
                             '<div class="alert alert-warning py-2 mb-3">' +
                             '<i class="fa fa-rotate-left me-2"></i>' +
-                            'Incorrect answer. Rewinding ' + res.rewind_seconds + ' seconds to review...' +
+                            'Incorrect answer. Rewinding to ' + targetFormatted + ' to review...' +
                             '</div>'
                         );
 
@@ -1051,7 +1054,24 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                             overlay.classList.remove('d-flex');
                             overlay.classList.add('d-none');
                             self.activeQuestion = null;
-                            self.video.currentTime = Math.max(0, q.timecode - res.rewind_seconds);
+                            self.video.currentTime = rewindTargetTime;
+                            self.video.play();
+                        }, 2500);
+                    } else if (res.rewind_seconds > 0) {
+                        const rewindTargetTime = Math.max(0, q.timecode - res.rewind_seconds);
+                        const targetFormatted = formatTime(rewindTargetTime);
+                        feedbackEl.insertAdjacentHTML('afterbegin',
+                            '<div class="alert alert-warning py-2 mb-3">' +
+                            '<i class="fa fa-rotate-left me-2"></i>' +
+                            'Incorrect answer. Rewinding to ' + targetFormatted + ' to review...' +
+                            '</div>'
+                        );
+
+                        setTimeout(function() {
+                            overlay.classList.remove('d-flex');
+                            overlay.classList.add('d-none');
+                            self.activeQuestion = null;
+                            self.video.currentTime = rewindTargetTime;
                             self.video.play();
                         }, 2500);
                     } else if (q.requirecorrect) {

@@ -267,6 +267,7 @@ class question_helper {
             'timecode'       => (int)$cue->timecode,
             'requirecorrect' => (int)$cue->requirecorrect,
             'rewindonfail'   => (int)$cue->rewindonfail,
+            'rewindto'       => isset($cue->rewindto) ? (int)$cue->rewindto : -1,
             'qubaid'         => (int)$quba->get_id(),
             'slot'           => (int)$slot,
             'passed'         => !empty($attempt->passed),
@@ -344,12 +345,22 @@ class question_helper {
 
         $feedbackhtml = $quba->render_question($slot, $displayoptions);
 
+        $rewindto = -1;
+        if (!$iscorrect) {
+            if (isset($cue->rewindto) && (int)$cue->rewindto >= 0) {
+                $rewindto = (int)$cue->rewindto;
+            } else if (!empty($cue->rewindonfail)) {
+                $rewindto = max(0, (int)$cue->timecode - (int)$cue->rewindonfail);
+            }
+        }
+
         return [
             'is_correct'     => (bool)$iscorrect,
             'fraction'       => (float)($fraction ?? 0),
             'passed'         => !empty($attempt->passed),
             'can_continue'   => $iscorrect || empty($cue->requirecorrect),
             'rewind_seconds' => (!$iscorrect && !empty($cue->rewindonfail)) ? (int)$cue->rewindonfail : 0,
+            'rewind_to'      => $rewindto,
             'feedback_html'  => $feedbackhtml,
         ];
     }
