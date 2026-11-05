@@ -55,5 +55,133 @@ function xmldb_smartvideo_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110501, 'smartvideo');
     }
 
+    if ($oldversion < 2026110504) {
+        // Define table smartvideo_chapters to be created.
+        $table = new xmldb_table('smartvideo_chapters');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('instanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecode', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('title', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('instanceid_fk', XMLDB_KEY_FOREIGN, ['instanceid'], 'smartvideo', ['id']);
+        $table->add_index('instanceid_timecode_idx', XMLDB_INDEX_NOTUNIQUE, ['instanceid', 'timecode']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table smartvideo_callouts to be created.
+        $table = new xmldb_table('smartvideo_callouts');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('instanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecode', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('duration', XMLDB_TYPE_INTEGER, '5', null, XMLDB_NOTNULL, null, '8');
+        $table->add_field('title', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('body', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('linkurl', XMLDB_TYPE_CHAR, '512', null, null, null, null);
+        $table->add_field('linklabel', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('autopause', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('position', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'bottom-right');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('instanceid_fk', XMLDB_KEY_FOREIGN, ['instanceid'], 'smartvideo', ['id']);
+        $table->add_index('instanceid_timecode_idx', XMLDB_INDEX_NOTUNIQUE, ['instanceid', 'timecode']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2026110504, 'smartvideo');
+    }
+
+    if ($oldversion < 2026110505) {
+        // Define table smartvideo_notes to be created.
+        $table = new xmldb_table('smartvideo_notes');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('instanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecode', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('content', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('instanceid_fk', XMLDB_KEY_FOREIGN, ['instanceid'], 'smartvideo', ['id']);
+        $table->add_index('instanceid_userid_idx', XMLDB_INDEX_NOTUNIQUE, ['instanceid', 'userid']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table smartvideo_reports to be created.
+        $table = new xmldb_table('smartvideo_reports');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('instanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('findings', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('impression', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('diagnosis', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('recommendations', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'draft');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('instanceid_fk', XMLDB_KEY_FOREIGN, ['instanceid'], 'smartvideo', ['id']);
+        $table->add_index('instanceid_userid_idx', XMLDB_INDEX_UNIQUE, ['instanceid', 'userid']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2026110505, 'smartvideo');
+    }
+
+    if ($oldversion < 2026110506) {
+        // Define table smartvideo_subtitles to be created.
+        $table = new xmldb_table('smartvideo_subtitles');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('instanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('lang', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'en');
+        $table->add_field('label', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, 'English');
+        $table->add_field('content', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('instanceid_fk', XMLDB_KEY_FOREIGN, ['instanceid'], 'smartvideo', ['id']);
+        $table->add_index('instanceid_lang_idx', XMLDB_INDEX_UNIQUE, ['instanceid', 'lang']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table smartvideo_discussions to be created.
+        $table = new xmldb_table('smartvideo_discussions');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('instanceid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecode', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('content', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('parentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('instanceid_fk', XMLDB_KEY_FOREIGN, ['instanceid'], 'smartvideo', ['id']);
+        $table->add_index('instanceid_timecode_idx', XMLDB_INDEX_NOTUNIQUE, ['instanceid', 'timecode']);
+        $table->add_index('parentid_idx', XMLDB_INDEX_NOTUNIQUE, ['parentid']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2026110506, 'smartvideo');
+    }
+
+    if ($oldversion < 2026110507) {
+        // SmartVideo v1.5.0 upgrade savepoint (Analytics & Heatmap enhancements).
+        upgrade_mod_savepoint(true, 2026110507, 'smartvideo');
+    }
+
     return true;
 }

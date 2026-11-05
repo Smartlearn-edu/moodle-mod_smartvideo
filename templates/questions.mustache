@@ -17,24 +17,51 @@
 {{!
     @template mod_smartvideo/questions
 
-    Management page for in-video interactive questions and cuepoints.
+    Unified Timeline Studio for interactive questions, chapters, and callout cards.
 }}
 <div class="mod-smartvideo-questions-container mod-securevideo-questions-container my-3" data-cmid="{{cmid}}" data-duration="{{duration}}">
-    {{! Header & Actions }}
+    {{! Header & Global Actions }}
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h3 class="mb-1">
-                <i class="fa fa-question-circle text-primary me-2" aria-hidden="true"></i>{{#str}}managequestions, mod_smartvideo{{/str}}
+                <i class="fa fa-sliders text-primary me-2" aria-hidden="true"></i>{{#str}}timelinestudio, mod_smartvideo{{/str}}
             </h3>
-            <p class="text-muted mb-0">{{#str}}managequestions_desc, mod_smartvideo{{/str}}</p>
+            <p class="text-muted mb-0">{{#str}}timelinestudio_desc, mod_smartvideo{{/str}}</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
             <a href="{{backtovideourl}}" class="btn btn-outline-secondary">
                 <i class="fa fa-arrow-left me-1" aria-hidden="true"></i>{{#str}}backtovideo, mod_smartvideo{{/str}}
             </a>
-            <button type="button" class="btn btn-primary btn-add-question" data-timecode="0">
-                <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
-            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary btn-add-question" data-timecode="0">
+                    <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
+                </button>
+                <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li>
+                        <a class="dropdown-item btn-add-question" href="#" data-timecode="0">
+                            <i class="fa fa-question-circle text-primary me-2" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item btn-add-chapter" href="#" data-timecode="0">
+                            <i class="fa fa-bookmark text-success me-2" aria-hidden="true"></i>{{#str}}addchapter, mod_smartvideo{{/str}}
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item btn-add-callout" href="#" data-timecode="0">
+                            <i class="fa fa-bullhorn text-info me-2" aria-hidden="true"></i>{{#str}}addcallout, mod_smartvideo{{/str}}
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item btn-add-subtitles" href="#">
+                            <i class="fa fa-cc text-warning me-2" aria-hidden="true"></i>{{#str}}addsubtitles, mod_smartvideo{{/str}}
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -61,22 +88,29 @@
                     </div>
                 </div>
                 <div class="col-md-7 col-lg-8">
-                    <h5 class="card-title mb-2">Scrub to Timestamp</h5>
+                    <h5 class="card-title mb-1">Scrub to Timestamp</h5>
                     <p class="text-muted small mb-3">
-                        Play or scrub the video to locate the exact moment where you want to ask a question, then click the button below.
+                        Play or scrub the video to pinpoint where you want to insert a checkpoint, chapter, or callout overlay.
                     </p>
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="input-group" style="max-width: 200px;">
+                    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                        <div class="input-group" style="max-width: 170px;">
                             <span class="input-group-text"><i class="fa fa-clock" aria-hidden="true"></i></span>
                             <input type="text" id="smartVideoScrubTimeInput" class="form-control text-center fw-bold" value="00:00" readonly>
                         </div>
                         <button type="button" class="btn btn-success btn-add-at-current">
                             <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
                         </button>
+                        <button type="button" class="btn btn-outline-success btn-add-chapter-at-current">
+                            <i class="fa fa-bookmark me-1" aria-hidden="true"></i>{{#str}}addchapter, mod_smartvideo{{/str}}
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-add-callout-at-current">
+                            <i class="fa fa-bullhorn me-1" aria-hidden="true"></i>{{#str}}addcallout, mod_smartvideo{{/str}}
+                        </button>
                     </div>
-                    <div class="small text-secondary">
-                        <i class="fa fa-info-circle me-1" aria-hidden="true"></i>
-                        {{#str}}questioncount, mod_smartvideo, {{questioncount}}{{/str}}
+                    <div class="d-flex gap-3 small text-secondary flex-wrap">
+                        <span><i class="fa fa-question-circle text-primary me-1" aria-hidden="true"></i>{{#str}}questioncount, mod_smartvideo, {{questioncount}}{{/str}}</span>
+                        <span><i class="fa fa-bookmark text-success me-1" aria-hidden="true"></i>{{#str}}chaptercount, mod_smartvideo, {{chaptercount}}{{/str}}</span>
+                        <span><i class="fa fa-bullhorn text-info me-1" aria-hidden="true"></i>{{#str}}calloutcount, mod_smartvideo, {{calloutcount}}{{/str}}</span>
                     </div>
                 </div>
             </div>
@@ -84,101 +118,311 @@
     </div>
     {{/hasmedia}}
 
-    {{! Configured Questions List }}
+    {{! Main Studio Nav Tabs }}
     <div class="card shadow-sm border-0">
-        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold">
-                <i class="fa fa-list-check text-info me-2" aria-hidden="true"></i>{{#str}}interactivequestions, mod_smartvideo{{/str}}
-            </h5>
-            <span class="badge bg-primary rounded-pill">{{questioncount}}</span>
+        <div class="card-header bg-white p-0 border-bottom">
+            <ul class="nav nav-tabs card-header-tabs m-0 px-3 pt-2" id="timelineStudioTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold" id="questions-tab" data-bs-toggle="tab" data-bs-target="#tab-questions" type="button" role="tab" aria-controls="tab-questions" aria-selected="true">
+                        <i class="fa fa-question-circle text-primary me-1" aria-hidden="true"></i>{{#str}}tab_questions, mod_smartvideo{{/str}}
+                        <span class="badge bg-primary rounded-pill ms-1">{{questioncount}}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="chapters-tab" data-bs-toggle="tab" data-bs-target="#tab-chapters" type="button" role="tab" aria-controls="tab-chapters" aria-selected="false">
+                        <i class="fa fa-bookmark text-success me-1" aria-hidden="true"></i>{{#str}}tab_chapters, mod_smartvideo{{/str}}
+                        <span class="badge bg-success rounded-pill ms-1">{{chaptercount}}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="callouts-tab" data-bs-toggle="tab" data-bs-target="#tab-callouts" type="button" role="tab" aria-controls="tab-callouts" aria-selected="false">
+                        <i class="fa fa-bullhorn text-info me-1" aria-hidden="true"></i>{{#str}}tab_callouts, mod_smartvideo{{/str}}
+                        <span class="badge bg-info rounded-pill ms-1">{{calloutcount}}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="subtitles-tab" data-bs-toggle="tab" data-bs-target="#tab-subtitles" type="button" role="tab" aria-controls="tab-subtitles" aria-selected="false">
+                        <i class="fa fa-cc text-warning me-1" aria-hidden="true"></i>{{#str}}subtitles, mod_smartvideo{{/str}}
+                        <span class="badge bg-warning text-dark rounded-pill ms-1">{{subtitlecount}}</span>
+                    </button>
+                </li>
+            </ul>
         </div>
         <div class="card-body p-0">
-            {{#hasquestions}}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 120px;">{{#str}}timecode, mod_smartvideo{{/str}}</th>
-                            <th>{{#str}}selectquestion, mod_smartvideo{{/str}}</th>
-                            <th style="width: 140px;">{{#str}}requirecorrect, mod_smartvideo{{/str}}</th>
-                            <th style="width: 150px;">{{#str}}rewindto, mod_smartvideo{{/str}}</th>
-                            <th style="width: 140px;" class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{#questions}}
-                        <tr data-cueid="{{id}}" data-timecode="{{timecode}}" data-qid="{{questionid}}" data-qbeid="{{questionbankentryid}}" data-title="{{title}}" data-req="{{#requirecorrect}}1{{/requirecorrect}}{{^requirecorrect}}0{{/requirecorrect}}" data-rewindto="{{rewindto}}" data-rewind="{{rewindonfail}}" data-style="{{questionstyle}}">
-                            <td>
-                                <button type="button" class="btn btn-sm btn-outline-primary btn-jump-to-time font-monospace" data-timecode="{{timecode}}" title="{{#str}}jumpto, mod_smartvideo{{/str}} {{timeformatted}}">
-                                    <i class="fa fa-play fa-xs me-1" aria-hidden="true"></i>{{timeformatted}}
-                                </button>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="fw-semibold text-dark">{{title}}</span>
-                                    {{#isnative}}
-                                    <span class="badge bg-info-subtle text-info border border-info-subtle small py-0">Native Quiz</span>
-                                    {{/isnative}}
-                                </div>
-                                <div class="small text-secondary d-flex align-items-center gap-2 mt-1">
-                                    <span class="badge bg-light text-dark border">{{qtype}}</span>
-                                    <span class="fw-medium text-truncate" style="max-width: 320px;">{{questionname}}</span>
-                                </div>
-                                {{#snippet}}
-                                <div class="small text-muted mt-1 fst-italic">{{snippet}}</div>
-                                {{/snippet}}
-                            </td>
-                            <td>
-                                {{#requirecorrect}}
-                                <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                    <i class="fa fa-check-circle me-1" aria-hidden="true"></i>Required
-                                </span>
-                                {{/requirecorrect}}
-                                {{^requirecorrect}}
-                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                                    Informational
-                                </span>
-                                {{/requirecorrect}}
-                            </td>
-                            <td>
-                                {{#hasrewind}}
-                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
-                                    <i class="fa fa-rotate-left me-1" aria-hidden="true"></i>{{#str}}jumpto, mod_smartvideo{{/str}} {{rewindtoformatted}}
-                                </span>
-                                {{/hasrewind}}
-                                {{^hasrewind}}
-                                <span class="badge bg-light text-muted border">{{#str}}retryonspot, mod_smartvideo{{/str}}</span>
-                                {{/hasrewind}}
-                            </td>
-                            <td class="text-end">
-                                <div class="btn-group btn-group-sm">
-                                    <button type="button" class="btn btn-outline-secondary btn-edit-cue" title="{{#str}}editquestion, mod_smartvideo{{/str}}">
-                                        <i class="fa fa-pencil" aria-hidden="true"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-danger btn-delete-cue" title="{{#str}}deletequestion, mod_smartvideo{{/str}}">
-                                        <i class="fa fa-trash" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {{/questions}}
-                    </tbody>
-                </table>
+            <div class="tab-content" id="timelineStudioTabContent">
+
+                {{! TAB 1: INTERACTIVE QUESTIONS }}
+                <div class="tab-pane fade show active" id="tab-questions" role="tabpanel" aria-labelledby="questions-tab">
+                    {{#hasquestions}}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 120px;">{{#str}}timecode, mod_smartvideo{{/str}}</th>
+                                    <th>{{#str}}selectquestion, mod_smartvideo{{/str}}</th>
+                                    <th style="width: 140px;">{{#str}}requirecorrect, mod_smartvideo{{/str}}</th>
+                                    <th style="width: 150px;">{{#str}}rewindto, mod_smartvideo{{/str}}</th>
+                                    <th style="width: 140px;" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#questions}}
+                                <tr data-cueid="{{id}}" data-timecode="{{timecode}}" data-qid="{{questionid}}" data-qbeid="{{questionbankentryid}}" data-title="{{title}}" data-req="{{#requirecorrect}}1{{/requirecorrect}}{{^requirecorrect}}0{{/requirecorrect}}" data-rewindto="{{rewindto}}" data-rewind="{{rewindonfail}}" data-style="{{questionstyle}}">
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary btn-jump-to-time font-monospace" data-timecode="{{timecode}}" title="{{#str}}jumpto, mod_smartvideo{{/str}} {{timeformatted}}">
+                                            <i class="fa fa-play fa-xs me-1" aria-hidden="true"></i>{{timeformatted}}
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fw-semibold text-dark">{{title}}</span>
+                                            {{#isnative}}
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle small py-0">Native Quiz</span>
+                                            {{/isnative}}
+                                        </div>
+                                        <div class="small text-secondary d-flex align-items-center gap-2 mt-1">
+                                            <span class="badge bg-light text-dark border">{{qtype}}</span>
+                                            <span class="fw-medium text-truncate" style="max-width: 320px;">{{questionname}}</span>
+                                        </div>
+                                        {{#snippet}}
+                                        <div class="small text-muted mt-1 fst-italic">{{snippet}}</div>
+                                        {{/snippet}}
+                                    </td>
+                                    <td>
+                                        {{#requirecorrect}}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="fa fa-check-circle me-1" aria-hidden="true"></i>Required
+                                        </span>
+                                        {{/requirecorrect}}
+                                        {{^requirecorrect}}
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                            Informational
+                                        </span>
+                                        {{/requirecorrect}}
+                                    </td>
+                                    <td>
+                                        {{#hasrewind}}
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                            <i class="fa fa-rotate-left me-1" aria-hidden="true"></i>{{#str}}jumpto, mod_smartvideo{{/str}} {{rewindtoformatted}}
+                                        </span>
+                                        {{/hasrewind}}
+                                        {{^hasrewind}}
+                                        <span class="badge bg-light text-muted border">{{#str}}retryonspot, mod_smartvideo{{/str}}</span>
+                                        {{/hasrewind}}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary btn-edit-cue" title="{{#str}}editquestion, mod_smartvideo{{/str}}">
+                                                <i class="fa fa-pencil" aria-hidden="true"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-delete-cue" title="{{#str}}deletequestion, mod_smartvideo{{/str}}">
+                                                <i class="fa fa-trash" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{/questions}}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{/hasquestions}}
+                    {{^hasquestions}}
+                    <div class="text-center py-5">
+                        <i class="fa fa-question-circle fa-3x text-muted opacity-50 mb-3" aria-hidden="true"></i>
+                        <h6 class="text-secondary fw-normal">{{#str}}noquestionsconfigured, mod_smartvideo{{/str}}</h6>
+                        <button type="button" class="btn btn-primary btn-sm mt-2 btn-add-question" data-timecode="0">
+                            <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
+                        </button>
+                    </div>
+                    {{/hasquestions}}
+                </div>
+
+                {{! TAB 2: CHAPTERS }}
+                <div class="tab-pane fade" id="tab-chapters" role="tabpanel" aria-labelledby="chapters-tab">
+                    {{#haschapters}}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 120px;">{{#str}}timecode, mod_smartvideo{{/str}}</th>
+                                    <th>{{#str}}chaptertitle, mod_smartvideo{{/str}}</th>
+                                    <th style="width: 140px;" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#chapters}}
+                                <tr data-chapterid="{{id}}" data-timecode="{{timecode}}" data-title="{{title}}">
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-success btn-jump-to-time font-monospace" data-timecode="{{timecode}}" title="{{#str}}jumpto, mod_smartvideo{{/str}} {{timeformatted}}">
+                                            <i class="fa fa-play fa-xs me-1" aria-hidden="true"></i>{{timeformatted}}
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold text-dark">{{title}}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary btn-edit-chapter" title="{{#str}}editchapter, mod_smartvideo{{/str}}">
+                                                <i class="fa fa-pencil" aria-hidden="true"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-delete-chapter" title="{{#str}}deletechapter, mod_smartvideo{{/str}}">
+                                                <i class="fa fa-trash" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{/chapters}}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{/haschapters}}
+                    {{^haschapters}}
+                    <div class="text-center py-5">
+                        <i class="fa fa-bookmark fa-3x text-muted opacity-50 mb-3" aria-hidden="true"></i>
+                        <h6 class="text-secondary fw-normal">{{#str}}nochapters, mod_smartvideo{{/str}}</h6>
+                        <button type="button" class="btn btn-success btn-sm mt-2 btn-add-chapter" data-timecode="0">
+                            <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addchapter, mod_smartvideo{{/str}}
+                        </button>
+                    </div>
+                    {{/haschapters}}
+                </div>
+
+                {{! TAB 3: CALLOUT CARDS }}
+                <div class="tab-pane fade" id="tab-callouts" role="tabpanel" aria-labelledby="callouts-tab">
+                    {{#hascallouts}}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 120px;">{{#str}}timecode, mod_smartvideo{{/str}}</th>
+                                    <th>{{#str}}callouttitle, mod_smartvideo{{/str}}</th>
+                                    <th style="width: 110px;">{{#str}}calloutduration, mod_smartvideo{{/str}}</th>
+                                    <th style="width: 130px;">Behavior</th>
+                                    <th style="width: 130px;">Position</th>
+                                    <th style="width: 140px;" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#callouts}}
+                                <tr data-calloutid="{{id}}" data-timecode="{{timecode}}" data-title="{{title}}" data-body="{{body}}" data-duration="{{duration}}" data-autopause="{{#autopause}}1{{/autopause}}{{^autopause}}0{{/autopause}}" data-position="{{position}}" data-linkurl="{{linkurl}}" data-linklabel="{{linklabel}}">
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-info btn-jump-to-time font-monospace" data-timecode="{{timecode}}" title="{{#str}}jumpto, mod_smartvideo{{/str}} {{timeformatted}}">
+                                            <i class="fa fa-play fa-xs me-1" aria-hidden="true"></i>{{timeformatted}}
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-dark">{{title}}</div>
+                                        {{#body}}
+                                        <div class="small text-muted text-truncate mt-1" style="max-width: 340px;">{{body}}</div>
+                                        {{/body}}
+                                        {{#linkurl}}
+                                        <div class="small text-primary mt-1">
+                                            <i class="fa fa-external-link-alt me-1" aria-hidden="true"></i>{{linklabel}} ({{linkurl}})
+                                        </div>
+                                        {{/linkurl}}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{duration}}s</span>
+                                    </td>
+                                    <td>
+                                        {{#autopause}}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                            <i class="fa fa-pause me-1" aria-hidden="true"></i>Auto-pause
+                                        </span>
+                                        {{/autopause}}
+                                        {{^autopause}}
+                                        <span class="badge bg-light text-secondary border">Non-blocking</span>
+                                        {{/autopause}}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace small">
+                                            {{position}}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary btn-edit-callout" title="{{#str}}editcallout, mod_smartvideo{{/str}}">
+                                                <i class="fa fa-pencil" aria-hidden="true"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-delete-callout" title="{{#str}}deletecallout, mod_smartvideo{{/str}}">
+                                                <i class="fa fa-trash" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{/callouts}}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{/hascallouts}}
+                    {{^hascallouts}}
+                    <div class="text-center py-5">
+                        <i class="fa fa-bullhorn fa-3x text-muted opacity-50 mb-3" aria-hidden="true"></i>
+                        <h6 class="text-secondary fw-normal">{{#str}}nocallouts, mod_smartvideo{{/str}}</h6>
+                        <button type="button" class="btn btn-info text-white btn-sm mt-2 btn-add-callout" data-timecode="0">
+                            <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addcallout, mod_smartvideo{{/str}}
+                        </button>
+                    </div>
+                    {{/hascallouts}}
+                </div>
+
+                {{! TAB 4: SUBTITLES }}
+                <div class="tab-pane fade" id="tab-subtitles" role="tabpanel" aria-labelledby="subtitles-tab">
+                    {{#hassubtitles}}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 120px;">Language</th>
+                                    <th>Display Label</th>
+                                    <th style="width: 140px;">Parsed Cues</th>
+                                    <th style="width: 140px;" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#subtitles}}
+                                <tr data-trackid="{{id}}" data-lang="{{lang}}" data-label="{{label}}" data-content="{{content}}">
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace text-uppercase">{{lang}}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold text-dark">{{label}}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{cuecount}} cues</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary btn-edit-subtitles" title="Edit subtitle track">
+                                                <i class="fa fa-pencil" aria-hidden="true"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-delete-subtitles" title="Delete subtitle track">
+                                                <i class="fa fa-trash" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{/subtitles}}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{/hassubtitles}}
+                    {{^hassubtitles}}
+                    <div class="text-center py-5">
+                        <i class="fa fa-cc fa-3x text-muted opacity-50 mb-3" aria-hidden="true"></i>
+                        <h6 class="text-secondary fw-normal">No WebVTT subtitle tracks added yet.</h6>
+                        <button type="button" class="btn btn-warning text-dark btn-sm mt-2 btn-add-subtitles">
+                            <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addsubtitles, mod_smartvideo{{/str}}
+                        </button>
+                    </div>
+                    {{/hassubtitles}}
+                </div>
+
             </div>
-            {{/hasquestions}}
-            {{^hasquestions}}
-            <div class="text-center py-5">
-                <i class="fa fa-question-circle fa-3x text-muted opacity-50 mb-3" aria-hidden="true"></i>
-                <h6 class="text-secondary fw-normal">{{#str}}noquestionsconfigured, mod_smartvideo{{/str}}</h6>
-                <button type="button" class="btn btn-primary btn-sm mt-2 btn-add-question" data-timecode="0">
-                    <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
-                </button>
-            </div>
-            {{/hasquestions}}
         </div>
     </div>
 
-    {{! Add / Edit Question Modal }}
+    {{! MODAL 1: ADD / EDIT QUESTION MODAL (QUESTION BANK & QUICK CREATOR) }}
     <div class="modal fade" id="smartVideoAddQuestionModal" tabindex="-1" aria-labelledby="smartVideoAddQuestionModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow border-0">
@@ -189,11 +433,127 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
+                    {{! Inner Source Selector Tabs }}
+                    <ul class="nav nav-pills mb-4 nav-justified bg-light p-1 rounded" id="questionSourceTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-semibold" id="source-bank-tab" data-bs-toggle="pill" data-bs-target="#source-bank" type="button" role="tab" aria-controls="source-bank" aria-selected="true">
+                                <i class="fa fa-database me-1" aria-hidden="true"></i>{{#str}}fromquestionbank, mod_smartvideo{{/str}}
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold" id="source-quick-tab" data-bs-toggle="pill" data-bs-target="#source-quick" type="button" role="tab" aria-controls="source-quick" aria-selected="false">
+                                <i class="fa fa-bolt text-warning me-1" aria-hidden="true"></i>{{#str}}quickcreator, mod_smartvideo{{/str}}
+                            </button>
+                        </li>
+                    </ul>
+
                     <form id="smartVideoCueForm">
                         <input type="hidden" id="cueId" value="0">
                         <input type="hidden" id="cueQid" value="0">
                         <input type="hidden" id="cueQbeId" value="0">
 
+                        <div class="tab-content mb-3" id="questionSourceTabContent">
+                            {{! SUB-TAB: FROM QUESTION BANK }}
+                            <div class="tab-pane fade show active" id="source-bank" role="tabpanel" aria-labelledby="source-bank-tab">
+                                <div class="mb-3">
+                                    <label for="cueCategorySelect" class="form-label fw-semibold">
+                                        {{#str}}questioncategory, mod_smartvideo{{/str}} <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="cueCategorySelect" class="form-select">
+                                        <option value="">{{#str}}choosecategory, mod_smartvideo{{/str}}</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="cueQuestionSelect" class="form-label fw-semibold">
+                                        {{#str}}selectquestion, mod_smartvideo{{/str}} <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="cueQuestionSelect" class="form-select" disabled>
+                                        <option value="">{{#str}}choosequestion, mod_smartvideo{{/str}}</option>
+                                    </select>
+                                </div>
+
+                                {{! Question Preview Box }}
+                                <div id="cueQuestionPreviewBox" class="alert alert-secondary d-none p-3 mb-3">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="badge bg-secondary" id="previewQtype"></span>
+                                        <strong id="previewQname"></strong>
+                                    </div>
+                                    <div id="previewQtext" class="small text-muted fst-italic"></div>
+                                </div>
+                            </div>
+
+                            {{! SUB-TAB: QUICK CREATOR }}
+                            <div class="tab-pane fade" id="source-quick" role="tabpanel" aria-labelledby="source-quick-tab">
+                                <div class="alert alert-info py-2 px-3 small mb-3">
+                                    <i class="fa fa-info-circle me-1" aria-hidden="true"></i>
+                                    {{#str}}quickquestion_desc, mod_smartvideo{{/str}}
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-sm-6">
+                                        <label for="quickQtype" class="form-label fw-semibold">
+                                            {{#str}}questiontype, mod_smartvideo{{/str}}
+                                        </label>
+                                        <select id="quickQtype" class="form-select">
+                                            <option value="multichoice" selected>{{#str}}multichoice, mod_smartvideo{{/str}}</option>
+                                            <option value="truefalse">{{#str}}truefalse, mod_smartvideo{{/str}}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label for="quickCategorySelect" class="form-label fw-semibold">
+                                            Target Category (Optional)
+                                        </label>
+                                        <select id="quickCategorySelect" class="form-select">
+                                            <option value="0">Default Course Category</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="quickQuestionText" class="form-label fw-semibold">
+                                        {{#str}}questionprompt, mod_smartvideo{{/str}} <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea id="quickQuestionText" class="form-control" rows="2" placeholder="e.g. Which of the following is the main function of the organ shown?"></textarea>
+                                </div>
+
+                                {{! Multiple Choice Answers Section }}
+                                <div id="quickMultichoiceSection" class="mb-3">
+                                    <label class="form-label fw-semibold d-flex justify-content-between align-items-center">
+                                        <span>{{#str}}answerchoices, mod_smartvideo{{/str}} <span class="text-danger">*</span></span>
+                                        <span class="text-muted small fw-normal">{{#str}}correctanswer, mod_smartvideo{{/str}}</span>
+                                    </label>
+                                    <div id="quickChoicesList" class="d-flex flex-column gap-2 mb-2">
+                                        {{! Default 4 choices rendered by JS }}
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAddQuickChoice">
+                                        <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addchoice, mod_smartvideo{{/str}}
+                                    </button>
+                                </div>
+
+                                {{! True/False Answers Section }}
+                                <div id="quickTruefalseSection" class="mb-3 d-none">
+                                    <label class="form-label fw-semibold">{{#str}}correctanswer, mod_smartvideo{{/str}}</label>
+                                    <div class="d-flex gap-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="quickTfAnswer" id="quickTfTrue" value="1" checked>
+                                            <label class="form-check-label fw-medium" for="quickTfTrue">
+                                                <i class="fa fa-check text-success me-1" aria-hidden="true"></i>{{#str}}true, mod_smartvideo{{/str}}
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="quickTfAnswer" id="quickTfFalse" value="0">
+                                            <label class="form-check-label fw-medium" for="quickTfFalse">
+                                                <i class="fa fa-times text-danger me-1" aria-hidden="true"></i>{{#str}}false, mod_smartvideo{{/str}}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        {{! Common Settings: Timecode, Rewind, Display Style, Require Correct }}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
                                 <label for="cueTimecode" class="form-label fw-semibold">
@@ -245,39 +605,208 @@
                             </div>
                             <div class="form-text small">{{#str}}requirecorrect_help, mod_smartvideo{{/str}}</div>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="cueCategorySelect" class="form-label fw-semibold">
-                                {{#str}}questioncategory, mod_smartvideo{{/str}} <span class="text-danger">*</span>
-                            </label>
-                            <select id="cueCategorySelect" class="form-select" required>
-                                <option value="">{{#str}}choosecategory, mod_smartvideo{{/str}}</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="cueQuestionSelect" class="form-label fw-semibold">
-                                {{#str}}selectquestion, mod_smartvideo{{/str}} <span class="text-danger">*</span>
-                            </label>
-                            <select id="cueQuestionSelect" class="form-select" disabled required>
-                                <option value="">{{#str}}choosequestion, mod_smartvideo{{/str}}</option>
-                            </select>
-                        </div>
-
-                        {{! Question Preview Box }}
-                        <div id="cueQuestionPreviewBox" class="alert alert-secondary d-none p-3 mb-3">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="badge bg-secondary" id="previewQtype"></span>
-                                <strong id="previewQname"></strong>
-                            </div>
-                            <div id="previewQtext" class="small text-muted fst-italic"></div>
-                        </div>
                     </form>
                 </div>
                 <div class="modal-footer bg-light py-2">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary btn-save-cue">
                         <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savecuepoint, mod_smartvideo{{/str}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! MODAL 2: ADD / EDIT CHAPTER MODAL }}
+    <div class="modal fade" id="smartVideoChapterModal" tabindex="-1" aria-labelledby="smartVideoChapterModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow border-0">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="smartVideoChapterModalLabel">
+                        <i class="fa fa-bookmark me-2" aria-hidden="true"></i><span class="chapter-modal-title-text">{{#str}}addchapter, mod_smartvideo{{/str}}</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="smartVideoChapterForm">
+                        <input type="hidden" id="chapterId" value="0">
+                        <div class="mb-3">
+                            <label for="chapterTimecode" class="form-label fw-semibold">
+                                {{#str}}timecode, mod_smartvideo{{/str}} <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-clock" aria-hidden="true"></i></span>
+                                <input type="text" id="chapterTimecode" class="form-control" placeholder="00:00 or 120" required>
+                            </div>
+                            <div class="form-text small">Start timestamp of this chapter.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="chapterTitle" class="form-label fw-semibold">
+                                {{#str}}chaptertitle, mod_smartvideo{{/str}} <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="chapterTitle" class="form-control" placeholder="e.g. Introduction to Cardiology" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success btn-save-chapter">
+                        <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savechapter, mod_smartvideo{{/str}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! MODAL 3: ADD / EDIT CALLOUT CARD MODAL }}
+    <div class="modal fade" id="smartVideoCalloutModal" tabindex="-1" aria-labelledby="smartVideoCalloutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content shadow border-0">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="smartVideoCalloutModalLabel">
+                        <i class="fa fa-bullhorn me-2" aria-hidden="true"></i><span class="callout-modal-title-text">{{#str}}addcallout, mod_smartvideo{{/str}}</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="smartVideoCalloutForm">
+                        <input type="hidden" id="calloutId" value="0">
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label for="calloutTimecode" class="form-label fw-semibold">
+                                    {{#str}}timecode, mod_smartvideo{{/str}} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fa fa-clock" aria-hidden="true"></i></span>
+                                    <input type="text" id="calloutTimecode" class="form-control" placeholder="01:30 or 90" required>
+                                </div>
+                                <div class="form-text small">Timestamp when this card appears.</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="calloutDuration" class="form-label fw-semibold">
+                                    {{#str}}calloutduration, mod_smartvideo{{/str}}
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" id="calloutDuration" class="form-control" value="8" min="3" max="60">
+                                    <span class="input-group-text">seconds</span>
+                                </div>
+                                <div class="form-text small">How long the card remains visible.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="calloutTitle" class="form-label fw-semibold">
+                                {{#str}}callouttitle, mod_smartvideo{{/str}} <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="calloutTitle" class="form-control" placeholder="e.g. Clinical Note: Dosage Caution" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="calloutBody" class="form-label fw-semibold">
+                                {{#str}}calloutbody, mod_smartvideo{{/str}}
+                            </label>
+                            <textarea id="calloutBody" class="form-control" rows="3" placeholder="Key formula, definition, clinical reminder, or summary of this segment..."></textarea>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label for="calloutPosition" class="form-label fw-semibold">
+                                    {{#str}}calloutposition, mod_smartvideo{{/str}}
+                                </label>
+                                <select id="calloutPosition" class="form-select">
+                                    <option value="bottom-right" selected>Bottom-Right</option>
+                                    <option value="top-right">Top-Right</option>
+                                    <option value="bottom-left">Bottom-Left</option>
+                                    <option value="top-left">Top-Left</option>
+                                    <option value="center">Center Overlay</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6 d-flex align-items-center">
+                                <div class="form-check form-switch mt-3">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="calloutAutopause">
+                                    <label class="form-check-label fw-semibold" for="calloutAutopause">
+                                        {{#str}}calloutautopause, mod_smartvideo{{/str}}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label for="calloutLinkLabel" class="form-label fw-semibold">
+                                    {{#str}}calloutlinklabel, mod_smartvideo{{/str}}
+                                </label>
+                                <input type="text" id="calloutLinkLabel" class="form-control" placeholder="e.g. View Guidelines">
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="calloutLinkUrl" class="form-label fw-semibold">
+                                    {{#str}}calloutlinkurl, mod_smartvideo{{/str}}
+                                </label>
+                                <input type="url" id="calloutLinkUrl" class="form-control" placeholder="https://example.com/guidelines">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info text-white btn-save-callout">
+                        <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savecallout, mod_smartvideo{{/str}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! MODAL 4: ADD / EDIT SUBTITLES MODAL }}
+    <div class="modal fade" id="smartVideoSubtitlesModal" tabindex="-1" aria-labelledby="smartVideoSubtitlesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content shadow border-0">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="smartVideoSubtitlesModalLabel">
+                        <i class="fa fa-cc me-2" aria-hidden="true"></i><span class="subtitles-modal-title-text">{{#str}}addsubtitles, mod_smartvideo{{/str}}</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="smartVideoSubtitlesForm">
+                        <input type="hidden" id="subTrackId" value="0">
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label for="subLang" class="form-label fw-semibold">
+                                    {{#str}}subtitleslang, mod_smartvideo{{/str}} <span class="text-danger">*</span>
+                                </label>
+                                <select id="subLang" class="form-select">
+                                    <option value="en" selected>English (en)</option>
+                                    <option value="ar">العربية - Arabic (ar)</option>
+                                    <option value="fr">Français - French (fr)</option>
+                                    <option value="es">Español - Spanish (es)</option>
+                                    <option value="de">Deutsch - German (de)</option>
+                                    <option value="it">Italiano - Italian (it)</option>
+                                    <option value="pt">Português - Portuguese (pt)</option>
+                                    <option value="tr">Türkçe - Turkish (tr)</option>
+                                    <option value="zh">中文 - Chinese (zh)</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="subLabel" class="form-label fw-semibold">
+                                    Display Label <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="subLabel" class="form-control" value="English" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subVttContent" class="form-label fw-semibold d-flex justify-content-between align-items-center">
+                                <span>{{#str}}vttcontent, mod_smartvideo{{/str}} <span class="text-danger">*</span></span>
+                                <span class="small text-muted fw-normal">Standard WebVTT format</span>
+                            </label>
+                            <textarea id="subVttContent" class="form-control font-monospace small" rows="10" placeholder="WEBVTT&#10;&#10;00:00:01.000 --> 00:00:04.000&#10;Welcome to this interactive video session.&#10;&#10;00:00:04.500 --> 00:00:08.000&#10;Today we will inspect clinical findings." required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning text-dark btn-save-subtitles">
+                        <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savesubtitles, mod_smartvideo{{/str}}
                     </button>
                 </div>
             </div>

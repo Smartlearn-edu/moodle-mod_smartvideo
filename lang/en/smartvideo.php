@@ -187,3 +187,153 @@ $string['privacy:metadata:smartvideo_qattempts:attempts'] = 'The number of attem
 $string['privacy:metadata:smartvideo_qattempts:fraction'] = 'The score fraction obtained from the question engine.';
 $string['privacy:metadata:smartvideo_qattempts:timemodified'] = 'The timestamp of the last attempt interaction.';
 $string['privacy:metadata:core_question'] = 'The Smart Video activity uses Moodle\'s Question Engine subsystem to evaluate and store interactive question attempts.';
+
+// Workstation Sidebar & 3-Zone Architecture.
+$string['workstation_tools'] = 'Workstation Tools';
+$string['sidebar_toggle'] = 'Toggle Workstation Sidebar';
+$string['sidebar_split_mode'] = 'Side-by-side view';
+$string['sidebar_overlay_mode'] = 'Overlay view';
+$string['dock_to_sidebar'] = 'Dock to Sidebar';
+$string['move_below'] = 'Move Below Video';
+$string['close_sidebar'] = 'Close Sidebar';
+
+// Chapters & Table of Contents.
+$string['chapters'] = 'Chapters';
+$string['chapter'] = 'Chapter';
+$string['addchapter'] = 'Add Chapter';
+$string['editchapter'] = 'Edit Chapter';
+$string['deletechapter'] = 'Delete Chapter';
+$string['deletechapterconfirm'] = 'Are you sure you want to delete this chapter marker?';
+$string['chaptertitle'] = 'Chapter Title';
+$string['nochapters'] = 'No chapters defined yet.';
+$string['tableofcontents'] = 'Table of Contents';
+
+// Callout Cards.
+$string['callouts'] = 'Callout Cards';
+$string['callout'] = 'Callout Card';
+$string['addcallout'] = 'Add Callout Card';
+$string['editcallout'] = 'Edit Callout Card';
+$string['deletecallout'] = 'Delete Callout Card';
+$string['deletecalloutconfirm'] = 'Are you sure you want to delete this callout card?';
+$string['callouttitle'] = 'Card Title / Heading';
+$string['calloutbody'] = 'Card Content';
+$string['calloutduration'] = 'Display Duration (seconds)';
+$string['calloutautopause'] = 'Auto-pause video when card appears';
+$string['calloutlinkurl'] = 'Action Button Link URL';
+$string['calloutlinklabel'] = 'Action Button Label';
+$string['calloutposition'] = 'Card Position';
+$string['nocallouts'] = 'No callout cards configured yet.';
+
+// Quick Questions.
+$string['quickquestion'] = 'Quick Question';
+$string['createquickquestion'] = 'Create Quick Question';
+$string['quickquestion_desc'] = 'Quickly create a Multiple Choice or True/False question and add it directly to this video timestamp.';
+$string['questiontype'] = 'Question Type';
+$string['multichoice'] = 'Multiple Choice';
+$string['truefalse'] = 'True / False';
+$string['questionprompt'] = 'Question Prompt';
+$string['answerchoices'] = 'Answer Choices';
+$string['correctanswer'] = 'Correct Answer';
+$string['addchoice'] = 'Add Another Choice';
+$string['removechoice'] = 'Remove Choice';
+$string['choice'] = 'Choice {$a}';
+$string['true'] = 'True';
+$string['false'] = 'False';
+
+// Timeline Studio.
+$string['timelinestudio'] = 'Timeline Studio';
+$string['timelinestudio_desc'] = 'Manage interactive questions, chapters, and rich callouts along your video timeline.';
+$string['tab_questions'] = 'Questions';
+$string['tab_chapters'] = 'Chapters';
+$string['tab_callouts'] = 'Callout Cards';
+$string['fromquestionbank'] = 'Question Bank';
+$string['quickcreator'] = 'Quick Creator';
+$string['savechapter'] = 'Save Chapter';
+$string['savecallout'] = 'Save Callout';
+$string['addchapterat'] = 'Add Chapter at {$a}';
+$string['addcalloutat'] = 'Add Callout at {$a}';
+$string['chaptercount'] = 'Chapters: {$a}';
+$string['calloutcount'] = 'Callout Cards: {$a}';
+
+// Student Timestamped Notes.
+$string['notes'] = 'Notes';
+$string['studentnotes'] = 'Personal Notes';
+$string['addnote'] = 'Add Note';
+$string['addnotecurrent'] = 'Add Note at {$a}';
+$string['noteprompt'] = 'Type your timestamped note here...';
+$string['nonotes'] = 'You haven\'t added any notes yet. Jot down key ideas while watching!';
+$string['exportnotes'] = 'Export Notes';
+$string['printnotes'] = 'Print Notes';
+$string['deletenoteconfirm'] = 'Are you sure you want to delete this note?';
+$string['notecreated'] = 'Note added at {$a}';
+
+// Clinical & Scientific Calculator.
+$string['calculator'] = 'Calculator';
+$string['calc_scientific'] = 'Scientific Calculator';
+$string['calc_clinical'] = 'Clinical Presets';
+$string['calc_bmi'] = 'BMI (Body Mass Index)';
+$string['calc_map'] = 'MAP (Mean Arterial Pressure)';
+$string['calc_egfr'] = 'eGFR (CKD-EPI)';
+
+// Structured Medical & Case Report.
+$string['medicalreport'] = 'Case Report';
+$string['findings'] = 'Clinical Findings';
+$string['findings_placeholder'] = 'Document key symptoms, signs, or video findings. Click "Cite Time" to link video evidence...';
+$string['impression'] = 'Diagnostic Impression';
+$string['impression_placeholder'] = 'Primary hypothesis or overall impression...';
+$string['differential'] = 'Differential Diagnosis';
+$string['differential_placeholder'] = 'Alternative diagnoses considered and rationale...';
+$string['recommendations'] = 'Action Plan / Management';
+$string['recommendations_placeholder'] = 'Next steps, recommended tests, monitoring or treatment...';
+$string['savedraft'] = 'Save Draft';
+$string['submitreport'] = 'Submit Report';
+$string['reportsubmitted'] = 'Report Submitted';
+$string['citetime'] = 'Cite Time';
+$string['lastsaved'] = 'Saved {$a}';
+$string['draftsaved'] = 'Draft saved';
+$string['reports'] = 'Student Case Reports';
+$string['viewreport'] = 'View Report';
+
+// Closed Captions & Interactive Transcript.
+$string['captions'] = 'Closed Captions';
+$string['captions_toggle'] = 'Toggle Closed Captions';
+$string['captions_off'] = 'Off';
+$string['subtitles'] = 'Subtitles';
+$string['transcript'] = 'Transcript';
+$string['searchtranscript'] = 'Search in transcript...';
+$string['notranscript'] = 'No transcript or subtitles available for this video.';
+$string['addsubtitles'] = 'Add Subtitles';
+$string['subtitleslang'] = 'Subtitle Language';
+$string['vttcontent'] = 'WebVTT Content';
+$string['savesubtitles'] = 'Save Subtitles';
+$string['deletesubtitlesconfirm'] = 'Are you sure you want to delete this subtitle track?';
+
+// Handouts & Resources.
+$string['resources'] = 'Handouts & Resources';
+$string['resources_desc'] = 'Lecture handouts, slides, and reference files attached to this activity.';
+$string['noresources'] = 'No handouts or files attached to this video.';
+$string['downloadfile'] = 'Download File';
+
+// Timestamped Q&A / Discussions.
+$string['discussions'] = 'Q&A Discussions';
+$string['askquestion'] = 'Ask a Question';
+$string['askquestionat'] = 'Ask at {$a}';
+$string['questionplaceholder'] = 'Ask a question or share an observation (optionally tied to video timestamp)...';
+$string['reply'] = 'Reply';
+$string['replyplaceholder'] = 'Write a reply...';
+$string['postquestion'] = 'Post Question';
+$string['postreply'] = 'Post Reply';
+$string['nodiscussions'] = 'No questions asked yet. Be the first to start a discussion!';
+$string['deletediscussionconfirm'] = 'Are you sure you want to delete this comment and its replies?';
+$string['dock_below'] = 'Move Below Video';
+$string['dock_to_sidebar'] = 'Dock to Sidebar';
+
+// Audience Retention & Engagement Heatmap.
+$string['engagement_heatmap'] = 'Audience Retention & Engagement Heatmap';
+$string['heatmap_desc'] = 'Visualizes second-by-second student retention, drop-offs, and high-frequency re-watch spikes across the video.';
+$string['retention_rate'] = 'Retention Rate';
+$string['rewatch_spikes'] = 'Re-watch Spikes';
+
+
+
+

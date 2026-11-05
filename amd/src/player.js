@@ -185,9 +185,85 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             return (a.timecode || 0) - (b.timecode || 0);
         });
 
+        // Parse chapters.
+        let rawChapters = container.dataset.chapters || '[]';
+        try {
+            if (rawChapters.indexOf('&quot;') !== -1 || rawChapters.indexOf('&amp;') !== -1) {
+                const txt = document.createElement('textarea');
+                txt.innerHTML = rawChapters;
+                rawChapters = txt.value;
+            }
+            this.chapters = JSON.parse(rawChapters);
+            if (!Array.isArray(this.chapters)) {
+                this.chapters = [];
+            }
+        } catch (e) {
+            this.chapters = [];
+        }
+        this.chapters.sort(function(a, b) {
+            return (a.timecode || 0) - (b.timecode || 0);
+        });
+
+        // Parse in-video callouts.
+        let rawCallouts = container.dataset.callouts || '[]';
+        try {
+            if (rawCallouts.indexOf('&quot;') !== -1 || rawCallouts.indexOf('&amp;') !== -1) {
+                const txt = document.createElement('textarea');
+                txt.innerHTML = rawCallouts;
+                rawCallouts = txt.value;
+            }
+            this.callouts = JSON.parse(rawCallouts);
+            if (!Array.isArray(this.callouts)) {
+                this.callouts = [];
+            }
+        } catch (e) {
+            this.callouts = [];
+        }
+        this.activeCallout = null;
+        this.calloutTimer = null;
+
+        // Parse subtitle cues.
+        let rawCues = container.dataset.cues || '[]';
+        try {
+            if (rawCues.indexOf('&quot;') !== -1 || rawCues.indexOf('&amp;') !== -1) {
+                const txt = document.createElement('textarea');
+                txt.innerHTML = rawCues;
+                rawCues = txt.value;
+            }
+            this.cues = JSON.parse(rawCues);
+            if (!Array.isArray(this.cues)) {
+                this.cues = [];
+            }
+        } catch (e) {
+            this.cues = [];
+        }
+
+        // Parse subtitle tracks.
+        let rawTracks = container.dataset.tracks || '[]';
+        try {
+            if (rawTracks.indexOf('&quot;') !== -1 || rawTracks.indexOf('&amp;') !== -1) {
+                const txt = document.createElement('textarea');
+                txt.innerHTML = rawTracks;
+                rawTracks = txt.value;
+            }
+            this.tracks = JSON.parse(rawTracks);
+            if (!Array.isArray(this.tracks)) {
+                this.tracks = [];
+            }
+        } catch (e) {
+            this.tracks = [];
+        }
+
+        this.captionsOverlay = container.querySelector('#smartVideoCaptionsOverlay');
+        this.captionText = container.querySelector('.smartvideo-caption-text');
+        this.captionsEnabled = false;
+        this.activeTrackId = (this.tracks.length > 0) ? this.tracks[0].id : -1;
+        this.transcriptUserHovering = false;
+
         this.video = container.querySelector('#smartVideoElement, #secureVideoElement, video');
         this.canvas = container.querySelector('#smartVideoWatermarkCanvas, #secureVideoWatermarkCanvas, canvas');
         this.questionOverlay = container.querySelector('#smartVideoQuestionOverlay, #secureVideoQuestionOverlay');
+        this.calloutOverlay = container.querySelector('#smartVideoCalloutOverlay');
         this.activeQuestion = null;
         this.hls = null;
         this.beaconInterval = null;
@@ -207,6 +283,15 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             this.setupAntiTamper();
             this.setupProgressBeacon();
             this.setupQuestions();
+            this.setupChapters();
+            this.setupCallouts();
+            this.setupWorkstationSidebar();
+            this.setupNotes();
+            this.setupCalculator();
+            this.setupReport();
+            this.setupCaptions();
+            this.setupTranscript();
+            this.setupDiscussions();
             this.loadStream();
         },
 
@@ -394,6 +479,40 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
             if (timelineWrapper) {
                 timelineWrapper.addEventListener('click', handleTimelineSeek);
+
+                const hoverTooltip = container.querySelector('#smartVideoHoverTooltip');
+                const hoverTime = hoverTooltip ? hoverTooltip.querySelector('.smartvideo-hover-time') : null;
+                const hoverChapter = hoverTooltip ? hoverTooltip.querySelector('.smartvideo-hover-chapter-name') : null;
+
+                timelineWrapper.addEventListener('mousemove', function(e) {
+                    if (!hoverTooltip) {
+                        return;
+                    }
+                    const rect = timelineWrapper.getBoundingClientRect();
+                    const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+                    const dur = video.duration || self.duration;
+                    const hoverSec = dur > 0 ? (clickX / rect.width) * dur : 0;
+
+                    hoverTooltip.style.left = clickX + 'px';
+                    hoverTooltip.classList.remove('d-none');
+                    if (hoverTime) {
+                        hoverTime.textContent = formatTime(hoverSec);
+                    }
+
+                    const chap = self.getChapterForTime(hoverSec);
+                    if (chap && hoverChapter) {
+                        hoverChapter.textContent = chap.title + ' • ';
+                        hoverChapter.classList.remove('d-none');
+                    } else if (hoverChapter) {
+                        hoverChapter.classList.add('d-none');
+                    }
+                });
+
+                timelineWrapper.addEventListener('mouseleave', function() {
+                    if (hoverTooltip) {
+                        hoverTooltip.classList.add('d-none');
+                    }
+                });
             }
 
             // Seeking guard against native or script seek bypasses.
@@ -402,10 +521,15 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     return;
                 }
                 const cur = video.currentTime;
-                // Reset triggered flag for questions ahead of current seek target.
+                // Reset triggered flag for questions and callouts ahead of current seek target.
                 self.questions.forEach(function(q) {
                     if (cur < q.timecode - 1) {
                         q.triggered = false;
+                    }
+                });
+                self.callouts.forEach(function(c) {
+                    if (cur < c.timecode - 1) {
+                        c.triggered = false;
                     }
                 });
                 const unpassedQ = self.findFirstUnpassedQuestion(cur);
@@ -431,6 +555,12 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
                 // Check interactive question cuepoints.
                 self.checkQuestionCuepoints(cur);
+
+                // Update active chapter and in-video callouts.
+                self.updateActiveChapter(cur);
+                self.checkCallouts(cur);
+                self.updateCaptions(cur);
+                self.syncTranscript(cur);
 
                 // Anti-seek enforcement.
                 if (self.preventSeeking) {
@@ -639,6 +769,19 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     clearTimeout(idleTimeout);
                 });
                 controlsBar.addEventListener('mouseleave', function() {
+                    isOverControls = false;
+                    resetIdle();
+                });
+            }
+
+            const sidebarEl = container.querySelector('.smartvideo-sidebar');
+            if (sidebarEl) {
+                sidebarEl.addEventListener('mouseenter', function() {
+                    isOverControls = true;
+                    container.classList.remove('is-idle');
+                    clearTimeout(idleTimeout);
+                });
+                sidebarEl.addEventListener('mouseleave', function() {
                     isOverControls = false;
                     resetIdle();
                 });
@@ -1383,6 +1526,941 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         },
 
         /**
+         * Setup YouTube-style segmented chapters on timeline and Table of Contents in sidebar.
+         */
+        setupChapters: function() {
+            const self = this;
+            const container = this.container;
+            const video = this.video;
+            const chapters = this.chapters;
+
+            const pillBtn = container.querySelector('.smartvideo-chapter-pill');
+            const pillLabel = container.querySelector('.smartvideo-chapter-pill-label');
+            const chapterList = container.querySelector('.smartvideo-chapters-list');
+            const searchInput = container.querySelector('.smartvideo-search-chapters');
+            const segmentsContainer = container.querySelector('.smartvideo-chapter-segments');
+
+            // Render 3px segment dividers on timeline track.
+            if (segmentsContainer && chapters && chapters.length > 1) {
+                segmentsContainer.innerHTML = '';
+                const dur = this.duration || (video ? video.duration : 0);
+                if (dur > 0) {
+                    chapters.forEach(function(ch, idx) {
+                        if (idx > 0) {
+                            const pct = Math.min(100, (ch.timecode / dur) * 100);
+                            const div = document.createElement('div');
+                            div.className = 'smartvideo-chapter-divider';
+                            div.style.left = pct + '%';
+                            segmentsContainer.appendChild(div);
+                        }
+                    });
+                }
+            }
+
+            // Click on chapter pill opens/toggles the sidebar and focuses Chapters tab.
+            if (pillBtn) {
+                pillBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    self.openSidebarTab('tabBtnChapters');
+                });
+            }
+
+            // Click on chapter item in sidebar seeks video to chapter start.
+            if (chapterList) {
+                chapterList.addEventListener('click', function(e) {
+                    const item = e.target.closest('.smartvideo-chapter-item');
+                    if (!item) {
+                        return;
+                    }
+                    const timecode = parseInt(item.dataset.timecode, 10);
+                    if (isNaN(timecode)) {
+                        return;
+                    }
+
+                    // Gate check: First unpassed required question before chapter timecode.
+                    const unpassedQ = self.findFirstUnpassedQuestion(timecode);
+                    if (unpassedQ && timecode > unpassedQ.timecode) {
+                        video.currentTime = unpassedQ.timecode;
+                        self.triggerQuestion(unpassedQ, false);
+                        return;
+                    }
+
+                    // Anti-seek check.
+                    if (self.preventSeeking && timecode > (self.maxPosition + 2)) {
+                        video.currentTime = self.maxPosition;
+                        const seekNotice = container.querySelector('#smartVideoSeekNotice, #secureVideoSeekNotice');
+                        if (seekNotice) {
+                            seekNotice.classList.remove('d-none');
+                            setTimeout(function() {
+                                seekNotice.classList.add('d-none');
+                            }, 2000);
+                        }
+                        return;
+                    }
+
+                    video.currentTime = timecode;
+                    if (video.paused && !self.activeQuestion) {
+                        video.play().catch(function() {});
+                    }
+                });
+            }
+
+            // Search filter for chapters list.
+            if (searchInput && chapterList) {
+                searchInput.addEventListener('input', function(e) {
+                    const q = (e.target.value || '').toLowerCase().trim();
+                    const items = chapterList.querySelectorAll('.smartvideo-chapter-item');
+                    items.forEach(function(item) {
+                        const title = (item.querySelector('.smartvideo-chapter-title')?.textContent || '').toLowerCase();
+                        if (!q || title.indexOf(q) !== -1) {
+                            item.classList.remove('d-none');
+                        } else {
+                            item.classList.add('d-none');
+                        }
+                    });
+                });
+            }
+        },
+
+        /**
+         * Get the chapter active at a given timecode.
+         *
+         * @param {number} time
+         * @return {Object|null}
+         */
+        getChapterForTime: function(time) {
+            if (!this.chapters || this.chapters.length === 0) {
+                return null;
+            }
+            let active = null;
+            for (let i = 0; i < this.chapters.length; i++) {
+                if (this.chapters[i].timecode <= time) {
+                    active = this.chapters[i];
+                } else {
+                    break;
+                }
+            }
+            return active;
+        },
+
+        /**
+         * Update active chapter UI based on current video time.
+         *
+         * @param {number} curTime
+         */
+        updateActiveChapter: function(curTime) {
+            const chap = this.getChapterForTime(curTime);
+            if (!chap) {
+                return;
+            }
+
+            // Update chapter pill in control bar.
+            const pillLabel = this.container.querySelector('.smartvideo-chapter-pill-label');
+            if (pillLabel && pillLabel.textContent !== chap.title) {
+                pillLabel.textContent = chap.title;
+            }
+
+            // Update active state in sidebar list.
+            const items = this.container.querySelectorAll('.smartvideo-chapter-item');
+            items.forEach(function(item) {
+                const itemTime = parseInt(item.dataset.timecode, 10);
+                if (itemTime === chap.timecode) {
+                    item.classList.add('is-active');
+                } else {
+                    item.classList.remove('is-active');
+                }
+            });
+        },
+
+        /**
+         * Setup In-Video Callout Cards overlay and actions.
+         */
+        setupCallouts: function() {
+            const self = this;
+            const overlay = this.calloutOverlay;
+            if (!overlay) {
+                return;
+            }
+
+            const closeBtn = overlay.querySelector('.smartvideo-btn-callout-close');
+            const contBtn = overlay.querySelector('.smartvideo-btn-callout-continue');
+
+            const dismissCallout = function() {
+                overlay.classList.add('d-none');
+                clearTimeout(self.calloutTimer);
+                if (self.activeCallout && self.activeCallout.autopause && self.video.paused) {
+                    self.video.play().catch(function() {});
+                }
+                self.activeCallout = null;
+            };
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', dismissCallout);
+            }
+            if (contBtn) {
+                contBtn.addEventListener('click', dismissCallout);
+            }
+        },
+
+        /**
+         * Check and trigger in-video callouts at current timestamp.
+         *
+         * @param {number} curTime
+         */
+        checkCallouts: function(curTime) {
+            if (!this.callouts || this.callouts.length === 0 || this.activeQuestion) {
+                return;
+            }
+            const self = this;
+            for (let i = 0; i < this.callouts.length; i++) {
+                const c = this.callouts[i];
+                if (!c.triggered && curTime >= c.timecode && curTime <= (c.timecode + 2)) {
+                    c.triggered = true;
+                    self.triggerCallout(c);
+                    break;
+                }
+            }
+        },
+
+        /**
+         * Trigger and render an in-video callout card.
+         *
+         * @param {Object} callout
+         */
+        triggerCallout: function(callout) {
+            const overlay = this.calloutOverlay;
+            if (!overlay) {
+                return;
+            }
+            this.activeCallout = callout;
+            clearTimeout(this.calloutTimer);
+
+            const titleEl = overlay.querySelector('.smartvideo-callout-title');
+            const bodyEl = overlay.querySelector('.smartvideo-callout-body');
+            const linkBtn = overlay.querySelector('.smartvideo-callout-link');
+            const linkLabel = overlay.querySelector('.smartvideo-callout-link-label');
+            const contBtn = overlay.querySelector('.smartvideo-btn-callout-continue');
+
+            if (titleEl) {
+                titleEl.textContent = callout.title || 'Information';
+            }
+            if (bodyEl) {
+                bodyEl.innerHTML = callout.body || '';
+            }
+
+            if (linkBtn) {
+                if (callout.linkurl) {
+                    linkBtn.href = callout.linkurl;
+                    if (linkLabel) {
+                        linkLabel.textContent = callout.linklabel || 'Open Resource';
+                    }
+                    linkBtn.classList.remove('d-none');
+                } else {
+                    linkBtn.classList.add('d-none');
+                }
+            }
+
+            // Position class.
+            overlay.className = 'smartvideo-callout-overlay position-absolute p-3 pos-' + (callout.position || 'bottom-right');
+
+            if (callout.autopause) {
+                this.video.pause();
+                if (contBtn) {
+                    contBtn.classList.remove('d-none');
+                }
+            } else {
+                if (contBtn) {
+                    contBtn.classList.add('d-none');
+                }
+                const dur = Math.max(2, callout.duration || 8);
+                const self = this;
+                this.calloutTimer = setTimeout(function() {
+                    overlay.classList.add('d-none');
+                    self.activeCallout = null;
+                }, dur * 1000);
+            }
+
+            overlay.classList.remove('d-none');
+        },
+
+        /**
+         * Setup Workstation Sidebar toggle, split-view mode, and close handlers.
+         */
+        setupWorkstationSidebar: function() {
+            const self = this;
+            const container = this.container;
+            const sidebar = container.querySelector('.smartvideo-sidebar');
+            const toggleBtn = container.querySelector('.smartvideo-btn-sidebar');
+            const modeBtn = container.querySelector('.smartvideo-btn-sidebar-mode');
+            const closeBtn = container.querySelector('.smartvideo-btn-sidebar-close');
+
+            if (!sidebar) {
+                return;
+            }
+
+            const toggleSidebar = function() {
+                const isHidden = sidebar.classList.contains('d-none');
+                if (isHidden) {
+                    sidebar.classList.remove('d-none');
+                    container.classList.add('is-sidebar-open');
+                } else {
+                    sidebar.classList.add('d-none');
+                    container.classList.remove('is-sidebar-open');
+                }
+                if (self.canvas && typeof self.resizeCanvas === 'function') {
+                    setTimeout(function() {
+                        self.resizeCanvas();
+                    }, 60);
+                }
+            };
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleSidebar();
+                });
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    sidebar.classList.add('d-none');
+                    container.classList.remove('is-sidebar-open');
+                    if (self.canvas && typeof self.resizeCanvas === 'function') {
+                        setTimeout(function() {
+                            self.resizeCanvas();
+                        }, 60);
+                    }
+                });
+            }
+
+            if (modeBtn) {
+                modeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    container.classList.toggle('is-sidebar-overlay');
+                    const isOverlay = container.classList.contains('is-sidebar-overlay');
+                    modeBtn.innerHTML = isOverlay ?
+                        '<i class="fa fa-table-columns" aria-hidden="true"></i>' :
+                        '<i class="fa fa-window-maximize" aria-hidden="true"></i>';
+                    modeBtn.setAttribute('title', isOverlay ? 'Side-by-side view' : 'Overlay view');
+                    if (self.canvas && typeof self.resizeCanvas === 'function') {
+                        setTimeout(function() {
+                            self.resizeCanvas();
+                        }, 60);
+                    }
+                });
+            }
+        },
+
+        /**
+         * Setup Student Timestamped Notes in the Workstation Sidebar.
+         */
+        setupNotes: function() {
+            const self = this;
+            const container = this.container;
+            const video = this.video;
+
+            const timeBtn = container.querySelector('#svNoteCurrentTimeBtn');
+            const timeDisplay = container.querySelector('#svNoteTimeDisplay');
+            const noteInput = container.querySelector('#svNoteInput');
+            const saveBtn = container.querySelector('#svSaveNoteBtn');
+            const notesList = container.querySelector('#svNotesList');
+            const exportBtn = container.querySelector('#svExportNotesBtn');
+            const printBtn = container.querySelector('#svPrintNotesBtn');
+            const countBadge = container.querySelector('.smartvideo-notes-count-badge');
+
+            if (!notesList) {
+                return;
+            }
+
+            let selectedTimecode = 0;
+
+            const updateStampDisplay = function() {
+                selectedTimecode = Math.floor(video.currentTime || 0);
+                if (timeDisplay) {
+                    timeDisplay.textContent = formatTime(selectedTimecode);
+                }
+            };
+
+            if (timeBtn) {
+                timeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    updateStampDisplay();
+                });
+            }
+
+            // Sync stamp display when note input is focused if not already set.
+            if (noteInput) {
+                noteInput.addEventListener('focus', function() {
+                    if (selectedTimecode === 0 && video.currentTime > 0) {
+                        updateStampDisplay();
+                    }
+                });
+            }
+
+            if (saveBtn && noteInput) {
+                saveBtn.addEventListener('click', function() {
+                    const text = noteInput.value.trim();
+                    if (!text) {
+                        Notification.alert('Required Field', 'Please enter some text for your note.', 'OK');
+                        return;
+                    }
+
+                    const timecodeToSave = (selectedTimecode > 0) ? selectedTimecode : Math.floor(video.currentTime || 0);
+
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Saving...';
+
+                    Ajax.call([{
+                        methodname: 'mod_smartvideo_save_note',
+                        args: {
+                            cmid: self.cmid,
+                            noteid: 0,
+                            timecode: timecodeToSave,
+                            content: text
+                        }
+                    }])[0].then(function(res) {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = '<i class="fa fa-plus me-1"></i>Add Note';
+                        if (res && res.status) {
+                            noteInput.value = '';
+                            selectedTimecode = 0;
+                            if (timeDisplay) {
+                                timeDisplay.textContent = '00:00';
+                            }
+
+                            // Remove empty placeholder if present.
+                            const placeholder = notesList.querySelector('.sv-no-notes-placeholder');
+                            if (placeholder) {
+                                placeholder.remove();
+                            }
+
+                            // Render new note card.
+                            const card = document.createElement('div');
+                            card.className = 'card bg-black bg-opacity-30 border-secondary border-opacity-25 p-2 smartvideo-note-card';
+                            card.dataset.noteid = res.id;
+                            card.dataset.timecode = res.timecode;
+                            card.innerHTML =
+                                '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                                    '<button type="button" class="btn btn-xs btn-outline-primary py-0 px-1 font-monospace btn-note-seek" data-timecode="' + res.timecode + '">' +
+                                        '<i class="fa fa-play fa-xs me-1"></i>' + res.timeformatted +
+                                    '</button>' +
+                                    '<button type="button" class="btn btn-link text-danger p-0 btn-note-delete" title="Delete note">' +
+                                        '<i class="fa fa-trash fa-xs"></i>' +
+                                    '</button>' +
+                                '</div>' +
+                                '<div class="small text-white note-content-text">' + res.content + '</div>';
+
+                            notesList.appendChild(card);
+
+                            // Update count badge.
+                            if (countBadge) {
+                                const currentCount = parseInt(countBadge.textContent, 10) || 0;
+                                countBadge.textContent = String(currentCount + 1);
+                            }
+                        }
+                    }).catch(function(err) {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = '<i class="fa fa-plus me-1"></i>Add Note';
+                        Notification.exception(err);
+                    });
+                });
+            }
+
+            // Click delegation for seek and delete on notes list.
+            notesList.addEventListener('click', function(e) {
+                const seekBtn = e.target.closest('.btn-note-seek');
+                if (seekBtn) {
+                    const timecode = parseInt(seekBtn.dataset.timecode, 10);
+                    if (!isNaN(timecode)) {
+                        video.currentTime = timecode;
+                        if (video.paused && !self.activeQuestion) {
+                            video.play().catch(function() {});
+                        }
+                    }
+                    return;
+                }
+
+                const deleteBtn = e.target.closest('.btn-note-delete');
+                if (deleteBtn) {
+                    const card = deleteBtn.closest('.smartvideo-note-card');
+                    if (!card) {
+                        return;
+                    }
+                    const noteId = parseInt(card.dataset.noteid, 10);
+
+                    Notification.confirm('Delete Note', 'Are you sure you want to delete this note?', 'Delete', 'Cancel', function() {
+                        Ajax.call([{
+                            methodname: 'mod_smartvideo_delete_note',
+                            args: {
+                                cmid: self.cmid,
+                                noteid: noteId
+                            }
+                        }])[0].then(function(res) {
+                            if (res && res.status) {
+                                card.remove();
+                                if (countBadge) {
+                                    const currentCount = Math.max(0, (parseInt(countBadge.textContent, 10) || 1) - 1);
+                                    countBadge.textContent = String(currentCount);
+                                }
+                                if (notesList.querySelectorAll('.smartvideo-note-card').length === 0) {
+                                    notesList.innerHTML =
+                                        '<div class="text-center py-4 text-white-50 small sv-no-notes-placeholder">' +
+                                            '<i class="fa fa-pencil fa-2x mb-2 opacity-50" aria-hidden="true"></i>' +
+                                            '<div>No notes yet. Jot down key ideas while watching!</div>' +
+                                        '</div>';
+                                }
+                            }
+                        }).catch(Notification.exception);
+                    });
+                }
+            });
+
+            // Export Notes as text file.
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function() {
+                    const cards = notesList.querySelectorAll('.smartvideo-note-card');
+                    if (cards.length === 0) {
+                        Notification.alert('Notice', 'No notes to export yet.', 'OK');
+                        return;
+                    }
+
+                    let content = 'Smart Video Notes\n';
+                    content += 'Video: ' + (container.dataset.title || 'Lesson Video') + '\n';
+                    content += 'Date: ' + (new Date()).toLocaleDateString() + '\n';
+                    content += '--------------------------------------------------\n\n';
+
+                    cards.forEach(function(card) {
+                        const time = card.querySelector('.btn-note-seek')?.textContent.trim() || '00:00';
+                        const text = card.querySelector('.note-content-text')?.textContent.trim() || '';
+                        content += '[' + time + '] ' + text + '\n\n';
+                    });
+
+                    const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'notes_' + (new Date()).toISOString().slice(0, 10) + '.txt';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            }
+
+            // Print Notes.
+            if (printBtn) {
+                printBtn.addEventListener('click', function() {
+                    const cards = notesList.querySelectorAll('.smartvideo-note-card');
+                    if (cards.length === 0) {
+                        Notification.alert('Notice', 'No notes to print.', 'OK');
+                        return;
+                    }
+
+                    let printHtml = '<html><head><title>Notes - ' + (container.dataset.title || 'Video') + '</title>';
+                    printHtml += '<style>body{font-family:sans-serif;padding:24px;line-height:1.5;} .note{margin-bottom:16px;border-bottom:1px solid #ddd;padding-bottom:12px;} .time{font-family:monospace;font-weight:bold;color:#0d6efd;margin-right:8px;}</style></head><body>';
+                    printHtml += '<h2>' + (container.dataset.title || 'Video Notes') + '</h2><hr>';
+
+                    cards.forEach(function(card) {
+                        const time = card.querySelector('.btn-note-seek')?.textContent.trim() || '00:00';
+                        const text = card.querySelector('.note-content-text')?.textContent.trim() || '';
+                        printHtml += '<div class="note"><span class="time">[' + time + ']</span> ' + text + '</div>';
+                    });
+
+                    printHtml += '</body></html>';
+
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                        printWindow.document.write(printHtml);
+                        printWindow.document.close();
+                        printWindow.focus();
+                        printWindow.print();
+                    }
+                });
+            }
+        },
+
+        /**
+         * Setup Scientific and Clinical Calculator in Workstation Sidebar.
+         */
+        setupCalculator: function() {
+            const container = this.container;
+            const standardBtn = container.querySelector('#calcModeStandardBtn');
+            const clinicalBtn = container.querySelector('#calcModeClinicalBtn');
+            const standardView = container.querySelector('#calcStandardView');
+            const clinicalView = container.querySelector('#calcClinicalView');
+
+            if (!standardView) {
+                return;
+            }
+
+            // Mode switching.
+            if (standardBtn && clinicalBtn) {
+                standardBtn.addEventListener('click', function() {
+                    standardBtn.classList.add('active');
+                    clinicalBtn.classList.remove('active');
+                    standardView.classList.remove('d-none');
+                    clinicalView.classList.add('d-none');
+                });
+                clinicalBtn.addEventListener('click', function() {
+                    clinicalBtn.classList.add('active');
+                    standardBtn.classList.remove('active');
+                    clinicalView.classList.remove('d-none');
+                    standardView.classList.add('d-none');
+                });
+            }
+
+            // --- Standard / Sci Calculator Engine ---
+            const display = container.querySelector('#calcDisplay');
+            const formula = container.querySelector('#calcFormula');
+            let currentExpr = '';
+
+            const updateCalcDisplay = function(val) {
+                if (display) {
+                    display.value = val;
+                }
+            };
+
+            container.querySelectorAll('.calc-key').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const key = btn.dataset.key;
+
+                    if (key === 'C') {
+                        currentExpr = '';
+                        if (formula) {
+                            formula.textContent = '';
+                        }
+                        updateCalcDisplay('0');
+                    } else if (key === 'BACK') {
+                        currentExpr = currentExpr.slice(0, -1);
+                        updateCalcDisplay(currentExpr || '0');
+                    } else if (key === '=') {
+                        if (!currentExpr) {
+                            return;
+                        }
+                        try {
+                            if (formula) {
+                                formula.textContent = currentExpr + ' =';
+                            }
+                            // Sanitize math expression (only allow digits, operators, parens, decimal).
+                            const sanitized = currentExpr.replace(/[^0-9+\-*/().]/g, '');
+                            // Safe math calculation using Function constructor with sanitized input.
+                            const result = Function('"use strict"; return (' + sanitized + ')')();
+                            const formatted = Number.isFinite(result) ?
+                                (Number.isInteger(result) ? result : parseFloat(result.toFixed(6))) : 'Error';
+                            updateCalcDisplay(formatted);
+                            currentExpr = String(formatted);
+                        } catch (err) {
+                            updateCalcDisplay('Error');
+                            currentExpr = '';
+                        }
+                    } else if (key === 'sqrt') {
+                        try {
+                            const val = parseFloat(display.value) || 0;
+                            if (val < 0) {
+                                updateCalcDisplay('Error');
+                            } else {
+                                const result = Math.sqrt(val);
+                                updateCalcDisplay(parseFloat(result.toFixed(6)));
+                                currentExpr = String(result);
+                            }
+                        } catch (err) {
+                            updateCalcDisplay('Error');
+                        }
+                    } else if (key === 'sq') {
+                        try {
+                            const val = parseFloat(display.value) || 0;
+                            const result = val * val;
+                            updateCalcDisplay(parseFloat(result.toFixed(6)));
+                            currentExpr = String(result);
+                        } catch (err) {
+                            updateCalcDisplay('Error');
+                        }
+                    } else if (key === '%') {
+                        try {
+                            const val = parseFloat(display.value) || 0;
+                            const result = val / 100;
+                            updateCalcDisplay(parseFloat(result.toFixed(6)));
+                            currentExpr = String(result);
+                        } catch (err) {
+                            updateCalcDisplay('Error');
+                        }
+                    } else {
+                        currentExpr += key;
+                        updateCalcDisplay(currentExpr);
+                    }
+                });
+            });
+
+            // --- Clinical Presets ---
+            // BMI
+            const calcBmiBtn = container.querySelector('#btnCalcBmi');
+            if (calcBmiBtn) {
+                calcBmiBtn.addEventListener('click', function() {
+                    const weight = parseFloat(container.querySelector('#bmiWeight')?.value) || 0;
+                    const height = parseFloat(container.querySelector('#bmiHeight')?.value) || 0;
+                    const resBox = container.querySelector('#bmiResult');
+                    const valEl = container.querySelector('#bmiValue');
+                    const catEl = container.querySelector('#bmiCategory');
+
+                    if (weight <= 0 || height <= 0 || !resBox || !valEl || !catEl) {
+                        return;
+                    }
+
+                    const heightM = height / 100;
+                    const bmi = weight / (heightM * heightM);
+                    valEl.textContent = bmi.toFixed(1) + ' kg/m²';
+
+                    let cat = 'Normal';
+                    let catClass = 'text-success';
+                    if (bmi < 18.5) {
+                        cat = 'Underweight';
+                        catClass = 'text-info';
+                    } else if (bmi >= 25 && bmi < 30) {
+                        cat = 'Overweight';
+                        catClass = 'text-warning';
+                    } else if (bmi >= 30) {
+                        cat = 'Obese';
+                        catClass = 'text-danger';
+                    }
+
+                    catEl.textContent = cat;
+                    catEl.className = 'small fw-semibold mt-1 ' + catClass;
+                    resBox.classList.remove('d-none');
+                });
+            }
+
+            // MAP (Mean Arterial Pressure)
+            const calcMapBtn = container.querySelector('#btnCalcMap');
+            if (calcMapBtn) {
+                calcMapBtn.addEventListener('click', function() {
+                    const sys = parseFloat(container.querySelector('#mapSystolic')?.value) || 0;
+                    const dia = parseFloat(container.querySelector('#mapDiastolic')?.value) || 0;
+                    const resBox = container.querySelector('#mapResult');
+                    const valEl = container.querySelector('#mapValue');
+
+                    if (sys <= 0 || dia <= 0 || !resBox || !valEl) {
+                        return;
+                    }
+
+                    const map = dia + ((sys - dia) / 3);
+                    valEl.textContent = map.toFixed(1);
+                    resBox.classList.remove('d-none');
+                });
+            }
+
+            // eGFR (CKD-EPI)
+            const calcEgfrBtn = container.querySelector('#btnCalcEgfr');
+            if (calcEgfrBtn) {
+                calcEgfrBtn.addEventListener('click', function() {
+                    const scr = parseFloat(container.querySelector('#egfrCreatinine')?.value) || 0;
+                    const age = parseFloat(container.querySelector('#egfrAge')?.value) || 0;
+                    const sex = container.querySelector('#egfrSex')?.value || 'male';
+                    const resBox = container.querySelector('#egfrResult');
+                    const valEl = container.querySelector('#egfrValue');
+                    const stageEl = container.querySelector('#egfrStage');
+
+                    if (scr <= 0 || age <= 0 || !resBox || !valEl || !stageEl) {
+                        return;
+                    }
+
+                    const isFemale = (sex === 'female');
+                    const kappa = isFemale ? 0.7 : 0.9;
+                    const alpha = isFemale ? -0.241 : -0.302;
+                    const factor = isFemale ? 1.012 : 1.0;
+
+                    const minRatio = Math.min(scr / kappa, 1);
+                    const maxRatio = Math.max(scr / kappa, 1);
+
+                    const egfr = 142 * Math.pow(minRatio, alpha) * Math.pow(maxRatio, -1.200) * Math.pow(0.9938, age) * factor;
+                    valEl.textContent = egfr.toFixed(0);
+
+                    let stage = 'G1: Normal / High';
+                    if (egfr < 15) {
+                        stage = 'G5: Kidney Failure';
+                    } else if (egfr < 30) {
+                        stage = 'G4: Severely Decreased';
+                    } else if (egfr < 45) {
+                        stage = 'G3b: Moderately to Severely Decreased';
+                    } else if (egfr < 60) {
+                        stage = 'G3a: Mildly to Moderately Decreased';
+                    } else if (egfr < 90) {
+                        stage = 'G2: Mildly Decreased';
+                    }
+
+                    stageEl.textContent = stage;
+                    resBox.classList.remove('d-none');
+                });
+            }
+        },
+
+        /**
+         * Setup Structured Medical / Case Report in Workstation Sidebar.
+         */
+        setupReport: function() {
+            const self = this;
+            const container = this.container;
+            const video = this.video;
+
+            const findingsInput = container.querySelector('#reportFindings');
+            const impressionInput = container.querySelector('#reportImpression');
+            const diagnosisInput = container.querySelector('#reportDiagnosis');
+            const recommendationsInput = container.querySelector('#reportRecommendations');
+            const saveDraftBtn = container.querySelector('#btnSaveReportDraft');
+            const submitBtn = container.querySelector('#btnSubmitReport');
+            const statusBadge = container.querySelector('#reportStatusBadge');
+            const savedIndicator = container.querySelector('#reportSavedIndicator');
+            const citeTimeBtn = container.querySelector('#btnCiteTime');
+            const citeTimeVal = container.querySelector('#citeTimeVal');
+
+            if (!findingsInput) {
+                return;
+            }
+
+            let lastFocusedTextarea = findingsInput;
+            const allInputs = [findingsInput, impressionInput, diagnosisInput, recommendationsInput];
+
+            allInputs.forEach(function(input) {
+                if (input) {
+                    input.addEventListener('focus', function() {
+                        lastFocusedTextarea = input;
+                    });
+                }
+            });
+
+            // Update cite button timecode display on timeupdate
+            video.addEventListener('timeupdate', function() {
+                if (citeTimeVal) {
+                    citeTimeVal.textContent = formatTime(video.currentTime);
+                }
+            });
+
+            // Cite time button inserts "[MM:SS] " into active textarea.
+            if (citeTimeBtn) {
+                citeTimeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const target = lastFocusedTextarea || findingsInput;
+                    const stamp = '[' + formatTime(video.currentTime) + '] ';
+                    const startPos = target.selectionStart || target.value.length;
+                    const endPos = target.selectionEnd || target.value.length;
+                    target.value = target.value.substring(0, startPos) + stamp + target.value.substring(endPos);
+                    target.selectionStart = target.selectionEnd = startPos + stamp.length;
+                    target.focus();
+                });
+            }
+
+            const saveReport = function(status, showNotification) {
+                const findings = (findingsInput ? findingsInput.value : '').trim();
+                const impression = (impressionInput ? impressionInput.value : '').trim();
+                const diagnosis = (diagnosisInput ? diagnosisInput.value : '').trim();
+                const recommendations = (recommendationsInput ? recommendationsInput.value : '').trim();
+
+                return Ajax.call([{
+                    methodname: 'mod_smartvideo_save_report',
+                    args: {
+                        cmid: self.cmid,
+                        findings: findings,
+                        impression: impression,
+                        diagnosis: diagnosis,
+                        recommendations: recommendations,
+                        status: status
+                    }
+                }])[0].then(function(res) {
+                    if (res && res.status) {
+                        const now = new Date();
+                        const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                        if (savedIndicator) {
+                            savedIndicator.textContent = 'Saved ' + timeStr;
+                        }
+                        if (statusBadge) {
+                            if (res.reportstatus === 'submitted') {
+                                statusBadge.className = 'badge bg-success';
+                                statusBadge.textContent = 'Submitted';
+                            } else {
+                                statusBadge.className = 'badge bg-warning text-dark';
+                                statusBadge.textContent = 'Draft';
+                            }
+                        }
+                        if (showNotification) {
+                            Notification.alert('Success', status === 'submitted' ? 'Your case report has been submitted!' : 'Draft saved successfully.', 'OK');
+                        }
+                    }
+                }).catch(function(err) {
+                    if (showNotification) {
+                        Notification.exception(err);
+                    }
+                });
+            };
+
+            if (saveDraftBtn) {
+                saveDraftBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    saveReport('draft', true);
+                });
+            }
+
+            if (submitBtn) {
+                submitBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    Notification.confirm(
+                        'Submit Case Report',
+                        'Are you ready to submit your case report? Your instructor will be able to review your findings and diagnosis.',
+                        'Submit',
+                        'Cancel',
+                        function() {
+                            saveReport('submitted', true);
+                        }
+                    );
+                });
+            }
+
+            // Autosave draft silently every 25 seconds if changes occurred.
+            let hasUnsavedChanges = false;
+            allInputs.forEach(function(input) {
+                if (input) {
+                    input.addEventListener('input', function() {
+                        hasUnsavedChanges = true;
+                    });
+                }
+            });
+
+            setInterval(function() {
+                if (hasUnsavedChanges) {
+                    hasUnsavedChanges = false;
+                    saveReport('draft', false);
+                }
+            }, 25000);
+        },
+
+        /**
+         * Open the Workstation Sidebar and activate a specific tab.
+         *
+         * @param {string} tabBtnId
+         */
+        openSidebarTab: function(tabBtnId) {
+            const container = this.container;
+            const sidebar = container.querySelector('.smartvideo-sidebar');
+            if (!sidebar) {
+                return;
+            }
+            sidebar.classList.remove('d-none');
+            container.classList.add('is-sidebar-open');
+
+            const tabBtn = sidebar.querySelector('#' + tabBtnId);
+            if (tabBtn && typeof tabBtn.click === 'function') {
+                tabBtn.click();
+            }
+
+            if (this.canvas && typeof this.resizeCanvas === 'function') {
+                const self = this;
+                setTimeout(function() {
+                    self.resizeCanvas();
+                }, 60);
+            }
+        },
+
+        /**
          * Submit watch progress beacon via external web service.
          */
         sendProgressBeacon: function() {
@@ -1423,6 +2501,432 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             }).catch(function(err) {
                 console.error('[SmartVideo] Progress beacon failed:', err);
             });
+        },
+
+        // =========================================================================
+        // CLOSED CAPTIONS & SUBTITLES METHODS
+        // =========================================================================
+
+        /**
+         * Setup Closed Captions dropdown, toggle, and language selector.
+         */
+        setupCaptions: function() {
+            const self = this;
+            const container = this.container;
+            const ccMenu = container.querySelector('.smartvideo-cc-menu');
+            const ccLabel = container.querySelector('.smartvideo-current-cc');
+            const ccBtn = container.querySelector('.smartvideo-btn-cc');
+
+            if (!ccMenu || !ccBtn) {
+                return;
+            }
+
+            // Click listener for each item in the CC menu.
+            ccMenu.querySelectorAll('.dropdown-item').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const trackId = parseInt(item.dataset.trackid, 10);
+                    ccMenu.querySelectorAll('.dropdown-item').forEach(function(el) {
+                        el.classList.remove('active');
+                    });
+                    item.classList.add('active');
+
+                    if (trackId === -1) {
+                        self.captionsEnabled = false;
+                        if (ccLabel) {
+                            ccLabel.textContent = 'Off';
+                        }
+                        if (self.captionsOverlay) {
+                            self.captionsOverlay.classList.add('d-none');
+                        }
+                    } else {
+                        self.captionsEnabled = true;
+                        const lang = item.dataset.lang || 'CC';
+                        if (ccLabel) {
+                            ccLabel.textContent = lang.toUpperCase();
+                        }
+                        self.activeTrackId = trackId;
+                        self.loadTrackCues(trackId);
+                    }
+                });
+            });
+        },
+
+        /**
+         * Load cues for a specific subtitle track via web service if needed.
+         *
+         * @param {number} trackId
+         */
+        loadTrackCues: function(trackId) {
+            const self = this;
+            if (trackId <= 0) {
+                return;
+            }
+            Ajax.call([{
+                methodname: 'mod_smartvideo_get_subtitles',
+                args: {
+                    cmid: self.cmid,
+                    trackid: trackId
+                }
+            }])[0].then(function(res) {
+                if (res && res.cues) {
+                    self.cues = res.cues;
+                    self.renderTranscriptCues(res.cues);
+                }
+            }).catch(function(err) {
+                console.error('[SmartVideo] Failed to load subtitle cues:', err);
+            });
+        },
+
+        /**
+         * Update displayed captions on stage for the current video time.
+         *
+         * @param {number} cur
+         */
+        updateCaptions: function(cur) {
+            if (!this.captionsEnabled || !this.captionsOverlay || !this.captionText) {
+                return;
+            }
+
+            if (!this.cues || this.cues.length === 0) {
+                this.captionsOverlay.classList.add('d-none');
+                return;
+            }
+
+            let activeCue = null;
+            for (let i = 0; i < this.cues.length; i++) {
+                const cue = this.cues[i];
+                if (cur >= cue.start && cur <= cue.end) {
+                    activeCue = cue;
+                    break;
+                }
+            }
+
+            if (activeCue) {
+                this.captionText.innerHTML = activeCue.text;
+                this.captionsOverlay.classList.remove('d-none');
+            } else {
+                this.captionsOverlay.classList.add('d-none');
+            }
+        },
+
+        // =========================================================================
+        // SEARCHABLE INTERACTIVE TRANSCRIPT METHODS
+        // =========================================================================
+
+        /**
+         * Setup Searchable Interactive Transcript.
+         */
+        setupTranscript: function() {
+            const self = this;
+            const searchInput = document.getElementById('svSearchTranscript');
+            const transcriptList = document.getElementById('svTranscriptList');
+
+            if (!transcriptList) {
+                return;
+            }
+
+            transcriptList.addEventListener('mouseenter', function() {
+                self.transcriptUserHovering = true;
+            });
+            transcriptList.addEventListener('mouseleave', function() {
+                self.transcriptUserHovering = false;
+            });
+
+            // Click listener on cues to seek playback.
+            transcriptList.addEventListener('click', function(e) {
+                const cueEl = e.target.closest('.smartvideo-transcript-cue');
+                if (cueEl && cueEl.dataset.start !== undefined) {
+                    const start = parseFloat(cueEl.dataset.start);
+                    self.video.currentTime = start;
+                }
+            });
+
+            // Live filter on typing.
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = searchInput.value.trim().toLowerCase();
+                    const cueEls = transcriptList.querySelectorAll('.smartvideo-transcript-cue');
+                    cueEls.forEach(function(el) {
+                        const txt = el.querySelector('.sv-cue-text') ? el.querySelector('.sv-cue-text').textContent.toLowerCase() : '';
+                        if (!query || txt.indexOf(query) !== -1) {
+                            el.classList.remove('d-none');
+                        } else {
+                            el.classList.add('d-none');
+                        }
+                    });
+                });
+            }
+        },
+
+        /**
+         * Re-render transcript cue elements when subtitle track changes.
+         *
+         * @param {Array<Object>} cues
+         */
+        renderTranscriptCues: function(cues) {
+            const transcriptList = document.getElementById('svTranscriptList');
+            if (!transcriptList) {
+                return;
+            }
+            if (!cues || cues.length === 0) {
+                transcriptList.innerHTML = '<div class="text-center py-4 text-white-50 small">' +
+                    '<i class="fa fa-align-left fa-2x mb-2 opacity-50" aria-hidden="true"></i>' +
+                    '<div>No transcript cues available.</div></div>';
+                return;
+            }
+
+            let html = '';
+            cues.forEach(function(cue) {
+                html += '<div class="smartvideo-transcript-cue p-2 rounded cursor-pointer d-flex gap-2 align-items-start" ' +
+                        'data-start="' + cue.start + '" data-end="' + cue.end + '" data-cueindex="' + cue.index + '">' +
+                        '<span class="badge bg-secondary bg-opacity-75 text-white font-monospace sv-cue-time">' + cue.startformatted + '</span>' +
+                        '<span class="sv-cue-text small text-white-50 flex-grow-1">' + cue.text + '</span>' +
+                        '</div>';
+            });
+            transcriptList.innerHTML = html;
+        },
+
+        /**
+         * Synchronize active transcript cue with current video playback time.
+         *
+         * @param {number} cur
+         */
+        syncTranscript: function(cur) {
+            const transcriptList = document.getElementById('svTranscriptList');
+            if (!transcriptList) {
+                return;
+            }
+
+            const cueEls = transcriptList.querySelectorAll('.smartvideo-transcript-cue');
+            let activeEl = null;
+
+            cueEls.forEach(function(el) {
+                const start = parseFloat(el.dataset.start);
+                const end = parseFloat(el.dataset.end);
+                if (cur >= start && cur <= end) {
+                    el.classList.add('is-active');
+                    activeEl = el;
+                } else {
+                    el.classList.remove('is-active');
+                }
+            });
+
+            if (activeEl && !this.transcriptUserHovering) {
+                const listRect = transcriptList.getBoundingClientRect();
+                const elRect = activeEl.getBoundingClientRect();
+                if (elRect.top < listRect.top || elRect.bottom > listRect.bottom) {
+                    activeEl.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+                }
+            }
+        },
+
+        // =========================================================================
+        // TIMESTAMPED Q&A DISCUSSIONS METHODS
+        // =========================================================================
+
+        /**
+         * Setup Timestamped Q&A Discussions across both Sidebar (Zone 2) and Below Area (Zone 3).
+         */
+        setupDiscussions: function() {
+            const self = this;
+            const container = this.container;
+            const video = this.video;
+
+            // Live sync timecode on sync buttons.
+            const timeDisplays = document.querySelectorAll('.sv-qa-time-display');
+            video.addEventListener('timeupdate', function() {
+                const formatted = formatTime(video.currentTime);
+                timeDisplays.forEach(function(el) {
+                    el.textContent = formatted;
+                });
+            });
+
+            // Docking triggers: from Below to Sidebar.
+            document.querySelectorAll('.btn-dock-qa').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    self.openSidebarTab('tabBtnQA');
+                });
+            });
+
+            document.querySelectorAll('.btn-dock-resources').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    self.openSidebarTab('tabBtnResources');
+                });
+            });
+
+            // Move below triggers: from Sidebar to Below.
+            document.querySelectorAll('.btn-scroll-to-below-qa').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const belowCard = document.getElementById('svBelowWorkstationCard');
+                    if (belowCard) {
+                        const tabBtn = document.getElementById('below-discussions-tab');
+                        if (tabBtn && typeof tabBtn.click === 'function') {
+                            tabBtn.click();
+                        }
+                        belowCard.scrollIntoView({behavior: 'smooth', block: 'start'});
+                    }
+                });
+            });
+
+            document.querySelectorAll('.btn-scroll-to-below-resources').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const belowCard = document.getElementById('svBelowWorkstationCard');
+                    if (belowCard) {
+                        const tabBtn = document.getElementById('below-resources-tab');
+                        if (tabBtn && typeof tabBtn.click === 'function') {
+                            tabBtn.click();
+                        }
+                        belowCard.scrollIntoView({behavior: 'smooth', block: 'start'});
+                    }
+                });
+            });
+
+            // Seek playback when clicking discussion timestamps.
+            document.addEventListener('click', function(e) {
+                const seekBtn = e.target.closest('.btn-seek-qa');
+                if (seekBtn && seekBtn.dataset.timecode !== undefined) {
+                    const timecode = parseInt(seekBtn.dataset.timecode, 10) || 0;
+                    video.currentTime = timecode;
+                    video.scrollIntoView({behavior: 'smooth', block: 'center'});
+                }
+            });
+
+            // Toggle inline reply form.
+            document.addEventListener('click', function(e) {
+                const toggleReplyBtn = e.target.closest('.btn-toggle-reply');
+                if (toggleReplyBtn) {
+                    const replyBox = toggleReplyBtn.closest('.sv-qa-reply-box');
+                    if (replyBox) {
+                        const form = replyBox.querySelector('.sv-qa-reply-form');
+                        if (form) {
+                            form.classList.toggle('d-none');
+                            const input = form.querySelector('.sv-qa-reply-input');
+                            if (input && !form.classList.contains('d-none')) {
+                                input.focus();
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Post Question from Sidebar.
+            const postSidebarBtn = container.querySelector('.btn-post-qa-sidebar');
+            const sidebarInput = container.querySelector('.sv-sidebar-qa-input');
+            if (postSidebarBtn && sidebarInput) {
+                postSidebarBtn.addEventListener('click', function() {
+                    const content = sidebarInput.value.trim();
+                    if (!content) {
+                        return;
+                    }
+                    const includeTime = container.querySelector('#panelQA .sv-qa-include-time');
+                    const timecode = (includeTime && includeTime.checked) ? Math.floor(video.currentTime) : 0;
+                    self.postDiscussionMessage(content, timecode, 0, function() {
+                        sidebarInput.value = '';
+                    });
+                });
+            }
+
+            // Post Question from Below Zone.
+            const postBelowBtn = document.querySelector('.btn-post-qa-below');
+            const belowInput = document.querySelector('.sv-below-qa-input');
+            if (postBelowBtn && belowInput) {
+                postBelowBtn.addEventListener('click', function() {
+                    const content = belowInput.value.trim();
+                    if (!content) {
+                        return;
+                    }
+                    const includeTime = document.querySelector('#below-discussions .sv-qa-include-time');
+                    const timecode = (includeTime && includeTime.checked) ? Math.floor(video.currentTime) : 0;
+                    self.postDiscussionMessage(content, timecode, 0, function() {
+                        belowInput.value = '';
+                    });
+                });
+            }
+
+            // Post Reply button click.
+            document.addEventListener('click', function(e) {
+                const submitReplyBtn = e.target.closest('.btn-submit-reply');
+                if (submitReplyBtn) {
+                    const parentId = parseInt(submitReplyBtn.dataset.parentid, 10);
+                    const form = submitReplyBtn.closest('.sv-qa-reply-form');
+                    const input = form ? form.querySelector('.sv-qa-reply-input') : null;
+                    if (input && input.value.trim()) {
+                        const content = input.value.trim();
+                        self.postDiscussionMessage(content, 0, parentId, function() {
+                            input.value = '';
+                            form.classList.add('d-none');
+                        });
+                    }
+                }
+            });
+
+            // Delete Discussion comment.
+            document.addEventListener('click', function(e) {
+                const deleteBtn = e.target.closest('.btn-delete-discussion');
+                if (deleteBtn) {
+                    const discussionId = parseInt(deleteBtn.dataset.discussionid, 10);
+                    if (!discussionId) {
+                        return;
+                    }
+                    Notification.confirm(
+                        'Delete Discussion',
+                        'Are you sure you want to delete this comment and its replies?',
+                        'Delete',
+                        'Cancel',
+                        function() {
+                            Ajax.call([{
+                                methodname: 'mod_smartvideo_delete_discussion',
+                                args: {
+                                    cmid: self.cmid,
+                                    discussionid: discussionId
+                                }
+                            }])[0].then(function(res) {
+                                if (res && res.status) {
+                                    // Remove thread or reply from both UI surfaces.
+                                    document.querySelectorAll('[data-discussionid="' + discussionId + '"]').forEach(function(el) {
+                                        el.remove();
+                                    });
+                                    // Update count badges.
+                                    const badges = document.querySelectorAll('.smartvideo-qa-count-badge');
+                                    badges.forEach(function(badge) {
+                                        const count = Math.max(0, (parseInt(badge.textContent, 10) || 1) - 1);
+                                        badge.textContent = count;
+                                    });
+                                }
+                            }).catch(Notification.exception);
+                        }
+                    );
+                }
+            });
+        },
+
+        /**
+         * Submit a new discussion question or reply via web service.
+         *
+         * @param {string} content
+         * @param {number} timecode
+         * @param {number} parentId
+         * @param {Function} callback
+         */
+        postDiscussionMessage: function(content, timecode, parentId, callback) {
+            const self = this;
+            Ajax.call([{
+                methodname: 'mod_smartvideo_post_discussion',
+                args: {
+                    cmid: self.cmid,
+                    content: content,
+                    timecode: timecode,
+                    parentid: parentId
+                }
+            }])[0].then(function(res) {
+                if (res && res.status) {
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                    window.location.reload();
+                }
+            }).catch(Notification.exception);
         }
     };
 

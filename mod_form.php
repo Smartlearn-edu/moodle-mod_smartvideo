@@ -136,6 +136,18 @@ class mod_smartvideo_mod_form extends moodleform_mod {
         $mform->setDefault('preventseeking', 0);
 
         // -------------------------------------------------------------------------------
+        // Handouts & Supplementary Resources Section.
+        $mform->addElement('header', 'resourcesheader', get_string('resources', 'mod_smartvideo'));
+
+        $filemanageroptions = [
+            'subdirs'   => 0,
+            'maxbytes'  => $course->maxbytes,
+            'maxfiles'  => 10,
+        ];
+        $mform->addElement('filemanager', 'resources_filemanager', get_string('resources', 'mod_smartvideo'), null, $filemanageroptions);
+        $mform->addHelpButton('resources_filemanager', 'resources', 'mod_smartvideo');
+
+        // -------------------------------------------------------------------------------
         // Activity Completion rules & Standard course module elements.
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
@@ -224,6 +236,20 @@ class mod_smartvideo_mod_form extends moodleform_mod {
 
         if (!empty($defaultvalues['completionrequirequestions'])) {
             $defaultvalues['completionrequirequestions'] = 1;
+        }
+
+        if ($this->current && !empty($this->current->coursemodule)) {
+            $context = context_module::instance($this->current->coursemodule);
+            $draftitemid = file_get_submitted_draft_itemid('resources_filemanager');
+            file_prepare_draft_area(
+                $draftitemid,
+                $context->id,
+                'mod_smartvideo',
+                'resources',
+                0,
+                ['subdirs' => 0, 'maxfiles' => 10]
+            );
+            $defaultvalues['resources_filemanager'] = $draftitemid;
         }
     }
 

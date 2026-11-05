@@ -177,6 +177,209 @@ if (!$media || $media->status !== 'ready') {
     $lastpossecs = $lastposition % 60;
     $lastposformatted = sprintf('%02d:%02d', $lastposmins, $lastpossecs);
 
+    // Fetch configured chapters.
+    $chapters = $DB->get_records('smartvideo_chapters', ['instanceid' => $smartvideo->id], 'timecode ASC');
+    $chaptersdata = [];
+    $chapindex = 1;
+    foreach ($chapters as $ch) {
+        $cmins = floor($ch->timecode / 60);
+        $csecs = $ch->timecode % 60;
+        $chtimeformatted = sprintf('%02d:%02d', $cmins, $csecs);
+        $chpercent = ($media->duration > 0) ? min(100, round(($ch->timecode / $media->duration) * 100, 2)) : 0;
+
+        $chaptersdata[] = [
+            'id'            => (int)$ch->id,
+            'index'         => $chapindex++,
+            'timecode'      => (int)$ch->timecode,
+            'timeformatted' => $chtimeformatted,
+            'percent'       => $chpercent,
+            'title'         => format_string($ch->title),
+        ];
+    }
+
+    // Fetch configured in-video callouts.
+    $callouts = $DB->get_records('smartvideo_callouts', ['instanceid' => $smartvideo->id], 'timecode ASC');
+    $calloutsdata = [];
+    foreach ($callouts as $c) {
+        $cmins = floor($c->timecode / 60);
+        $csecs = $c->timecode % 60;
+        $ctimeformatted = sprintf('%02d:%02d', $cmins, $csecs);
+        $cpercent = ($media->duration > 0) ? min(100, round(($c->timecode / $media->duration) * 100, 2)) : 0;
+
+        $calloutsdata[] = [
+            'id'            => (int)$c->id,
+            'timecode'      => (int)$c->timecode,
+            'timeformatted' => $ctimeformatted,
+            'percent'       => $cpercent,
+            'duration'      => (int)$c->duration,
+            'title'         => format_string($c->title),
+            'body'          => format_text($c->body, FORMAT_HTML),
+            'linkurl'       => !empty($c->linkurl) ? $c->linkurl : '',
+            'linklabel'     => !empty($c->linklabel) ? format_string($c->linklabel) : '',
+            'haslink'       => !empty($c->linkurl),
+            'autopause'     => !empty($c->autopause),
+            'position'      => !empty($c->position) ? $c->position : 'bottom-right',
+        ];
+    }
+
+    // Fetch student personal notes.
+    $notes = $DB->get_records('smartvideo_notes', [
+        'instanceid' => $smartvideo->id,
+        'userid'     => $USER->id,
+    ], 'timecode ASC');
+    $notesdata = [];
+    foreach ($notes as $note) {
+        $nm = floor($note->timecode / 60);
+        $ns = $note->timecode % 60;
+        $notesdata[] = [
+            'id'            => (int)$note->id,
+            'timecode'      => (int)$note->timecode,
+            'timeformatted' => sprintf('%02d:%02d', $nm, $ns),
+            'content'       => format_text($note->content, FORMAT_PLAIN),
+            'rawcontent'    => $note->content,
+            'timemodified'  => (int)$note->timemodified,
+        ];
+    }
+
+    // Fetch student structured case report.
+    $report = $DB->get_record('smartvideo_reports', [
+        'instanceid' => $smartvideo->id,
+        'userid'     => $USER->id,
+    ]);
+    $reportdata = [
+        'id'              => $report ? (int)$report->id : 0,
+        'hasreport'       => !empty($report),
+        'findings'        => $report ? $report->findings : '',
+        'impression'      => $report ? $report->impression : '',
+        'diagnosis'       => $report ? $report->diagnosis : '',
+        'recommendations' => $report ? $report->recommendations : '',
+        'status'          => $report ? $report->status : 'draft',
+        'issubmitted'     => ($report && $report->status === 'submitted'),
+    ];
+
+    // Fetch subtitles and parse cues for captions & interactive transcript.
+    $subtitles = $DB->get_records('smartvideo_subtitles', ['instanceid' => $smartvideo->id], 'id ASC');
+    $tracksdata = [];
+    $primarycues = [];
+    $primarytrack = null;
+    foreach ($subtitles as $sub) {
+        $tracksdata[] = [
+            'id'    => (int)$sub->id,
+            'lang'  => $sub->lang,
+            'label' => $sub->label,
+        ];
+        if ($primarytrack === null) {
+            $primarytrack = $sub;
+        }
+    }
+    if ($primarytrack) {
+        $primarycues = \mod_smartvideo\vtt_helper::parse_vtt($primarytrack->content);
+    }
+    if (empty($tracksdata) && $media) {
+        $libraryvtt = \local_securevideolibrary\storage::get_file_path($media->id, 'subtitles.vtt');
+        if ($libraryvtt && file_exists($libraryvtt)) {
+            $content = file_get_contents($libraryvtt);
+            if ($content) {
+                $primarycues = \mod_smartvideo\vtt_helper::parse_vtt($content);
+                $tracksdata[] = [
+                    'id'    => 0,
+                    'lang'  => 'en',
+                    'label' => 'English',
+                ];
+            }
+        }
+    }
+
+    // Fetch lecture resources and handouts from filearea.
+    $fs = get_file_storage();
+    $rawfiles = $fs->get_area_files($context->id, 'mod_smartvideo', 'resources', 0, 'sortorder, itemid, filename', false);
+    $resourcesdata = [];
+    foreach ($rawfiles as $file) {
+        if ($file->is_directory()) {
+            continue;
+        }
+        $fileurl = moodle_url::make_pluginfile_url(
+            $context->id,
+            'mod_smartvideo',
+            'resources',
+            0,
+            $file->get_filepath(),
+            $file->get_filename(),
+            true
+        )->out(false);
+
+        $fext = strtolower(pathinfo($file->get_filename(), PATHINFO_EXTENSION));
+        $ficon = 'fa-file-o';
+        if ($fext === 'pdf') {
+            $ficon = 'fa-file-pdf-o text-danger';
+        } else if (in_array($fext, ['ppt', 'pptx'])) {
+            $ficon = 'fa-file-powerpoint-o text-warning';
+        } else if (in_array($fext, ['doc', 'docx'])) {
+            $ficon = 'fa-file-word-o text-primary';
+        } else if (in_array($fext, ['xls', 'xlsx', 'csv'])) {
+            $ficon = 'fa-file-excel-o text-success';
+        } else if (in_array($fext, ['zip', 'rar', 'tar', 'gz'])) {
+            $ficon = 'fa-file-archive-o text-secondary';
+        } else if (in_array($fext, ['png', 'jpg', 'jpeg', 'webp'])) {
+            $ficon = 'fa-file-image-o text-info';
+        }
+
+        $resourcesdata[] = [
+            'filename' => $file->get_filename(),
+            'filesize' => display_size($file->get_filesize()),
+            'fileurl'  => $fileurl,
+            'icon'     => $ficon,
+        ];
+    }
+
+    // Fetch timestamped Q&A discussions.
+    $discrecords = $DB->get_records('smartvideo_discussions', ['instanceid' => $smartvideo->id], 'timecreated ASC');
+    $discusers = [];
+    $topdiscussions = [];
+    $repliesmap = [];
+    foreach ($discrecords as $disc) {
+        if (!isset($discusers[$disc->userid])) {
+            $discusers[$disc->userid] = $DB->get_record('user', ['id' => $disc->userid], 'id, firstname, lastname, email, picture, imagealt');
+        }
+        $u = $discusers[$disc->userid];
+        $dm = floor($disc->timecode / 60);
+        $ds = $disc->timecode % 60;
+        $dformatted = ($disc->timecode > 0) ? sprintf('%02d:%02d', $dm, $ds) : '';
+
+        $discitem = [
+            'id'                   => (int)$disc->id,
+            'userid'               => (int)$disc->userid,
+            'userfullname'         => $u ? fullname($u) : 'User',
+            'userpicture'          => $u ? $OUTPUT->user_picture($u, ['size' => 28]) : '',
+            'timecode'             => (int)$disc->timecode,
+            'timeformatted'        => $dformatted,
+            'hastimecode'          => ($disc->timecode > 0),
+            'content'              => format_text($disc->content, FORMAT_PLAIN),
+            'parentid'             => (int)$disc->parentid,
+            'timecreatedformatted' => userdate($disc->timecreated, get_string('strftimedatetimeshort', 'langconfig')),
+            'candelete'            => ($disc->userid == $USER->id || $canmanage),
+            'replies'              => [],
+        ];
+
+        if ($disc->parentid > 0) {
+            $repliesmap[$disc->parentid][] = $discitem;
+        } else {
+            $topdiscussions[$disc->id] = $discitem;
+        }
+    }
+    $discussionsdata = [];
+    foreach ($topdiscussions as $did => $dtop) {
+        if (isset($repliesmap[$did])) {
+            $dtop['replies'] = $repliesmap[$did];
+            $dtop['hasreplies'] = true;
+            $dtop['replycount'] = count($repliesmap[$did]);
+        } else {
+            $dtop['hasreplies'] = false;
+            $dtop['replycount'] = 0;
+        }
+        $discussionsdata[] = $dtop;
+    }
+
     $playerdata = [
         'cmid'                 => (int)$cm->id,
         'title'                => $smartvideo->name,
@@ -203,7 +406,31 @@ if (!$media || $media->status !== 'ready') {
         'questions'            => $questionsdata,
         'hasquestions'         => !empty($questionsdata),
         'questionsjson'        => s(json_encode($questionsdata)),
+        'chapters'             => $chaptersdata,
+        'haschapters'          => !empty($chaptersdata),
+        'chaptersjson'         => s(json_encode($chaptersdata)),
+        'callouts'             => $calloutsdata,
+        'hascallouts'          => !empty($calloutsdata),
+        'calloutsjson'         => s(json_encode($calloutsdata)),
+        'notes'                => $notesdata,
+        'hasnotes'             => !empty($notesdata),
+        'notecount'            => count($notesdata),
+        'notesjson'            => s(json_encode($notesdata)),
+        'report'               => $reportdata,
+        'subtitles'            => $tracksdata,
+        'hassubtitles'         => !empty($tracksdata),
+        'subtitlecues'         => $primarycues,
+        'hascues'              => !empty($primarycues),
+        'cuesjson'             => s(json_encode($primarycues)),
+        'tracksjson'           => s(json_encode($tracksdata)),
+        'resources'            => $resourcesdata,
+        'hasresources'         => !empty($resourcesdata),
+        'resourcecount'        => count($resourcesdata),
+        'discussions'          => $discussionsdata,
+        'hasdiscussions'       => !empty($discussionsdata),
+        'discussioncount'      => count($discussionsdata),
         'canmanage'            => $canmanage,
+        'managequestionsurl'   => (new moodle_url('/mod/smartvideo/questions.php', ['id' => $cm->id]))->out(false),
         'resetattemptsurl'     => (new moodle_url('/mod/smartvideo/view.php', [
             'id'              => $cm->id,
             'resetmyattempts' => 1,

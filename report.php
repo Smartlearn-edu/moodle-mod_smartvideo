@@ -82,7 +82,15 @@ $progressrecords = $DB->get_records(
     'smartvideo_progress',
     ['instanceid' => $instance->id],
     '',
-    'userid, watchedseconds, percentcompleted, lastposition, timemodified'
+    'userid, watchedseconds, percentcompleted, lastposition, watchedintervals, timemodified'
+);
+
+// Fetch student case reports indexed by userid.
+$reportrecords = $DB->get_records(
+    'smartvideo_reports',
+    ['instanceid' => $instance->id],
+    '',
+    'userid, id, status, findings, impression, diagnosis, recommendations, timemodified'
 );
 
 $studentsdata = [];
@@ -155,25 +163,126 @@ foreach ($users as $user) {
         }
     }
 
+    $rep = $reportrecords[$user->id] ?? null;
+    $hascasereport = !empty($rep);
+    $reportsubmitted = ($rep && $rep->status === 'submitted');
+    $reportdraft = ($rep && $rep->status === 'draft');
+
     $studentsdata[] = [
-        'userid'           => $user->id,
-        'userfullname'     => $userfullname,
-        'useremail'        => $user->email,
-        'userpicture'      => $userpicture,
-        'userprofileurl'   => $userprofileurl,
-        'percent'          => $percent,
-        'watchedformatted' => $watchedformatted,
-        'lastposformatted' => $lastposformatted,
-        'statusclass'      => $statusclass,
-        'statustext'       => $statustext,
-        'lastupdated'      => $lastupdated,
-        'hasquestions'     => ($totalquestions > 0),
-        'questionssummary' => $questionssummary,
-        'qstatusclass'     => $qstatusclass,
+        'userid'                => $user->id,
+        'userfullname'          => $userfullname,
+        'useremail'             => $useremail,
+        'userpicture'           => $userpicture,
+        'userprofileurl'        => $userprofileurl,
+        'percent'               => $percent,
+        'watchedformatted'      => $watchedformatted,
+        'lastposformatted'      => $lastposformatted,
+        'statusclass'           => $statusclass,
+        'statustext'            => $statustext,
+        'lastupdated'           => $lastupdated,
+        'hasquestions'          => ($totalquestions > 0),
+        'questionssummary'      => $questionssummary,
+        'qstatusclass'          => $qstatusclass,
+        'hascasereport'         => $hascasereport,
+        'reportsubmitted'       => $reportsubmitted,
+        'reportdraft'           => $reportdraft,
+        'reportfindings'        => $rep ? s($rep->findings) : '',
+        'reportimpression'      => $rep ? s($rep->impression) : '',
+        'reportdiagnosis'       => $rep ? s($rep->diagnosis) : '',
+        'reportrecommendations' => $rep ? s($rep->recommendations) : '',
     ];
 }
 
 $avgpercent = $totalenrolled > 0 ? (int)round($totalpercent / $totalenrolled) : 0;
+
+// Compute audience retention & engagement heatmap curve.
+$heatmapdata = [];
+$svgpathline = '';
+$svgpatharea = '';
+$hasheatmap = false;
+$heatmapchapters = [];
+
+if ($duration > 0 && $totalenrolled > 0) {
+    $numbuckets = 60;
+    $bucketduration = $duration / $numbuckets;
+    $bucketcounts = array_fill(0, $numbuckets, 0);
+
+    foreach ($progressrecords as $prog) {
+        $intervals = [];
+        if (!empty($prog->watchedintervals)) {
+            $parsed = json_decode($prog->watchedintervals, true);
+            if (is_array($parsed)) {
+                $intervals = $parsed;
+            }
+        }
+        if (empty($intervals) && !empty($prog->lastposition)) {
+            $intervals = [[0, (int)$prog->lastposition]];
+        }
+
+        foreach ($intervals as $iv) {
+            if (!is_array($iv) || count($iv) < 2) {
+                continue;
+            }
+            $istart = max(0, (float)$iv[0]);
+            $iend = min($duration, (float)$iv[1]);
+            if ($iend <= $istart) {
+                continue;
+            }
+
+            for ($b = 0; $b < $numbuckets; $b++) {
+                $bstart = $b * $bucketduration;
+                $bend = ($b + 1) * $bucketduration;
+                if ($istart < $bend && $iend > $bstart) {
+                    $bucketcounts[$b]++;
+                }
+            }
+        }
+    }
+
+    $maxcount = max(1, max($bucketcounts));
+    $points = [];
+    for ($b = 0; $b < $numbuckets; $b++) {
+        $count = $bucketcounts[$b];
+        $timeat = round($b * $bucketduration);
+        $tm = floor($timeat / 60);
+        $ts = $timeat % 60;
+        $tformatted = sprintf('%02d:%02d', $tm, $ts);
+        $percent = round(($count / $totalenrolled) * 100);
+
+        // SVG viewBox is 0 0 1000 200. Height is 200, padding top 20, baseline Y: 180.
+        $x = round(($b / ($numbuckets - 1)) * 1000, 1);
+        $normalized = ($count / $maxcount);
+        $y = round(180 - ($normalized * 150), 1);
+
+        $points[] = "$x,$y";
+        $heatmapdata[] = [
+            'x'          => $x,
+            'y'          => $y,
+            'second'     => $timeat,
+            'time'       => $tformatted,
+            'count'      => $count,
+            'percentage' => $percent,
+        ];
+    }
+
+    if (!empty($points)) {
+        $svgpathline = 'M ' . implode(' L ', $points);
+        $svgpatharea = $svgpathline . ' L 1000,180 L 0,180 Z';
+        $hasheatmap = true;
+    }
+
+    // Chapters for heatmap x-axis markers.
+    $chrecords = $DB->get_records('smartvideo_chapters', ['instanceid' => $instance->id], 'timecode ASC');
+    foreach ($chrecords as $ch) {
+        $cpercent = ($duration > 0) ? min(100, round(($ch->timecode / $duration) * 100, 1)) : 0;
+        $heatmapchapters[] = [
+            'title'    => format_string($ch->title),
+            'timecode' => (int)$ch->timecode,
+            'percent'  => $cpercent,
+            'x'        => round(($cpercent / 100) * 1000, 1),
+        ];
+    }
+}
 
 $data = [
     'instancename'         => format_string($instance->name),
@@ -187,6 +296,12 @@ $data = [
     'backurl'              => (new moodle_url('/mod/smartvideo/view.php', ['id' => $cm->id]))->out(false),
     'completionminpercent' => (int)($instance->completionminpercent ?? 0),
     'hasactivityquestions' => ($totalquestions > 0),
+    'hasheatmap'           => $hasheatmap,
+    'svgpathline'          => $svgpathline,
+    'svgpatharea'          => $svgpatharea,
+    'heatmapchapters'      => $heatmapchapters,
+    'hasheatmapchapters'  => !empty($heatmapchapters),
+    'heatmapjson'          => s(json_encode($heatmapdata)),
 ];
 
 echo $OUTPUT->header();

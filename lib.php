@@ -66,7 +66,21 @@ function smartvideo_add_instance(stdClass $data, ?mod_smartvideo_mod_form $mform
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
 
-    return $DB->insert_record('smartvideo', $data);
+    $id = $DB->insert_record('smartvideo', $data);
+
+    if (!empty($data->coursemodule) && isset($data->resources_filemanager)) {
+        $context = context_module::instance($data->coursemodule);
+        file_save_draft_area_files(
+            $data->resources_filemanager,
+            $context->id,
+            'mod_smartvideo',
+            'resources',
+            0,
+            ['subdirs' => 0, 'maxfiles' => 10]
+        );
+    }
+
+    return $id;
 }
 
 /**
@@ -87,6 +101,19 @@ function smartvideo_update_instance(stdClass $data, ?mod_smartvideo_mod_form $mf
     $data->preventseeking   = !empty($data->preventseeking) ? 1 : 0;
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
+
+    $cmid = $data->coursemodule ?? 0;
+    if ($cmid > 0 && isset($data->resources_filemanager)) {
+        $context = context_module::instance($cmid);
+        file_save_draft_area_files(
+            $data->resources_filemanager,
+            $context->id,
+            'mod_smartvideo',
+            'resources',
+            0,
+            ['subdirs' => 0, 'maxfiles' => 10]
+        );
+    }
 
     return $DB->update_record('smartvideo', $data);
 }
@@ -120,6 +147,20 @@ function smartvideo_delete_instance(int $id): bool {
 
     $DB->delete_records('smartvideo_qattempts', ['instanceid' => $id]);
     $DB->delete_records('smartvideo_questions', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo_chapters', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo_callouts', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo_notes', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo_reports', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo_subtitles', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo_discussions', ['instanceid' => $id]);
+
+    $cm = get_coursemodule_from_instance('smartvideo', $id);
+    if ($cm) {
+        $context = context_module::instance($cm->id);
+        $fs = get_file_storage();
+        $fs->delete_area_files($context->id, 'mod_smartvideo', 'resources');
+    }
+
     $DB->delete_records('smartvideo', ['id' => $id]);
 
     return true;
@@ -293,3 +334,51 @@ function smartvideo_get_completion_state(stdClass $course, $cm, int $userid, boo
 
     return true;
 }
+
+/**
+ * Serves module files (e.g. lecture handouts and resources).
+ *
+ * @param stdClass $course Course object.
+ * @param stdClass $cm Course module object.
+ * @param context $context Context object.
+ * @param string $filearea File area name.
+ * @param array $args Extra file path arguments.
+ * @param bool $forcedownload Whether forced download is requested.
+ * @param array $options Additional file options.
+ * @return bool False if file not found.
+ */
+function smartvideo_pluginfile(
+    $course,
+    $cm,
+    $context,
+    $filearea,
+    $args,
+    $forcedownload,
+    array $options = []
+): bool {
+    if ($context->contextlevel != CONTEXT_MODULE) {
+        return false;
+    }
+
+    require_login($course, true, $cm);
+
+    if ($filearea !== 'resources') {
+        return false;
+    }
+
+    $itemid = (int)array_shift($args);
+    $filename = array_pop($args);
+    $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
+
+    $fs = get_file_storage();
+    $file = $fs->get_file($context->id, 'mod_smartvideo', $filearea, $itemid, $filepath, $filename);
+
+    if (!$file || $file->is_directory()) {
+        return false;
+    }
+
+    send_stored_file($file, null, 0, $forcedownload, $options);
+    return true;
+}
+
+

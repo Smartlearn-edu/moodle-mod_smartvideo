@@ -44,7 +44,8 @@
     position: relative !important;
     background-color: #000 !important;
     overflow: hidden !important;
-    display: block !important;
+    display: flex !important;
+    flex-direction: row !important;
 }
 
 .smartvideo-player-container:-webkit-full-screen,
@@ -59,7 +60,8 @@
     position: relative !important;
     background-color: #000 !important;
     overflow: hidden !important;
-    display: block !important;
+    display: flex !important;
+    flex-direction: row !important;
 }
 
 .smartvideo-player-container:-moz-full-screen,
@@ -74,7 +76,8 @@
     position: relative !important;
     background-color: #000 !important;
     overflow: hidden !important;
-    display: block !important;
+    display: flex !important;
+    flex-direction: row !important;
 }
 
 .smartvideo-player-container.is-fullscreen,
@@ -89,7 +92,8 @@
     position: relative !important;
     background-color: #000 !important;
     overflow: hidden !important;
-    display: block !important;
+    display: flex !important;
+    flex-direction: row !important;
 }
 
 /* Video ratio container in fullscreen fills entire screen - Standard & JS Fallback */
@@ -803,3 +807,264 @@
         margin-left: 0 !important;
     }
 }
+
+/* ==========================================================================
+   Pluggable 3-Zone Workstation Architecture & Layout
+   ========================================================================== */
+
+.mod-smartvideo-wrapper {
+    container-type: inline-size;
+    width: 100%;
+}
+
+.smartvideo-workstation-body {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+.smartvideo-stage {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    overflow: hidden;
+    background-color: #000;
+}
+
+/* Workstation Sidebar */
+.smartvideo-sidebar {
+    width: 340px;
+    background-color: #0f172a !important;
+    border-inline-start: 1px solid rgba(255, 255, 255, 0.12);
+    z-index: 35;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Desktop Split-View (when container >= 960px and not forced overlay mode) */
+@container (min-width: 960px) {
+    .smartvideo-player-container:not(.is-sidebar-overlay) .smartvideo-sidebar:not(.d-none) {
+        display: flex !important;
+        flex: 0 0 340px !important;
+        position: relative !important;
+        height: 100% !important;
+    }
+}
+
+/* Overlay Mode (on mobile, narrow screens, or when user toggles overlay mode) */
+.smartvideo-player-container.is-sidebar-overlay .smartvideo-sidebar:not(.d-none),
+@container (max-width: 959px) {
+    .smartvideo-sidebar:not(.d-none) {
+        display: flex !important;
+        position: absolute !important;
+        inset-block: 0 !important;
+        inset-inline-end: 0 !important;
+        width: 340px !important;
+        max-width: 85% !important;
+        z-index: 48 !important;
+        backdrop-filter: blur(14px) !important;
+        background: rgba(15, 23, 42, 0.94) !important;
+        box-shadow: -5px 0 25px rgba(0, 0, 0, 0.75) !important;
+    }
+}
+
+/* Fullscreen workstation split view */
+.smartvideo-player-container.is-fullscreen:not(.is-sidebar-overlay) .smartvideo-sidebar:not(.d-none) {
+    display: flex !important;
+    flex: 0 0 360px !important;
+    width: 360px !important;
+    height: 100vh !important;
+    position: relative !important;
+    z-index: 46 !important;
+}
+
+/* Sidebar header pills & buttons */
+.smartvideo-sidebar-tabs .nav-link {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #94a3b8 !important;
+    border-radius: 4px;
+}
+.smartvideo-sidebar-tabs .nav-link.active {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+}
+
+/* Timeline Chapter Segments */
+.smartvideo-chapter-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #000;
+    z-index: 4;
+}
+
+/* Active chapter item in sidebar */
+.smartvideo-chapter-item {
+    transition: background-color 0.15s ease-in-out;
+}
+.smartvideo-chapter-item:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+.smartvideo-chapter-item.is-active {
+    background-color: rgba(13, 110, 253, 0.22) !important;
+    border-inline-start: 3px solid #0d6efd !important;
+    color: #fff !important;
+}
+.smartvideo-chapter-item.is-active .smartvideo-chapter-playing-icon {
+    display: inline-block !important;
+}
+
+/* Timeline Hover Tooltip */
+.smartvideo-hover-tooltip {
+    transition: opacity 0.15s ease-in-out;
+    pointer-events: none;
+    font-size: 0.8rem;
+    backdrop-filter: blur(4px);
+    background-color: rgba(15, 23, 42, 0.92) !important;
+}
+
+/* In-Video Callout Cards Overlay */
+.smartvideo-callout-overlay {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.smartvideo-callout-overlay.pos-bottom-right {
+    bottom: 65px;
+    right: 20px;
+}
+.smartvideo-callout-overlay.pos-top-right {
+    top: 20px;
+    right: 20px;
+}
+.smartvideo-callout-overlay.pos-bottom-left {
+    bottom: 65px;
+    left: 20px;
+}
+.smartvideo-callout-overlay.pos-top-left {
+    top: 20px;
+    left: 20px;
+}
+.smartvideo-callout-overlay.pos-lower-third {
+    bottom: 65px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+[dir="rtl"] .smartvideo-callout-overlay.pos-bottom-right {
+    right: auto;
+    left: 20px;
+}
+[dir="rtl"] .smartvideo-callout-overlay.pos-top-right {
+    right: auto;
+    left: 20px;
+}
+[dir="rtl"] .smartvideo-callout-overlay.pos-bottom-left {
+    left: auto;
+    right: 20px;
+}
+[dir="rtl"] .smartvideo-callout-overlay.pos-top-left {
+    left: auto;
+    right: 20px;
+}
+
+/* --- Workstation Tools: Calculator Grid & Keys --- */
+.smartvideo-calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+.smartvideo-calc-grid .calc-key {
+    height: 38px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.08s ease, background-color 0.12s ease;
+}
+.smartvideo-calc-grid .calc-key:active {
+    transform: scale(0.95);
+}
+
+/* --- Workstation Tools: Notes Cards --- */
+.smartvideo-note-card {
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease;
+}
+.smartvideo-note-card:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(13, 110, 253, 0.4) !important;
+}
+
+/* --- Workstation Tools: Case Report Inputs --- */
+.report-input-field:focus {
+    background-color: #0b1120 !important;
+    color: #fff !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* --- Closed Captions (In-Video Subtitles Overlay) --- */
+.smartvideo-captions-overlay {
+    background-color: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: opacity 0.15s ease-in-out;
+}
+.smartvideo-caption-text {
+    color: #ffffff;
+    font-size: 1.05rem;
+    line-height: 1.4;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    letter-spacing: 0.02em;
+}
+
+/* --- Searchable Interactive Transcript --- */
+.smartvideo-transcript-cue {
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease;
+    border-inline-start: 3px solid transparent;
+}
+.smartvideo-transcript-cue:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+.smartvideo-transcript-cue.is-active {
+    background-color: rgba(13, 110, 253, 0.25) !important;
+    border-inline-start-color: #0d6efd !important;
+}
+.smartvideo-transcript-cue.is-active .sv-cue-text {
+    color: #ffffff !important;
+    font-weight: 500;
+}
+.smartvideo-transcript-cue.is-active .sv-cue-time {
+    background-color: #0d6efd !important;
+}
+
+/* --- Timestamped Q&A Discussions --- */
+.smartvideo-qa-thread {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease;
+}
+.smartvideo-qa-thread:hover {
+    border-color: rgba(13, 110, 253, 0.4) !important;
+}
+.sv-qa-avatar img,
+.sv-qa-avatar .userpicture {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.btn-seek-qa {
+    transition: background-color 0.12s ease, transform 0.08s ease;
+}
+.btn-seek-qa:hover {
+    transform: scale(1.05);
+}
+
+
+

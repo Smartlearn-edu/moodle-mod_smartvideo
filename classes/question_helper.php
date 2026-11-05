@@ -365,4 +365,146 @@ class question_helper {
             'feedback_html'  => $feedbackhtml,
         ];
     }
+
+    /**
+     * Rapidly creates a Multiple Choice or True/False question in the course Question Bank
+     * and returns the created question ID and bank entry ID.
+     *
+     * @param int $courseid Course ID.
+     * @param int $categoryid Category ID (0 to use default course category).
+     * @param string $qtype Question type ('multichoice' or 'truefalse').
+     * @param string $name Question title / name.
+     * @param string $questiontext Question text prompt.
+     * @param array $choices List of string choices (e.g. ['True', 'False'] or ['Option A', 'Option B']).
+     * @param int $correctindex 0-based index of the correct choice.
+     * @return array [questionid, questionbankentryid, categoryid, name]
+     */
+    public static function create_quick_question(
+        int $courseid,
+        int $categoryid,
+        string $qtype,
+        string $name,
+        string $questiontext,
+        array $choices,
+        int $correctindex
+    ): array {
+        global $DB, $USER, $CFG;
+        require_once($CFG->libdir . '/questionlib.php');
+
+        $coursecontext = context_course::instance($courseid);
+
+        if ($categoryid <= 0) {
+            $defaultcat = question_get_default_category($coursecontext->id);
+            if (!$defaultcat) {
+                // Fallback: fetch first category in course context.
+                $defaultcat = $DB->get_record('question_categories', ['contextid' => $coursecontext->id], '*', IGNORE_MULTIPLE);
+            }
+            if (!$defaultcat) {
+                throw new \moodle_exception('cannotfindcategory', 'question');
+            }
+            $categoryid = (int)$defaultcat->id;
+        }
+
+        $now = time();
+        $qtype = ($qtype === 'truefalse') ? 'truefalse' : 'multichoice';
+
+        $transaction = $DB->start_delegated_transaction();
+
+        // 1. Create question_bank_entries.
+        $qbe = new \stdClass();
+        $qbe->questioncategoryid = $categoryid;
+        $qbe->idnumber = null;
+        $qbe->ownerid = $USER->id;
+        $qbeid = $DB->insert_record('question_bank_entries', $qbe);
+
+        // 2. Create question record.
+        $q = new \stdClass();
+        $q->category = $categoryid;
+        $q->name = trim($name);
+        $q->questiontext = trim($questiontext);
+        $q->questiontextformat = FORMAT_HTML;
+        $q->generalfeedback = '';
+        $q->generalfeedbackformat = FORMAT_HTML;
+        $q->defaultmark = 1.0;
+        $q->penalty = 0.3333333;
+        $q->qtype = $qtype;
+        $q->length = 1;
+        $q->stamp = make_unique_id_code();
+        $q->timecreated = $now;
+        $q->timemodified = $now;
+        $q->createdby = $USER->id;
+        $q->modifiedby = $USER->id;
+        $qid = $DB->insert_record('question', $q);
+
+        // 3. Create question_versions.
+        $qv = new \stdClass();
+        $qv->questionbankentryid = $qbeid;
+        $qv->version = 1;
+        $qv->questionid = $qid;
+        $qv->status = 'ready';
+        $DB->insert_record('question_versions', $qv);
+
+        // 4. Create choices and type-specific records.
+        if ($qtype === 'multichoice') {
+            $mc = new \stdClass();
+            $mc->questionid = $qid;
+            $mc->single = 1;
+            $mc->shuffleanswers = 1;
+            $mc->answernumbering = 'abc';
+            $mc->showstandardinstruction = 0;
+            $mc->correctfeedback = '';
+            $mc->correctfeedbackformat = FORMAT_HTML;
+            $mc->partiallycorrectfeedback = '';
+            $mc->partiallycorrectfeedbackformat = FORMAT_HTML;
+            $mc->incorrectfeedback = '';
+            $mc->incorrectfeedbackformat = FORMAT_HTML;
+            $DB->insert_record('qtype_multichoice_options', $mc);
+
+            foreach ($choices as $idx => $choice) {
+                $ans = new \stdClass();
+                $ans->question = $qid;
+                $ans->answer = trim($choice);
+                $ans->answerformat = FORMAT_HTML;
+                $ans->fraction = ($idx === $correctindex) ? 1.0 : 0.0;
+                $ans->feedback = '';
+                $ans->feedbackformat = FORMAT_HTML;
+                $DB->insert_record('question_answers', $ans);
+            }
+        } else if ($qtype === 'truefalse') {
+            // True/false has two answers: True (fraction=1 or 0), False (fraction=0 or 1).
+            $trueans = new \stdClass();
+            $trueans->question = $qid;
+            $trueans->answer = get_string('true', 'qtype_truefalse');
+            $trueans->answerformat = FORMAT_HTML;
+            $trueans->fraction = ($correctindex === 0) ? 1.0 : 0.0;
+            $trueans->feedback = '';
+            $trueans->feedbackformat = FORMAT_HTML;
+            $trueid = $DB->insert_record('question_answers', $trueans);
+
+            $falseans = new \stdClass();
+            $falseans->question = $qid;
+            $falseans->answer = get_string('false', 'qtype_truefalse');
+            $falseans->answerformat = FORMAT_HTML;
+            $falseans->fraction = ($correctindex === 1) ? 1.0 : 0.0;
+            $falseans->feedback = '';
+            $falseans->feedbackformat = FORMAT_HTML;
+            $falseid = $DB->insert_record('question_answers', $falseans);
+
+            $tf = new \stdClass();
+            $tf->questionid = $qid;
+            $tf->trueanswerid = $trueid;
+            $tf->falseanswerid = $falseid;
+            $DB->insert_record('question_truefalse', $tf);
+        }
+
+        $transaction->allow_commit();
+
+        return [
+            'questionid'          => (int)$qid,
+            'questionbankentryid' => (int)$qbeid,
+            'categoryid'          => (int)$categoryid,
+            'name'                => $q->name,
+            'qtype'               => $qtype,
+        ];
+    }
 }

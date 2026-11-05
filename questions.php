@@ -43,7 +43,7 @@ if (
 
 $pageurl = new moodle_url('/mod/smartvideo/questions.php', ['id' => $cm->id]);
 $PAGE->set_url($pageurl);
-$PAGE->set_title(get_string('interactivequestions', 'mod_smartvideo') . ': ' . $smartvideo->name);
+$PAGE->set_title(get_string('timelinestudio', 'mod_smartvideo') . ': ' . $smartvideo->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
 
@@ -137,6 +137,59 @@ foreach ($questions as $q) {
     ];
 }
 
+// Fetch configured chapters.
+$chapters = $DB->get_records('smartvideo_chapters', ['instanceid' => $smartvideo->id], 'timecode ASC');
+$chaptersdata = [];
+foreach ($chapters as $chap) {
+    $cmins = floor($chap->timecode / 60);
+    $csecs = $chap->timecode % 60;
+    $cpercent = ($duration > 0) ? min(100, round(($chap->timecode / $duration) * 100, 2)) : 0;
+    $chaptersdata[] = [
+        'id'            => (int)$chap->id,
+        'timecode'      => (int)$chap->timecode,
+        'timeformatted' => sprintf('%02d:%02d', $cmins, $csecs),
+        'percent'       => $cpercent,
+        'title'         => format_string($chap->title),
+    ];
+}
+
+// Fetch configured callout cards.
+$callouts = $DB->get_records('smartvideo_callouts', ['instanceid' => $smartvideo->id], 'timecode ASC');
+$calloutsdata = [];
+foreach ($callouts as $c) {
+    $cmins = floor($c->timecode / 60);
+    $csecs = $c->timecode % 60;
+    $cpercent = ($duration > 0) ? min(100, round(($c->timecode / $duration) * 100, 2)) : 0;
+    $calloutsdata[] = [
+        'id'            => (int)$c->id,
+        'timecode'      => (int)$c->timecode,
+        'timeformatted' => sprintf('%02d:%02d', $cmins, $csecs),
+        'percent'       => $cpercent,
+        'title'         => format_string($c->title),
+        'body'          => $c->body ?? '',
+        'duration'      => (int)$c->duration,
+        'linkurl'       => $c->linkurl ?? '',
+        'linklabel'     => $c->linklabel ?? '',
+        'autopause'     => !empty($c->autopause),
+        'position'      => !empty($c->position) ? $c->position : 'bottom-right',
+    ];
+}
+
+// Fetch configured subtitles.
+$subtitles = $DB->get_records('smartvideo_subtitles', ['instanceid' => $smartvideo->id], 'id ASC');
+$subtitlesdata = [];
+foreach ($subtitles as $s) {
+    $scues = \mod_smartvideo\vtt_helper::parse_vtt($s->content);
+    $subtitlesdata[] = [
+        'id'           => (int)$s->id,
+        'lang'         => $s->lang,
+        'label'        => $s->label,
+        'content'      => $s->content,
+        'cuecount'     => count($scues),
+        'timemodified' => (int)$s->timemodified,
+    ];
+}
+
 $templatecontext = [
     'cmid'              => (int)$cm->id,
     'videoname'         => format_string($smartvideo->name),
@@ -150,6 +203,18 @@ $templatecontext = [
     'hasquestions'      => !empty($questionsdata),
     'questioncount'     => count($questionsdata),
     'questionsjson'     => s(json_encode($questionsdata)),
+    'chapters'          => $chaptersdata,
+    'haschapters'       => !empty($chaptersdata),
+    'chaptercount'      => count($chaptersdata),
+    'chaptersjson'      => s(json_encode($chaptersdata)),
+    'callouts'          => $calloutsdata,
+    'hascallouts'       => !empty($calloutsdata),
+    'calloutcount'      => count($calloutsdata),
+    'calloutsjson'      => s(json_encode($calloutsdata)),
+    'subtitles'         => $subtitlesdata,
+    'hassubtitles'      => !empty($subtitlesdata),
+    'subtitlecount'     => count($subtitlesdata),
+    'subtitlesjson'     => s(json_encode($subtitlesdata)),
 ];
 
 $PAGE->requires->js_call_amd('mod_smartvideo/questions', 'init', [[

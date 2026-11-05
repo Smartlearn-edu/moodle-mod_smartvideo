@@ -95,5 +95,122 @@
         <INDEX NAME="instanceid_userid_idx" UNIQUE="false" FIELDS="instanceid, userid"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="smartvideo_chapters" COMMENT="Video chapter markers and table of contents">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
+        <FIELD NAME="timecode" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Start time in seconds"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Chapter title"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="instanceid_timecode_idx" UNIQUE="false" FIELDS="instanceid, timecode"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="smartvideo_callouts" COMMENT="In-video callout cards, formulas and resource link overlays">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
+        <FIELD NAME="timecode" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Trigger time in seconds"/>
+        <FIELD NAME="duration" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="8" SEQUENCE="false" COMMENT="Duration in seconds if not autopause"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Callout title"/>
+        <FIELD NAME="body" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Callout content/markdown"/>
+        <FIELD NAME="linkurl" TYPE="char" LENGTH="512" NOTNULL="false" SEQUENCE="false" COMMENT="Optional resource or Moodle link"/>
+        <FIELD NAME="linklabel" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="Label for the link button"/>
+        <FIELD NAME="autopause" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 if video auto-pauses on appearance"/>
+        <FIELD NAME="position" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="bottom-right" SEQUENCE="false" COMMENT="Position: bottom-right, top-right, bottom-left, top-left"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="instanceid_timecode_idx" UNIQUE="false" FIELDS="instanceid, timecode"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="smartvideo_notes" COMMENT="Student timestamped notes in the Workstation Sidebar">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="User ID"/>
+        <FIELD NAME="timecode" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Timestamp in seconds"/>
+        <FIELD NAME="content" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Note text content"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="instanceid_userid_idx" UNIQUE="false" FIELDS="instanceid, userid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="smartvideo_reports" COMMENT="Structured student clinical and case inspection reports">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="User ID"/>
+        <FIELD NAME="findings" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Clinical or observational findings"/>
+        <FIELD NAME="impression" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Clinical impression or summary"/>
+        <FIELD NAME="diagnosis" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Differential diagnosis or conclusions"/>
+        <FIELD NAME="recommendations" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Treatment or next steps recommendations"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" SEQUENCE="false" COMMENT="draft or submitted"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="instanceid_userid_idx" UNIQUE="true" FIELDS="instanceid, userid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="smartvideo_subtitles" COMMENT="WebVTT closed captions and transcripts for video playback">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
+        <FIELD NAME="lang" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="en" SEQUENCE="false" COMMENT="Language code, e.g. en, ar"/>
+        <FIELD NAME="label" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="English" SEQUENCE="false" COMMENT="Display label for subtitle menu"/>
+        <FIELD NAME="content" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Raw WebVTT file content"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="instanceid_lang_idx" UNIQUE="true" FIELDS="instanceid, lang"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="smartvideo_discussions" COMMENT="Timestamped student and instructor Q&amp;A discussions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="User ID who posted"/>
+        <FIELD NAME="timecode" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Video timestamp in seconds or 0"/>
+        <FIELD NAME="content" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Discussion comment text"/>
+        <FIELD NAME="parentid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Parent discussion ID for threaded replies"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="instanceid_timecode_idx" UNIQUE="false" FIELDS="instanceid, timecode"/>
+        <INDEX NAME="parentid_idx" UNIQUE="false" FIELDS="parentid"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

@@ -98,6 +98,75 @@
         </div>
     </div>
 
+    {{#hasheatmap}}
+    <!-- Video Audience Retention & Engagement Heatmap Card -->
+    <div class="card mb-4 border-0 shadow-sm overflow-hidden" id="smartvideoHeatmapCard" data-heatmap="{{{heatmapjson}}}">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="mb-1 fw-bold text-dark">
+                    <i class="fa fa-line-chart text-primary me-2" aria-hidden="true"></i>{{#str}}engagement_heatmap, mod_smartvideo{{/str}}
+                </h5>
+                <small class="text-muted">{{#str}}heatmap_desc, mod_smartvideo{{/str}}</small>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                    <i class="fa fa-signal me-1"></i>{{#str}}retention_rate, mod_smartvideo{{/str}}
+                </span>
+                <span id="svHeatmapHoverBadge" class="badge bg-dark text-white px-3 py-1 font-monospace d-none">
+                    --:-- | --%
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-4 bg-light position-relative">
+            {{! SVG Responsive Retention Chart }}
+            <div class="position-relative w-100" style="height: 220px;">
+                <svg viewBox="0 0 1000 200" preserveAspectRatio="none" class="w-100 h-100 sv-heatmap-svg" style="overflow: visible; cursor: crosshair;">
+                    <defs>
+                        <linearGradient id="svHeatmapGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#0d6efd" stop-opacity="0.55"/>
+                            <stop offset="60%" stop-color="#0d6efd" stop-opacity="0.18"/>
+                            <stop offset="100%" stop-color="#0d6efd" stop-opacity="0.02"/>
+                        </linearGradient>
+                    </defs>
+
+                    {{! Background Horizontal Grid Lines }}
+                    <line x1="0" y1="30" x2="1000" y2="30" stroke="#cbd5e1" stroke-dasharray="4 4" stroke-width="1"/>
+                    <line x1="0" y1="80" x2="1000" y2="80" stroke="#cbd5e1" stroke-dasharray="4 4" stroke-width="1"/>
+                    <line x1="0" y1="130" x2="1000" y2="130" stroke="#cbd5e1" stroke-dasharray="4 4" stroke-width="1"/>
+                    <line x1="0" y1="180" x2="1000" y2="180" stroke="#94a3b8" stroke-width="1.5"/>
+
+                    {{! Y-Axis Percentage Labels }}
+                    <text x="5" y="26" fill="#64748b" font-size="11" font-weight="600">100%</text>
+                    <text x="5" y="76" fill="#64748b" font-size="11" font-weight="600">66%</text>
+                    <text x="5" y="126" fill="#64748b" font-size="11" font-weight="600">33%</text>
+                    <text x="5" y="176" fill="#64748b" font-size="11" font-weight="600">0%</text>
+
+                    {{! Chapter Markers along the curve }}
+                    {{#heatmapchapters}}
+                    <line x1="{{x}}" y1="20" x2="{{x}}" y2="180" stroke="#f59e0b" stroke-dasharray="3 3" stroke-width="1.5"/>
+                    <circle cx="{{x}}" cy="180" r="4" fill="#f59e0b"/>
+                    <text x="{{x}}" y="195" fill="#d97706" font-size="10" font-weight="bold" text-anchor="middle">{{title}}</text>
+                    {{/heatmapchapters}}
+
+                    {{! Fill Area and Stroke Curve }}
+                    <path d="{{svgpatharea}}" fill="url(#svHeatmapGradient)"/>
+                    <path d="{{svgpathline}}" fill="none" stroke="#0d6efd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+                    {{! Interactive Cursor Tracker Line }}
+                    <line id="svHeatmapCursor" x1="0" y1="20" x2="0" y2="180" stroke="#0f172a" stroke-width="2" class="d-none"/>
+                    <circle id="svHeatmapCursorDot" cx="0" cy="0" r="5" fill="#0d6efd" stroke="#ffffff" stroke-width="2" class="d-none"/>
+                </svg>
+            </div>
+
+            {{! Timeline X-axis Labels }}
+            <div class="d-flex justify-content-between mt-3 text-muted small font-monospace">
+                <span>00:00</span>
+                <span>{{durationformatted}}</span>
+            </div>
+        </div>
+    </div>
+    {{/hasheatmap}}
+
     <!-- Students progress table card -->
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
@@ -119,6 +188,7 @@
                             {{#hasactivityquestions}}
                             <th scope="col" class="text-center">{{#str}}interactivequestionscol, mod_smartvideo{{/str}}</th>
                             {{/hasactivityquestions}}
+                            <th scope="col" class="text-center">{{#str}}medicalreport, mod_smartvideo{{/str}}</th>
                             <th scope="col" class="text-center">{{#str}}status, mod_smartvideo{{/str}}</th>
                             <th scope="col" class="text-end pe-4">{{#str}}lastupdated, mod_smartvideo{{/str}}</th>
                         </tr>
@@ -158,6 +228,24 @@
                             </td>
                             {{/hasactivityquestions}}
                             <td class="text-center">
+                                {{#reportsubmitted}}
+                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 btn-view-report"
+                                        data-studentname="{{userfullname}}"
+                                        data-findings="{{reportfindings}}"
+                                        data-impression="{{reportimpression}}"
+                                        data-diagnosis="{{reportdiagnosis}}"
+                                        data-recommendations="{{reportrecommendations}}">
+                                    <i class="fa fa-file-text-o me-1"></i>Submitted
+                                </button>
+                                {{/reportsubmitted}}
+                                {{#reportdraft}}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Draft</span>
+                                {{/reportdraft}}
+                                {{^hascasereport}}
+                                <span class="text-muted small">-</span>
+                                {{/hascasereport}}
+                            </td>
+                            <td class="text-center">
                                 <span class="{{statusclass}} px-2 py-1">{{statustext}}</span>
                             </td>
                             <td class="text-end pe-4">
@@ -177,25 +265,139 @@
             {{/hasstudents}}
         </div>
     </div>
+
+    {{! Case Report Inspection Modal for Instructors }}
+    <div class="modal fade" id="smartVideoTeacherReportModal" tabindex="-1" aria-labelledby="teacherReportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content shadow border-0">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="teacherReportModalLabel">
+                        <i class="fa fa-stethoscope me-2"></i><span id="modalReportStudentName">Case Report</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-secondary mb-1"><i class="fa fa-eye me-1"></i>Clinical Findings:</h6>
+                        <div class="p-3 bg-light rounded border font-monospace small" id="modalReportFindings" style="white-space: pre-wrap;"></div>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-secondary mb-1"><i class="fa fa-lightbulb-o me-1"></i>Diagnostic Impression:</h6>
+                        <div class="p-3 bg-light rounded border font-monospace small" id="modalReportImpression" style="white-space: pre-wrap;"></div>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-secondary mb-1"><i class="fa fa-list-ul me-1"></i>Differential Diagnosis:</h6>
+                        <div class="p-3 bg-light rounded border font-monospace small" id="modalReportDiagnosis" style="white-space: pre-wrap;"></div>
+                    </div>
+                    <div class="mb-2">
+                        <h6 class="fw-bold text-secondary mb-1"><i class="fa fa-check-square-o me-1"></i>Management / Action Plan:</h6>
+                        <div class="p-3 bg-light rounded border font-monospace small" id="modalReportRecommendations" style="white-space: pre-wrap;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var searchInput = document.getElementById('smartvideo-report-filter') || document.getElementById('securevideo-report-filter');
-    if (!searchInput) return;
-    searchInput.addEventListener('input', function() {
-        var query = this.value.toLowerCase().trim();
-        var table = document.getElementById('smartvideo-report-table') || document.getElementById('securevideo-report-table');
-        if (!table) return;
-        var rows = table.querySelectorAll('.student-row');
-        rows.forEach(function(row) {
-            var searchData = (row.getAttribute('data-search') || '').toLowerCase();
-            if (query === '' || searchData.indexOf(query) !== -1) {
-                row.style.display = '';
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            var query = this.value.toLowerCase().trim();
+            var table = document.getElementById('smartvideo-report-table') || document.getElementById('securevideo-report-table');
+            if (!table) return;
+            var rows = table.querySelectorAll('.student-row');
+            rows.forEach(function(row) {
+                var searchData = (row.getAttribute('data-search') || '').toLowerCase();
+                if (query === '' || searchData.indexOf(query) !== -1) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    var reportModalEl = document.getElementById('smartVideoTeacherReportModal');
+    document.querySelectorAll('.btn-view-report').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var name = btn.getAttribute('data-studentname') || 'Student';
+            var findings = btn.getAttribute('data-findings') || 'None recorded.';
+            var impression = btn.getAttribute('data-impression') || 'None recorded.';
+            var diagnosis = btn.getAttribute('data-diagnosis') || 'None recorded.';
+            var recommendations = btn.getAttribute('data-recommendations') || 'None recorded.';
+
+            document.getElementById('modalReportStudentName').textContent = name + ' - Case Report';
+            document.getElementById('modalReportFindings').textContent = findings;
+            document.getElementById('modalReportImpression').textContent = impression;
+            document.getElementById('modalReportDiagnosis').textContent = diagnosis;
+            document.getElementById('modalReportRecommendations').textContent = recommendations;
+
+            if (window.bootstrap && window.bootstrap.Modal) {
+                var modal = window.bootstrap.Modal.getOrCreateInstance(reportModalEl);
+                modal.show();
             } else {
-                row.style.display = 'none';
+                reportModalEl.classList.add('show');
+                reportModalEl.style.display = 'block';
             }
         });
     });
+
+    // Heatmap interactive tracking
+    var heatmapCard = document.getElementById('smartvideoHeatmapCard');
+    if (heatmapCard) {
+        var rawHeatmap = heatmapCard.getAttribute('data-heatmap');
+        var heatmapData = [];
+        try {
+            heatmapData = JSON.parse(rawHeatmap) || [];
+        } catch (e) {
+            heatmapData = [];
+        }
+
+        var svg = heatmapCard.querySelector('.sv-heatmap-svg');
+        var cursorLine = document.getElementById('svHeatmapCursor');
+        var cursorDot = document.getElementById('svHeatmapCursorDot');
+        var badge = document.getElementById('svHeatmapHoverBadge');
+
+        if (svg && heatmapData.length > 0 && cursorLine && cursorDot && badge) {
+            svg.addEventListener('mousemove', function(e) {
+                var rect = svg.getBoundingClientRect();
+                var relX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                var svgX = relX * 1000;
+
+                // Find closest bucket.
+                var closest = heatmapData[0];
+                var minDiff = Math.abs(heatmapData[0].x - svgX);
+                for (var i = 1; i < heatmapData.length; i++) {
+                    var diff = Math.abs(heatmapData[i].x - svgX);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = heatmapData[i];
+                    }
+                }
+
+                cursorLine.setAttribute('x1', closest.x);
+                cursorLine.setAttribute('x2', closest.x);
+                cursorLine.classList.remove('d-none');
+
+                cursorDot.setAttribute('cx', closest.x);
+                cursorDot.setAttribute('cy', closest.y);
+                cursorDot.classList.remove('d-none');
+
+                badge.textContent = closest.time + ' | ' + closest.percentage + '% (' + closest.count + ' watched)';
+                badge.classList.remove('d-none');
+            });
+
+            svg.addEventListener('mouseleave', function() {
+                cursorLine.classList.add('d-none');
+                cursorDot.classList.add('d-none');
+                badge.classList.add('d-none');
+            });
+        }
+    }
 });
 </script>
