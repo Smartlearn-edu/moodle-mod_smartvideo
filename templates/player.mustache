@@ -21,7 +21,7 @@
 }}
 <div class="mod-smartvideo-wrapper mod-securevideo-wrapper my-3">
     <div id="smartVideoContainer"
-         class="smartvideo-player-container securevideo-player-container position-relative bg-black rounded shadow-lg overflow-hidden user-select-none"
+         class="smartvideo-player-container securevideo-player-container position-relative bg-black rounded shadow-lg overflow-hidden user-select-none is-paused"
          tabindex="0"
          data-cmid="{{cmid}}"
          data-playlisturl="{{playlisturl}}"
@@ -133,7 +133,7 @@
         </div>
 
         {{! Custom Controls Bar }}
-        <div class="smartvideo-controls-bar securevideo-controls-bar bg-dark bg-opacity-95 text-white p-2" style="z-index: 30;">
+        <div class="smartvideo-controls-bar securevideo-controls-bar bg-dark bg-opacity-95 text-white p-2" style="z-index: 45;">
             {{! Scrubber / Timeline }}
             <div class="smartvideo-timeline-wrapper securevideo-timeline-wrapper position-relative py-1 cursor-pointer">
                 <div class="smartvideo-timeline-track securevideo-timeline-track bg-secondary rounded position-relative" style="height: 6px;">

@@ -318,6 +318,13 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 });
             }
 
+            // Initial pause state.
+            if (video && video.paused) {
+                container.classList.add('is-paused');
+            } else {
+                container.classList.remove('is-paused');
+            }
+
             // Sync play state UI.
             video.addEventListener('play', function() {
                 container.classList.add('is-playing');
@@ -558,12 +565,14 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
                 if (isFullscreen) {
                     container.classList.add('is-fullscreen');
+                    container.classList.remove('is-idle');
                     if (fullscreenBtn) {
                         fullscreenBtn.innerHTML = '<i class="fa fa-compress" aria-hidden="true"></i>';
                         fullscreenBtn.setAttribute('title', 'Exit Fullscreen');
                     }
                 } else {
                     container.classList.remove('is-fullscreen');
+                    container.classList.remove('is-idle');
                     if (fullscreenBtn) {
                         fullscreenBtn.innerHTML = '<i class="fa fa-expand" aria-hidden="true"></i>';
                         fullscreenBtn.setAttribute('title', 'Fullscreen');
@@ -638,6 +647,16 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             container.addEventListener('mousemove', resetIdle);
             container.addEventListener('click', resetIdle);
             container.addEventListener('touchstart', resetIdle, {passive: true});
+
+            document.addEventListener('mousemove', function() {
+                const isFs = !!(document.fullscreenElement === container ||
+                    document.webkitFullscreenElement === container ||
+                    document.mozFullScreenElement === container ||
+                    document.msFullscreenElement === container);
+                if (isFs) {
+                    resetIdle();
+                }
+            });
 
             // Keyboard hotkeys for player container.
             container.addEventListener('keydown', function(e) {

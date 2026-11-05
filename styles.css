@@ -92,13 +92,9 @@
     display: block !important;
 }
 
-/* Video ratio container in fullscreen fills entire screen */
+/* Video ratio container in fullscreen fills entire screen - Standard & JS Fallback */
 .smartvideo-player-container:fullscreen .ratio,
 .securevideo-player-container:fullscreen .ratio,
-.smartvideo-player-container:-webkit-full-screen .ratio,
-.securevideo-player-container:-webkit-full-screen .ratio,
-.smartvideo-player-container:-moz-full-screen .ratio,
-.securevideo-player-container:-moz-full-screen .ratio,
 .smartvideo-player-container.is-fullscreen .ratio,
 .securevideo-player-container.is-fullscreen .ratio {
     position: absolute !important;
@@ -111,25 +107,58 @@
     padding: 0 !important;
 }
 
-/* Remove Bootstrap aspect-ratio padding in fullscreen so video does not overflow */
+/* Video ratio container in fullscreen - WebKit (Chrome, Brave, Safari, Edge) */
+.smartvideo-player-container:-webkit-full-screen .ratio,
+.securevideo-player-container:-webkit-full-screen .ratio {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Video ratio container in fullscreen - Mozilla (Firefox) */
+.smartvideo-player-container:-moz-full-screen .ratio,
+.securevideo-player-container:-moz-full-screen .ratio {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Remove Bootstrap aspect-ratio padding in fullscreen - Standard & JS Fallback */
 .smartvideo-player-container:fullscreen .ratio::before,
 .securevideo-player-container:fullscreen .ratio::before,
-.smartvideo-player-container:-webkit-full-screen .ratio::before,
-.securevideo-player-container:-webkit-full-screen .ratio::before,
-.smartvideo-player-container:-moz-full-screen .ratio::before,
-.securevideo-player-container:-moz-full-screen .ratio::before,
 .smartvideo-player-container.is-fullscreen .ratio::before,
 .securevideo-player-container.is-fullscreen .ratio::before {
     display: none !important;
     padding-top: 0 !important;
 }
 
+/* Remove Bootstrap aspect-ratio padding in fullscreen - WebKit */
+.smartvideo-player-container:-webkit-full-screen .ratio::before,
+.securevideo-player-container:-webkit-full-screen .ratio::before {
+    display: none !important;
+    padding-top: 0 !important;
+}
+
+/* Remove Bootstrap aspect-ratio padding in fullscreen - Mozilla */
+.smartvideo-player-container:-moz-full-screen .ratio::before,
+.securevideo-player-container:-moz-full-screen .ratio::before {
+    display: none !important;
+    padding-top: 0 !important;
+}
+
+/* Fullscreen video element containment - Standard & JS Fallback */
 .smartvideo-player-container:fullscreen video,
 .securevideo-player-container:fullscreen video,
-.smartvideo-player-container:-webkit-full-screen video,
-.securevideo-player-container:-webkit-full-screen video,
-.smartvideo-player-container:-moz-full-screen video,
-.securevideo-player-container:-moz-full-screen video,
 .smartvideo-player-container.is-fullscreen video,
 .securevideo-player-container.is-fullscreen video {
     width: 100% !important;
@@ -137,13 +166,25 @@
     object-fit: contain !important;
 }
 
-/* Fullscreen Controls Bar - absolute docked overlay at bottom */
+/* Fullscreen video element containment - WebKit */
+.smartvideo-player-container:-webkit-full-screen video,
+.securevideo-player-container:-webkit-full-screen video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+/* Fullscreen video element containment - Mozilla */
+.smartvideo-player-container:-moz-full-screen video,
+.securevideo-player-container:-moz-full-screen video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+/* Fullscreen Controls Bar - absolute docked overlay at bottom - Standard & JS Fallback */
 .smartvideo-player-container:fullscreen .smartvideo-controls-bar,
 .securevideo-player-container:fullscreen .securevideo-controls-bar,
-.smartvideo-player-container:-webkit-full-screen .smartvideo-controls-bar,
-.securevideo-player-container:-webkit-full-screen .securevideo-controls-bar,
-.smartvideo-player-container:-moz-full-screen .smartvideo-controls-bar,
-.securevideo-player-container:-moz-full-screen .securevideo-controls-bar,
 .smartvideo-player-container.is-fullscreen .smartvideo-controls-bar,
 .securevideo-player-container.is-fullscreen .securevideo-controls-bar {
     position: absolute !important;
@@ -151,7 +192,38 @@
     left: 0 !important;
     right: 0 !important;
     width: 100% !important;
-    z-index: 35 !important;
+    z-index: 45 !important;
+    display: block !important;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 65%, transparent 100%) !important;
+    padding: 1.5rem 1.25rem 0.75rem 1.25rem !important;
+    margin: 0 !important;
+}
+
+/* Fullscreen Controls Bar - WebKit */
+.smartvideo-player-container:-webkit-full-screen .smartvideo-controls-bar,
+.securevideo-player-container:-webkit-full-screen .securevideo-controls-bar {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 45 !important;
+    display: block !important;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 65%, transparent 100%) !important;
+    padding: 1.5rem 1.25rem 0.75rem 1.25rem !important;
+    margin: 0 !important;
+}
+
+/* Fullscreen Controls Bar - Mozilla */
+.smartvideo-player-container:-moz-full-screen .smartvideo-controls-bar,
+.securevideo-player-container:-moz-full-screen .securevideo-controls-bar {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 45 !important;
+    display: block !important;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 65%, transparent 100%) !important;
     padding: 1.5rem 1.25rem 0.75rem 1.25rem !important;
     margin: 0 !important;
@@ -212,15 +284,23 @@
     vertical-align: middle !important;
 }
 
-/* Hide cursor when idle in fullscreen */
+/* Hide cursor when idle in fullscreen - Standard & JS Fallback */
 .smartvideo-player-container:fullscreen.is-idle:not(.is-paused),
 .securevideo-player-container:fullscreen.is-idle:not(.is-paused),
-.smartvideo-player-container:-webkit-full-screen.is-idle:not(.is-paused),
-.securevideo-player-container:-webkit-full-screen.is-idle:not(.is-paused),
-.smartvideo-player-container:-moz-full-screen.is-idle:not(.is-paused),
-.securevideo-player-container:-moz-full-screen.is-idle:not(.is-paused),
 .smartvideo-player-container.is-fullscreen.is-idle:not(.is-paused),
 .securevideo-player-container.is-fullscreen.is-idle:not(.is-paused) {
+    cursor: none;
+}
+
+/* Hide cursor when idle in fullscreen - WebKit */
+.smartvideo-player-container:-webkit-full-screen.is-idle:not(.is-paused),
+.securevideo-player-container:-webkit-full-screen.is-idle:not(.is-paused) {
+    cursor: none;
+}
+
+/* Hide cursor when idle in fullscreen - Mozilla */
+.smartvideo-player-container:-moz-full-screen.is-idle:not(.is-paused),
+.securevideo-player-container:-moz-full-screen.is-idle:not(.is-paused) {
     cursor: none;
 }
 
@@ -299,8 +379,12 @@
 }
 
 /* In-Video Question Overlay & Modal */
+#smartVideoContainer .smartvideo-question-overlay,
+#smartVideoContainer .securevideo-question-overlay,
 #secureVideoContainer .smartvideo-question-overlay,
-#secureVideoContainer .securevideo-question-overlay {
+#secureVideoContainer .securevideo-question-overlay,
+.smartvideo-player-container .smartvideo-question-overlay,
+.securevideo-player-container .securevideo-question-overlay {
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
@@ -308,7 +392,7 @@
     bottom: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    z-index: 40 !important;
+    z-index: 60 !important;
     background-color: rgba(10, 14, 23, 0.82) !important;
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
@@ -321,8 +405,12 @@
     animation: smartvideoFadeIn 0.2s ease-out;
 }
 
+#smartVideoContainer .smartvideo-question-overlay.d-none,
+#smartVideoContainer .securevideo-question-overlay.d-none,
 #secureVideoContainer .smartvideo-question-overlay.d-none,
-#secureVideoContainer .securevideo-question-overlay.d-none {
+#secureVideoContainer .securevideo-question-overlay.d-none,
+.smartvideo-player-container .smartvideo-question-overlay.d-none,
+.securevideo-player-container .securevideo-question-overlay.d-none {
     display: none !important;
 }
 
