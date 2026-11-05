@@ -40,6 +40,7 @@ class save_subtitles extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'cmid'    => new external_value(PARAM_INT, 'Course module ID'),
+            'trackid' => new external_value(PARAM_INT, 'Subtitle track ID (0 to create or auto-match)', VALUE_DEFAULT, 0),
             'lang'    => new external_value(PARAM_ALPHA, 'Language code (e.g. en, ar)', VALUE_DEFAULT, 'en'),
             'label'   => new external_value(PARAM_TEXT, 'Display label (e.g. English, Arabic)', VALUE_DEFAULT, 'English'),
             'content' => new external_value(PARAM_RAW, 'Raw WebVTT content'),
@@ -50,16 +51,18 @@ class save_subtitles extends external_api {
      * Execute save subtitles.
      *
      * @param int $cmid Course module ID.
+     * @param int $trackid Subtitle track ID (0 to create).
      * @param string $lang Language code.
      * @param string $label Display label.
      * @param string $content WebVTT content.
      * @return array
      */
-    public static function execute(int $cmid, string $lang = 'en', string $label = 'English', string $content = ''): array {
+    public static function execute(int $cmid, int $trackid = 0, string $lang = 'en', string $label = 'English', string $content = ''): array {
         global $DB;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'    => $cmid,
+            'trackid' => $trackid,
             'lang'    => $lang,
             'label'   => $label,
             'content' => $content,
@@ -87,10 +90,19 @@ class save_subtitles extends external_api {
         }
 
         $now = time();
-        $existing = $DB->get_record('smartvideo_subtitles', [
-            'instanceid' => $smartvideo->id,
-            'lang'       => $lang,
-        ]);
+        $existing = null;
+        if (!empty($params['trackid'])) {
+            $existing = $DB->get_record('smartvideo_subtitles', [
+                'id'         => $params['trackid'],
+                'instanceid' => $smartvideo->id,
+            ]);
+        }
+        if (!$existing) {
+            $existing = $DB->get_record('smartvideo_subtitles', [
+                'instanceid' => $smartvideo->id,
+                'lang'       => $lang,
+            ]);
+        }
 
         $record = new stdClass();
         $record->instanceid   = $smartvideo->id;

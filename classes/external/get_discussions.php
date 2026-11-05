@@ -74,7 +74,13 @@ class get_discussions extends external_api {
 
         foreach ($records as $rec) {
             if (!isset($users[$rec->userid])) {
-                $u = $DB->get_record('user', ['id' => $rec->userid], 'id, firstname, lastname, email, picture, imagealt');
+                if (class_exists('\core_user\fields')) {
+                    $required = \core_user\fields::for_name()->with_userpic()->get_required_fields();
+                    $fieldlist = implode(', ', array_unique(array_merge(['id', 'email', 'picture', 'imagealt'], $required)));
+                    $u = $DB->get_record('user', ['id' => $rec->userid], $fieldlist);
+                } else {
+                    $u = $DB->get_record('user', ['id' => $rec->userid]);
+                }
                 $users[$rec->userid] = $u;
             }
 

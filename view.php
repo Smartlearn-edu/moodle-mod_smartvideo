@@ -339,7 +339,13 @@ if (!$media || $media->status !== 'ready') {
     $repliesmap = [];
     foreach ($discrecords as $disc) {
         if (!isset($discusers[$disc->userid])) {
-            $discusers[$disc->userid] = $DB->get_record('user', ['id' => $disc->userid], 'id, firstname, lastname, email, picture, imagealt');
+            if (class_exists('\core_user\fields')) {
+                $required = \core_user\fields::for_name()->with_userpic()->get_required_fields();
+                $fieldlist = implode(', ', array_unique(array_merge(['id', 'email', 'picture', 'imagealt'], $required)));
+                $discusers[$disc->userid] = $DB->get_record('user', ['id' => $disc->userid], $fieldlist);
+            } else {
+                $discusers[$disc->userid] = $DB->get_record('user', ['id' => $disc->userid]);
+            }
         }
         $u = $discusers[$disc->userid];
         $dm = floor($disc->timecode / 60);
