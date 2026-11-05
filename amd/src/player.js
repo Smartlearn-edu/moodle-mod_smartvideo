@@ -197,7 +197,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         this.init();
     }
 
-    SecurePlayer.prototype = {
+    SmartPlayer.prototype = {
         /**
          * Initialize player.
          */
@@ -299,9 +299,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             }
             if (centerOverlay) {
                 centerOverlay.addEventListener('click', function(e) {
-                    if (e.target === centerOverlay) {
-                        togglePlay();
+                    if (bigPlayBtn && bigPlayBtn.contains(e.target)) {
+                        return; // bigPlayBtn click listener already handles it.
                     }
+                    togglePlay();
                 });
             }
             if (video) {
@@ -473,8 +474,24 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             });
 
             // Playback speed selection.
+            const speedBtn = container.querySelector('.smartvideo-btn-speed, .securevideo-btn-speed');
+            const speedMenu = container.querySelector('.smartvideo-speed-menu, .securevideo-speed-menu');
+            if (speedBtn && speedMenu) {
+                speedBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const willShow = !speedMenu.classList.contains('show');
+                    container.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+                        m.classList.remove('show');
+                    });
+                    if (willShow) {
+                        speedMenu.classList.add('show');
+                    }
+                });
+            }
+
             speedItems.forEach(function(item) {
-                item.addEventListener('click', function() {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     const speed = parseFloat(item.dataset.speed);
                     video.playbackRate = speed;
                     speedItems.forEach(function(b) {
@@ -485,6 +502,16 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     if (label) {
                         label.textContent = item.textContent;
                     }
+                    if (speedMenu) {
+                        speedMenu.classList.remove('show');
+                    }
+                });
+            });
+
+            // Close dropdown menus when clicking elsewhere.
+            document.addEventListener('click', function() {
+                container.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+                    m.classList.remove('show');
                 });
             });
 
@@ -666,6 +693,20 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
             qualityContainer.classList.remove('d-none');
 
+            const qualityBtn = container.querySelector('.smartvideo-btn-quality, .securevideo-btn-quality');
+            if (qualityBtn) {
+                qualityBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const willShow = !qualityMenu.classList.contains('show');
+                    container.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+                        m.classList.remove('show');
+                    });
+                    if (willShow) {
+                        qualityMenu.classList.add('show');
+                    }
+                });
+            }
+
             levels.forEach(function(level, idx) {
                 const li = document.createElement('li');
                 const btn = document.createElement('button');
@@ -674,7 +715,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 btn.dataset.level = idx;
                 btn.textContent = (level.height ? level.height + 'p' : 'Level ' + (idx + 1));
 
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     self.hls.currentLevel = idx;
                     qualityMenu.querySelectorAll('.dropdown-item').forEach(function(b) {
                         b.classList.remove('active');
@@ -683,6 +725,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     if (qualityLabel) {
                         qualityLabel.textContent = btn.textContent;
                     }
+                    qualityMenu.classList.remove('show');
                 });
 
                 li.appendChild(btn);
@@ -692,7 +735,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             // Auto button.
             const autoBtn = qualityMenu.querySelector('[data-level="-1"]');
             if (autoBtn) {
-                autoBtn.addEventListener('click', function() {
+                autoBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
                     self.hls.currentLevel = -1;
                     qualityMenu.querySelectorAll('.dropdown-item').forEach(function(b) {
                         b.classList.remove('active');
@@ -701,6 +745,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     if (qualityLabel) {
                         qualityLabel.textContent = 'Auto';
                     }
+                    qualityMenu.classList.remove('show');
                 });
             }
         },
@@ -1343,7 +1388,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 }
             };
 
-            Ajax.call([request])[0].done(function(response) {
+            Ajax.call([request])[0].then(function(response) {
                 if (response && response.status) {
                     const badge = self.container.querySelector('.smartvideo-progress-badge, .securevideo-progress-badge');
                     if (badge) {
@@ -1356,7 +1401,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                         }
                     }
                 }
-            }).fail(function(err) {
+            }).catch(function(err) {
                 console.error('[SmartVideo] Progress beacon failed:', err);
             });
         }

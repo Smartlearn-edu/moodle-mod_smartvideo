@@ -71,7 +71,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
             }
         };
 
-        Ajax.call([request])[0].done(function(response) {
+        Ajax.call([request])[0].then(function(response) {
             if (loadingEl) {
                 loadingEl.classList.add('d-none');
             }
@@ -99,7 +99,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
                     gridEl.innerHTML = renderedHtmls.join('');
                 }
             }).catch(Notification.exception);
-        }).fail(function(err) {
+        }).catch(function(err) {
             if (loadingEl) {
                 loadingEl.classList.add('d-none');
             }
