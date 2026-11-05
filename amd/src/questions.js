@@ -16,7 +16,7 @@
 /**
  * Controller for interactive questions authoring and timeline cue management.
  *
- * @module     mod_securevideo/questions
+ * @module     mod_smartvideo/questions
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -66,8 +66,10 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
     function QuestionsManager(config) {
         this.cmid = config.cmid;
         this.duration = config.duration || 0;
-        this.container = document.querySelector('.mod-securevideo-questions-container');
-        this.modalEl = document.getElementById('secureVideoAddQuestionModal');
+        this.container = document.querySelector('.mod-smartvideo-questions-container') ||
+                         document.querySelector('.mod-securevideo-questions-container');
+        this.modalEl = document.getElementById('smartVideoAddQuestionModal') ||
+                       document.getElementById('secureVideoAddQuestionModal');
         this.categories = [];
         this.currentQuestions = [];
 
@@ -89,9 +91,11 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          */
         setupPreviewPlayer: function() {
             const self = this;
-            const video = document.getElementById('secureVideoPreviewElement');
-            const scrubInput = document.getElementById('secureVideoScrubTimeInput');
-            const timerBadge = this.container.querySelector('.securevideo-preview-timer');
+            const video = document.getElementById('smartVideoPreviewElement') ||
+                          document.getElementById('secureVideoPreviewElement');
+            const scrubInput = document.getElementById('smartVideoScrubTimeInput') ||
+                              document.getElementById('secureVideoScrubTimeInput');
+            const timerBadge = this.container.querySelector('.smartvideo-preview-timer, .securevideo-preview-timer');
 
             if (!video) {
                 return;
@@ -100,7 +104,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             // HLS stream loader if available.
             require(['local_securevideolibrary/hls'], function(Hls) {
                 const HlsClass = Hls || window.Hls;
-                const containerData = document.getElementById('secureVideoContainer') || self.container;
+                const containerData = document.getElementById('smartVideoContainer') ||
+                                      document.getElementById('secureVideoContainer') ||
+                                      self.container;
                 const playlistUrl = containerData.dataset.playlisturl;
 
                 if (playlistUrl && HlsClass && HlsClass.isSupported()) {
@@ -128,7 +134,8 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          */
         setupEventListeners: function() {
             const self = this;
-            const video = document.getElementById('secureVideoPreviewElement');
+            const video = document.getElementById('smartVideoPreviewElement') ||
+                          document.getElementById('secureVideoPreviewElement');
 
             // Add question button (from header or empty state).
             this.container.querySelectorAll('.btn-add-question').forEach(function(btn) {
@@ -207,7 +214,7 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             const catSelect = document.getElementById('cueCategorySelect');
 
             Ajax.call([{
-                methodname: 'mod_securevideo_get_course_categories',
+                methodname: 'mod_smartvideo_get_course_categories',
                 args: {cmid: self.cmid}
             }])[0].then(function(categories) {
                 self.categories = categories || [];
@@ -249,7 +256,7 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             qSelect.innerHTML = '<option value="">Loading questions...</option>';
 
             Ajax.call([{
-                methodname: 'mod_securevideo_get_category_questions',
+                methodname: 'mod_smartvideo_get_category_questions',
                 args: {cmid: self.cmid, categoryid: categoryId}
             }])[0].then(function(questions) {
                 self.currentQuestions = questions || [];
@@ -446,7 +453,7 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             }
 
             Ajax.call([{
-                methodname: 'mod_securevideo_save_cuepoint',
+                methodname: 'mod_smartvideo_save_cuepoint',
                 args: {
                     cmid: self.cmid,
                     cueid: cueId,
@@ -474,10 +481,10 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          */
         deleteCuepoint: function(cueId, row) {
             const self = this;
-            Str.get_string('deletequestionconfirm', 'mod_securevideo').then(function(msg) {
+            Str.get_string('deletequestionconfirm', 'mod_smartvideo').then(function(msg) {
                 Notification.confirm('Delete Question', msg, 'Delete', 'Cancel', function() {
                     Ajax.call([{
-                        methodname: 'mod_securevideo_delete_cuepoint',
+                        methodname: 'mod_smartvideo_delete_cuepoint',
                         args: {
                             cmid: self.cmid,
                             cueid: cueId

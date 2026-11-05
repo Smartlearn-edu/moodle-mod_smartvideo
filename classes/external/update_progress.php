@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo\external;
+namespace mod_smartvideo\external;
 
 use core_external\external_api;
 use core_external\external_function_parameters;
@@ -26,7 +26,7 @@ use stdClass;
 /**
  * External web service to update student video watch progress and trigger completion.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -73,12 +73,12 @@ class update_progress extends external_api {
             'watchedintervals' => $watchedintervals,
         ]);
 
-        $cm = get_coursemodule_from_id('securevideo', $params['cmid'], 0, false, MUST_EXIST);
+        $cm = get_coursemodule_from_id('smartvideo', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
-        require_capability('mod/securevideo:view', $context);
+        require_capability('mod/smartvideo:view', $context);
 
-        $instance = $DB->get_record('securevideo', ['id' => $cm->instance], '*', MUST_EXIST);
+        $instance = $DB->get_record('smartvideo', ['id' => $cm->instance], '*', MUST_EXIST);
         $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 
         $media = $DB->get_record('local_securevideolibrary_media', ['id' => $instance->mediaid]);
@@ -90,7 +90,7 @@ class update_progress extends external_api {
         }
 
         $now = time();
-        $progress = $DB->get_record('securevideo_progress', [
+        $progress = $DB->get_record('smartvideo_progress', [
             'instanceid' => $instance->id,
             'userid'     => $USER->id,
         ]);
@@ -102,7 +102,7 @@ class update_progress extends external_api {
             $progress->watchedintervals = $params['watchedintervals'];
             $progress->percentcompleted = max((int)$progress->percentcompleted, $percentcompleted);
             $progress->timemodified     = $now;
-            $DB->update_record('securevideo_progress', $progress);
+            $DB->update_record('smartvideo_progress', $progress);
         } else {
             $newrec = new stdClass();
             $newrec->instanceid       = $instance->id;
@@ -113,7 +113,7 @@ class update_progress extends external_api {
             $newrec->watchedintervals = $params['watchedintervals'];
             $newrec->percentcompleted = $percentcompleted;
             $newrec->timemodified     = $now;
-            $DB->insert_record('securevideo_progress', $newrec);
+            $DB->insert_record('smartvideo_progress', $newrec);
         }
 
         // Completion evaluation.

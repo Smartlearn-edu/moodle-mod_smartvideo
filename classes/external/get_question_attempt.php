@@ -14,19 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo\external;
+namespace mod_smartvideo\external;
 
 use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 use context_module;
-use mod_securevideo\question_helper;
+use mod_smartvideo\question_helper;
 
 /**
  * External web service to get or start a question attempt for in-video playback.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -61,10 +61,10 @@ class get_question_attempt extends external_api {
             'forcenew'     => $forcenew,
         ]);
 
-        $cm = get_coursemodule_from_id('securevideo', $params['cmid'], 0, false, MUST_EXIST);
+        $cm = get_coursemodule_from_id('smartvideo', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
-        require_capability('mod/securevideo:view', $context);
+        require_capability('mod/smartvideo:view', $context);
 
         $attempt = question_helper::get_or_create_attempt(
             $params['cmid'],

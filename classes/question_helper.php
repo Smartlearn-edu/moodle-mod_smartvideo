@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo;
+namespace mod_smartvideo;
 
 use context_course;
 use context_module;
@@ -23,9 +23,9 @@ use question_engine;
 use question_display_options;
 
 /**
- * Question helper managing Question Bank discovery and Question Engine attempts for mod_securevideo.
+ * Question helper managing Question Bank discovery and Question Engine attempts for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -182,11 +182,11 @@ class question_helper {
     ): array {
         global $DB, $PAGE;
 
-        $cm = get_coursemodule_from_id('securevideo', $cmid, 0, false, MUST_EXIST);
+        $cm = get_coursemodule_from_id('smartvideo', $cmid, 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
-        $cue = $DB->get_record('securevideo_questions', ['id' => $svquestionid], '*', MUST_EXIST);
+        $cue = $DB->get_record('smartvideo_questions', ['id' => $svquestionid], '*', MUST_EXIST);
 
-        $attempt = $DB->get_record('securevideo_qattempts', [
+        $attempt = $DB->get_record('smartvideo_qattempts', [
             'svquestionid' => $cue->id,
             'userid'       => $userid,
         ]);
@@ -211,14 +211,14 @@ class question_helper {
         if (!$attempt || $forcenew) {
             $latestqid = self::get_latest_question_id((int)$cue->questionbankentryid, (int)$cue->questionid);
             if ($latestqid <= 0) {
-                throw new \moodle_exception('invalidquestion', 'mod_securevideo');
+                throw new \moodle_exception('invalidquestion', 'mod_smartvideo');
             }
             if ($cue->questionid <= 0) {
-                $DB->set_field('securevideo_questions', 'questionid', $latestqid, ['id' => $cue->id]);
+                $DB->set_field('smartvideo_questions', 'questionid', $latestqid, ['id' => $cue->id]);
             }
             $question = question_bank::load_question($latestqid);
 
-            $quba = question_engine::make_questions_usage_by_activity('mod_securevideo', $context);
+            $quba = question_engine::make_questions_usage_by_activity('mod_smartvideo', $context);
             $quba->set_preferred_behaviour('immediatefeedback');
             $slot = $quba->add_question($question, 1.0);
             $quba->start_question($slot);
@@ -231,7 +231,7 @@ class question_helper {
                 $attempt->qubaid = $quba->get_id();
                 $attempt->slot = $slot;
                 $attempt->timemodified = $now;
-                $DB->update_record('securevideo_qattempts', $attempt);
+                $DB->update_record('smartvideo_qattempts', $attempt);
             } else {
                 $attempt = (object)[
                     'instanceid'   => $cue->instanceid,
@@ -244,7 +244,7 @@ class question_helper {
                     'fraction'     => null,
                     'timemodified' => $now,
                 ];
-                $attempt->id = $DB->insert_record('securevideo_qattempts', $attempt);
+                $attempt->id = $DB->insert_record('smartvideo_qattempts', $attempt);
             }
             $transaction->allow_commit();
         }
@@ -263,7 +263,7 @@ class question_helper {
 
         return [
             'svquestionid'   => (int)$cue->id,
-            'title'          => !empty($cue->title) ? format_string($cue->title) : get_string('knowledgecheck', 'mod_securevideo'),
+            'title'          => !empty($cue->title) ? format_string($cue->title) : get_string('knowledgecheck', 'mod_smartvideo'),
             'timecode'       => (int)$cue->timecode,
             'requirecorrect' => (int)$cue->requirecorrect,
             'rewindonfail'   => (int)$cue->rewindonfail,
@@ -293,9 +293,9 @@ class question_helper {
     ): array {
         global $DB;
 
-        $cm = get_coursemodule_from_id('securevideo', $cmid, 0, false, MUST_EXIST);
-        $cue = $DB->get_record('securevideo_questions', ['id' => $svquestionid], '*', MUST_EXIST);
-        $attempt = $DB->get_record('securevideo_qattempts', [
+        $cm = get_coursemodule_from_id('smartvideo', $cmid, 0, false, MUST_EXIST);
+        $cue = $DB->get_record('smartvideo_questions', ['id' => $svquestionid], '*', MUST_EXIST);
+        $attempt = $DB->get_record('smartvideo_qattempts', [
             'svquestionid' => $cue->id,
             'userid'       => $userid,
         ], '*', MUST_EXIST);
@@ -322,7 +322,7 @@ class question_helper {
             $attempt->passed = 1;
         }
         $attempt->timemodified = time();
-        $DB->update_record('securevideo_qattempts', $attempt);
+        $DB->update_record('smartvideo_qattempts', $attempt);
         $transaction->allow_commit();
 
         // Update activity completion if passed and completion is enabled.

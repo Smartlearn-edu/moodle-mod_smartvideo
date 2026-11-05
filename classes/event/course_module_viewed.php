@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo\event;
+namespace mod_smartvideo\event;
 
 /**
- * Event triggered when a secure video activity is viewed.
+ * Event triggered when a smart video activity is viewed.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -32,7 +32,7 @@ class course_module_viewed extends \core\event\course_module_viewed {
     protected function init(): void {
         $this->data['crud'] = 'r';
         $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
-        $this->data['objecttable'] = 'securevideo';
+        $this->data['objecttable'] = 'smartvideo';
     }
 
     /**
@@ -41,7 +41,7 @@ class course_module_viewed extends \core\event\course_module_viewed {
      * @return array
      */
     public static function get_objectid_mapping(): array {
-        return ['db' => 'securevideo', 'restore' => 'securevideo'];
+        return ['db' => 'smartvideo', 'restore' => 'smartvideo'];
     }
 
     /**

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo\external;
+namespace mod_smartvideo\external;
 
 use core_external\external_api;
 use core_external\external_function_parameters;
@@ -26,7 +26,7 @@ use stdClass;
 /**
  * External web service to create or update an interactive question cuepoint.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -93,24 +93,25 @@ class save_cuepoint extends external_api {
             'questionstyle'       => $questionstyle,
         ]);
 
-        $cm = get_coursemodule_from_id('securevideo', $params['cmid'], 0, false, MUST_EXIST);
+        $cm = get_coursemodule_from_id('smartvideo', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
 
         if (
             !has_capability('moodle/course:manageactivities', $context)
-            && !has_capability('mod/securevideo:addinstance', $context)
+            && !has_capability('mod/smartvideo:addinstance', $context)
+            && !has_capability('mod/smartvideo:managequestions', $context)
         ) {
             throw new \moodle_exception('nopermissions', 'error', '', 'manage questions');
         }
 
-        $instance = $DB->get_record('securevideo', ['id' => $cm->instance], '*', MUST_EXIST);
+        $instance = $DB->get_record('smartvideo', ['id' => $cm->instance], '*', MUST_EXIST);
 
         $qbeid = $params['questionbankentryid'];
         $qid   = $params['questionid'];
 
         if ($params['cueid'] > 0) {
-            $cue = $DB->get_record('securevideo_questions', [
+            $cue = $DB->get_record('smartvideo_questions', [
                 'id'         => $params['cueid'],
                 'instanceid' => $instance->id,
             ], '*', MUST_EXIST);
@@ -147,7 +148,7 @@ class save_cuepoint extends external_api {
         }
 
         if ($qid <= 0) {
-            throw new \moodle_exception('invalidquestion', 'mod_securevideo');
+            throw new \moodle_exception('invalidquestion', 'mod_smartvideo');
         }
 
         $timecode = max(0, $params['timecode']);
@@ -176,7 +177,7 @@ class save_cuepoint extends external_api {
             $cue->questionstyle       = $qstyle;
             $cue->timemodified        = $now;
 
-            $DB->update_record('securevideo_questions', $cue);
+            $DB->update_record('smartvideo_questions', $cue);
             $savedid = $cue->id;
         } else {
             $cue = new stdClass();
@@ -192,7 +193,7 @@ class save_cuepoint extends external_api {
             $cue->timecreated         = $now;
             $cue->timemodified        = $now;
 
-            $savedid = $DB->insert_record('securevideo_questions', $cue);
+            $savedid = $DB->insert_record('smartvideo_questions', $cue);
         }
 
         return [

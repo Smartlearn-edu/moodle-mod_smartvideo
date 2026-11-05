@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo\privacy;
+namespace mod_smartvideo\privacy;
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\contextlist;
@@ -28,9 +28,9 @@ use question_engine;
 use qubaid_list;
 
 /**
- * Privacy API provider for mod_securevideo.
+ * Privacy API provider for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -46,29 +46,29 @@ class provider implements
      */
     public static function get_metadata(collection $collection): collection {
         $collection->add_database_table(
-            'securevideo_progress',
+            'smartvideo_progress',
             [
-                'userid'           => 'privacy:metadata:securevideo_progress:userid',
-                'lastposition'     => 'privacy:metadata:securevideo_progress:lastposition',
-                'maxposition'      => 'privacy:metadata:securevideo_progress:maxposition',
-                'watchedseconds'   => 'privacy:metadata:securevideo_progress:watchedseconds',
-                'percentcompleted' => 'privacy:metadata:securevideo_progress:percentcompleted',
-                'timemodified'     => 'privacy:metadata:securevideo_progress:timemodified',
+                'userid'           => 'privacy:metadata:smartvideo_progress:userid',
+                'lastposition'     => 'privacy:metadata:smartvideo_progress:lastposition',
+                'maxposition'      => 'privacy:metadata:smartvideo_progress:maxposition',
+                'watchedseconds'   => 'privacy:metadata:smartvideo_progress:watchedseconds',
+                'percentcompleted' => 'privacy:metadata:smartvideo_progress:percentcompleted',
+                'timemodified'     => 'privacy:metadata:smartvideo_progress:timemodified',
             ],
-            'privacy:metadata:securevideo_progress'
+            'privacy:metadata:smartvideo_progress'
         );
 
         $collection->add_database_table(
-            'securevideo_qattempts',
+            'smartvideo_qattempts',
             [
-                'userid'        => 'privacy:metadata:securevideo_qattempts:userid',
-                'svquestionid'  => 'privacy:metadata:securevideo_qattempts:svquestionid',
-                'passed'        => 'privacy:metadata:securevideo_qattempts:passed',
-                'attempts'      => 'privacy:metadata:securevideo_qattempts:attempts',
-                'fraction'      => 'privacy:metadata:securevideo_qattempts:fraction',
-                'timemodified'  => 'privacy:metadata:securevideo_qattempts:timemodified',
+                'userid'        => 'privacy:metadata:smartvideo_qattempts:userid',
+                'svquestionid'  => 'privacy:metadata:smartvideo_qattempts:svquestionid',
+                'passed'        => 'privacy:metadata:smartvideo_qattempts:passed',
+                'attempts'      => 'privacy:metadata:smartvideo_qattempts:attempts',
+                'fraction'      => 'privacy:metadata:smartvideo_qattempts:fraction',
+                'timemodified'  => 'privacy:metadata:smartvideo_qattempts:timemodified',
             ],
-            'privacy:metadata:securevideo_qattempts'
+            'privacy:metadata:smartvideo_qattempts'
         );
 
         $collection->link_subsystem('core_question', 'privacy:metadata:core_question');
@@ -88,13 +88,13 @@ class provider implements
         $sql = "SELECT cm.id
                   FROM {course_modules} cm
                   JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                  JOIN {securevideo} p ON p.id = cm.instance
-             LEFT JOIN {securevideo_progress} prog ON prog.instanceid = p.id AND prog.userid = :userid1
-             LEFT JOIN {securevideo_qattempts} qatt ON qatt.instanceid = p.id AND qatt.userid = :userid2
+                  JOIN {smartvideo} p ON p.id = cm.instance
+             LEFT JOIN {smartvideo_progress} prog ON prog.instanceid = p.id AND prog.userid = :userid1
+             LEFT JOIN {smartvideo_qattempts} qatt ON qatt.instanceid = p.id AND qatt.userid = :userid2
                  WHERE prog.id IS NOT NULL OR qatt.id IS NOT NULL";
 
         $contextlist->add_from_sql($sql, [
-            'modname' => 'securevideo',
+            'modname' => 'smartvideo',
             'userid1' => $userid,
             'userid2' => $userid,
         ]);
@@ -118,24 +118,24 @@ class provider implements
         $sqlprog = "SELECT prog.userid
                       FROM {course_modules} cm
                       JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                      JOIN {securevideo} p ON p.id = cm.instance
-                      JOIN {securevideo_progress} prog ON prog.instanceid = p.id
+                      JOIN {smartvideo} p ON p.id = cm.instance
+                      JOIN {smartvideo_progress} prog ON prog.instanceid = p.id
                      WHERE cm.id = :cmid";
 
         $userlist->add_from_sql('userid', $sqlprog, [
-            'modname' => 'securevideo',
+            'modname' => 'smartvideo',
             'cmid'    => $context->instanceid,
         ]);
 
         $sqlq = "SELECT qatt.userid
                    FROM {course_modules} cm
                    JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                   JOIN {securevideo} p ON p.id = cm.instance
-                   JOIN {securevideo_qattempts} qatt ON qatt.instanceid = p.id
+                   JOIN {smartvideo} p ON p.id = cm.instance
+                   JOIN {smartvideo_qattempts} qatt ON qatt.instanceid = p.id
                   WHERE cm.id = :cmid";
 
         $userlist->add_from_sql('userid', $sqlq, [
-            'modname' => 'securevideo',
+            'modname' => 'smartvideo',
             'cmid'    => $context->instanceid,
         ]);
     }
@@ -156,12 +156,12 @@ class provider implements
                 continue;
             }
 
-            $cm = get_coursemodule_from_id('securevideo', $context->instanceid);
+            $cm = get_coursemodule_from_id('smartvideo', $context->instanceid);
             if (!$cm) {
                 continue;
             }
 
-            $progress = $DB->get_record('securevideo_progress', [
+            $progress = $DB->get_record('smartvideo_progress', [
                 'instanceid' => $cm->instance,
                 'userid'     => $user->id,
             ]);
@@ -176,13 +176,13 @@ class provider implements
                 ];
 
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'mod_securevideo'), 'progress'],
+                    [get_string('pluginname', 'mod_smartvideo'), 'progress'],
                     $data
                 );
             }
 
             // Export question attempts.
-            $attempts = $DB->get_records('securevideo_qattempts', [
+            $attempts = $DB->get_records('smartvideo_qattempts', [
                 'instanceid' => $cm->instance,
                 'userid'     => $user->id,
             ]);
@@ -200,7 +200,7 @@ class provider implements
                 }
 
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'mod_securevideo'), 'question_attempts'],
+                    [get_string('pluginname', 'mod_smartvideo'), 'question_attempts'],
                     (object)['attempts' => $attemptdata]
                 );
             }
@@ -220,12 +220,12 @@ class provider implements
             return;
         }
 
-        $cm = get_coursemodule_from_id('securevideo', $context->instanceid);
+        $cm = get_coursemodule_from_id('smartvideo', $context->instanceid);
         if ($cm) {
-            $DB->delete_records('securevideo_progress', ['instanceid' => $cm->instance]);
+            $DB->delete_records('smartvideo_progress', ['instanceid' => $cm->instance]);
 
             $qubaids = $DB->get_fieldset_select(
-                'securevideo_qattempts',
+                'smartvideo_qattempts',
                 'qubaid',
                 'instanceid = :instanceid AND qubaid > 0',
                 ['instanceid' => $cm->instance]
@@ -235,7 +235,7 @@ class provider implements
                 question_engine::delete_questions_usage_by_activities(new qubaid_list($qubaids));
             }
 
-            $DB->delete_records('securevideo_qattempts', ['instanceid' => $cm->instance]);
+            $DB->delete_records('smartvideo_qattempts', ['instanceid' => $cm->instance]);
         }
     }
 
@@ -255,15 +255,15 @@ class provider implements
                 continue;
             }
 
-            $cm = get_coursemodule_from_id('securevideo', $context->instanceid);
+            $cm = get_coursemodule_from_id('smartvideo', $context->instanceid);
             if ($cm) {
-                $DB->delete_records('securevideo_progress', [
+                $DB->delete_records('smartvideo_progress', [
                     'instanceid' => $cm->instance,
                     'userid'     => $user->id,
                 ]);
 
                 $qubaids = $DB->get_fieldset_select(
-                    'securevideo_qattempts',
+                    'smartvideo_qattempts',
                     'qubaid',
                     'instanceid = :instanceid AND userid = :userid AND qubaid > 0',
                     ['instanceid' => $cm->instance, 'userid' => $user->id]
@@ -273,7 +273,7 @@ class provider implements
                     question_engine::delete_questions_usage_by_activities(new qubaid_list($qubaids));
                 }
 
-                $DB->delete_records('securevideo_qattempts', [
+                $DB->delete_records('smartvideo_qattempts', [
                     'instanceid' => $cm->instance,
                     'userid'     => $user->id,
                 ]);
@@ -295,7 +295,7 @@ class provider implements
             return;
         }
 
-        $cm = get_coursemodule_from_id('securevideo', $context->instanceid);
+        $cm = get_coursemodule_from_id('smartvideo', $context->instanceid);
         if (!$cm) {
             return;
         }
@@ -309,13 +309,13 @@ class provider implements
         $params['instanceid'] = $cm->instance;
 
         $DB->delete_records_select(
-            'securevideo_progress',
+            'smartvideo_progress',
             "instanceid = :instanceid AND userid $insql",
             $params
         );
 
         $qubaids = $DB->get_fieldset_select(
-            'securevideo_qattempts',
+            'smartvideo_qattempts',
             'qubaid',
             "instanceid = :instanceid AND userid $insql AND qubaid > 0",
             $params
@@ -326,7 +326,7 @@ class provider implements
         }
 
         $DB->delete_records_select(
-            'securevideo_qattempts',
+            'smartvideo_qattempts',
             "instanceid = :instanceid AND userid $insql",
             $params
         );

@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Watch Progress Report for mod_securevideo.
+ * Watch Progress Report for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,17 +26,17 @@ require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
 $id = required_param('id', PARAM_INT);
-$cm = get_coursemodule_from_id('securevideo', $id, 0, false, MUST_EXIST);
+$cm = get_coursemodule_from_id('smartvideo', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
-$instance = $DB->get_record('securevideo', ['id' => $cm->instance], '*', MUST_EXIST);
+$instance = $DB->get_record('smartvideo', ['id' => $cm->instance], '*', MUST_EXIST);
 
 require_login($course, false, $cm);
 $context = context_module::instance($cm->id);
-require_capability('mod/securevideo:viewreports', $context);
+require_capability('mod/smartvideo:viewreports', $context);
 
-$pageurl = new moodle_url('/mod/securevideo/report.php', ['id' => $cm->id]);
+$pageurl = new moodle_url('/mod/smartvideo/report.php', ['id' => $cm->id]);
 $PAGE->set_url($pageurl);
-$PAGE->set_title(get_string('report', 'mod_securevideo') . ': ' . $instance->name);
+$PAGE->set_title(get_string('report', 'mod_smartvideo') . ': ' . $instance->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
 
@@ -52,7 +52,7 @@ $dursecs = $duration % 60;
 $durationformatted = sprintf('%02d:%02d', $durmins, $dursecs);
 
 // Enrolled users.
-$users = get_enrolled_users($context, 'mod/securevideo:view', 0, 'u.*', 'u.lastname ASC, u.firstname ASC');
+$users = get_enrolled_users($context, 'mod/smartvideo:view', 0, 'u.*', 'u.lastname ASC, u.firstname ASC');
 
 // Completion info.
 $minpercent = (int)($instance->completionminpercent ?? 0);
@@ -60,14 +60,14 @@ $completion = new \completion_info($course);
 $completionenabled = $completion->is_enabled($cm);
 
 // Total interactive questions configured.
-$totalquestions = $DB->count_records('securevideo_questions', ['instanceid' => $instance->id]);
+$totalquestions = $DB->count_records('smartvideo_questions', ['instanceid' => $instance->id]);
 
 // Count passed questions per user.
 $passedbyuser = [];
 if ($totalquestions > 0) {
     $passedrecords = $DB->get_records_sql(
         "SELECT userid, COUNT(id) AS passedcount
-           FROM {securevideo_qattempts}
+           FROM {smartvideo_qattempts}
           WHERE instanceid = :instanceid AND passed = 1
        GROUP BY userid",
         ['instanceid' => $instance->id]
@@ -79,7 +79,7 @@ if ($totalquestions > 0) {
 
 // Watch progress records indexed by userid.
 $progressrecords = $DB->get_records(
-    'securevideo_progress',
+    'smartvideo_progress',
     ['instanceid' => $instance->id],
     '',
     'userid, watchedseconds, percentcompleted, lastposition, timemodified'
@@ -115,13 +115,13 @@ foreach ($users as $user) {
         if ($iscompleted) {
             $totalcompleted++;
             $statusclass = 'badge bg-success';
-            $statustext = get_string('completed', 'mod_securevideo');
+            $statustext = get_string('completed', 'mod_smartvideo');
         } else if ($watchedsec > 0) {
             $statusclass = 'badge bg-primary';
-            $statustext = get_string('in_progress', 'mod_securevideo');
+            $statustext = get_string('in_progress', 'mod_smartvideo');
         } else {
             $statusclass = 'badge bg-secondary';
-            $statustext = get_string('notstarted', 'mod_securevideo');
+            $statustext = get_string('notstarted', 'mod_smartvideo');
         }
 
         $watchedformatted = sprintf('%02d:%02d', floor($watchedsec / 60), $watchedsec % 60);
@@ -131,7 +131,7 @@ foreach ($users as $user) {
     } else {
         $percent = 0;
         $statusclass = 'badge bg-secondary';
-        $statustext = get_string('notstarted', 'mod_securevideo');
+        $statustext = get_string('notstarted', 'mod_smartvideo');
         $watchedformatted = '00:00';
         $lastposformatted = '00:00';
         $lastupdated = '-';
@@ -184,11 +184,11 @@ $data = [
     'avgpercent'           => $avgpercent,
     'hasstudents'          => !empty($studentsdata),
     'students'             => $studentsdata,
-    'backurl'              => (new moodle_url('/mod/securevideo/view.php', ['id' => $cm->id]))->out(false),
+    'backurl'              => (new moodle_url('/mod/smartvideo/view.php', ['id' => $cm->id]))->out(false),
     'completionminpercent' => (int)($instance->completionminpercent ?? 0),
     'hasactivityquestions' => ($totalquestions > 0),
 ];
 
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('mod_securevideo/report', $data);
+echo $OUTPUT->render_from_template('mod_smartvideo/report', $data);
 echo $OUTPUT->footer();

@@ -15,7 +15,7 @@
     along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
-    @template mod_securevideo/report
+    @template mod_smartvideo/report
 
     Template for student watch progress report.
 
@@ -31,23 +31,23 @@
     * backurl - URL to return to player view.
     * completionminpercent - Required percentage or 0.
 }}
-<div class="mod-securevideo-report container-fluid px-0">
+<div class="mod-smartvideo-report mod-securevideo-report container-fluid px-0">
     <!-- Header banner -->
     <div class="card mb-4 shadow-sm border-0 bg-light">
         <div class="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div>
-                <h3 class="mb-1 text-primary fw-bold">{{#str}}report_title, mod_securevideo{{/str}}</h3>
+                <h3 class="mb-1 text-primary fw-bold">{{#str}}report_title, mod_smartvideo{{/str}}</h3>
                 <div class="text-muted d-flex flex-wrap align-items-center gap-3">
                     <span><i class="fa fa-film me-1 text-secondary" aria-hidden="true"></i><strong>{{videotitle}}</strong></span>
                     <span><i class="fa fa-clock-o me-1 text-secondary" aria-hidden="true"></i>{{durationformatted}}</span>
                     {{#completionminpercent}}
-                    <span><i class="fa fa-check-square-o me-1 text-success" aria-hidden="true"></i>{{#str}}completionminpercent_desc, mod_securevideo, {{completionminpercent}}{{/str}}</span>
+                    <span><i class="fa fa-check-square-o me-1 text-success" aria-hidden="true"></i>{{#str}}completionminpercent_desc, mod_smartvideo, {{completionminpercent}}{{/str}}</span>
                     {{/completionminpercent}}
                 </div>
             </div>
             <div>
                 <a href="{{backurl}}" class="btn btn-outline-primary">
-                    <i class="fa fa-arrow-left me-1" aria-hidden="true"></i>{{#str}}backtovideo, mod_securevideo{{/str}}
+                    <i class="fa fa-arrow-left me-1" aria-hidden="true"></i>{{#str}}backtovideo, mod_smartvideo{{/str}}
                 </a>
             </div>
         </div>
@@ -62,7 +62,7 @@
                         <i class="fa fa-users fa-2x" aria-hidden="true"></i>
                     </div>
                     <div>
-                        <div class="text-muted small text-uppercase fw-semibold">{{#str}}report_summary_total, mod_securevideo{{/str}}</div>
+                        <div class="text-muted small text-uppercase fw-semibold">{{#str}}report_summary_total, mod_smartvideo{{/str}}</div>
                         <h3 class="mb-0 fw-bold">{{totalenrolled}}</h3>
                     </div>
                 </div>
@@ -76,7 +76,7 @@
                         <i class="fa fa-check-circle fa-2x" aria-hidden="true"></i>
                     </div>
                     <div>
-                        <div class="text-muted small text-uppercase fw-semibold">{{#str}}report_summary_completed, mod_securevideo{{/str}}</div>
+                        <div class="text-muted small text-uppercase fw-semibold">{{#str}}report_summary_completed, mod_smartvideo{{/str}}</div>
                         <h3 class="mb-0 fw-bold text-success">{{totalcompleted}}</h3>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                         <i class="fa fa-pie-chart fa-2x" aria-hidden="true"></i>
                     </div>
                     <div>
-                        <div class="text-muted small text-uppercase fw-semibold">{{#str}}report_summary_avg, mod_securevideo{{/str}}</div>
+                        <div class="text-muted small text-uppercase fw-semibold">{{#str}}report_summary_avg, mod_smartvideo{{/str}}</div>
                         <h3 class="mb-0 fw-bold text-info">{{avgpercent}}%</h3>
                     </div>
                 </div>
@@ -101,26 +101,26 @@
     <!-- Students progress table card -->
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom">
-            <h5 class="mb-0 fw-bold text-dark">{{#str}}modulenameplural, mod_securevideo{{/str}}</h5>
+            <h5 class="mb-0 fw-bold text-dark">{{#str}}modulenameplural, mod_smartvideo{{/str}}</h5>
             <div style="min-width: 250px;">
-                <input type="text" id="securevideo-report-filter" class="form-control form-control-sm" placeholder="{{#str}}searchvideos, mod_securevideo{{/str}}">
+                <input type="text" id="smartvideo-report-filter" class="form-control form-control-sm" placeholder="{{#str}}searchvideos, mod_smartvideo{{/str}}">
             </div>
         </div>
         <div class="card-body p-0">
             {{#hasstudents}}
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="securevideo-report-table">
+                <table class="table table-hover align-middle mb-0" id="smartvideo-report-table">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col" style="min-width: 220px;">{{#str}}student, mod_securevideo{{/str}}</th>
-                            <th scope="col" style="min-width: 180px;">{{#str}}percentcompleted, mod_securevideo{{/str}}</th>
-                            <th scope="col" class="text-center">{{#str}}watchedtime, mod_securevideo{{/str}}</th>
-                            <th scope="col" class="text-center">{{#str}}lastposition, mod_securevideo{{/str}}</th>
+                            <th scope="col" style="min-width: 220px;">{{#str}}student, mod_smartvideo{{/str}}</th>
+                            <th scope="col" style="min-width: 180px;">{{#str}}percentcompleted, mod_smartvideo{{/str}}</th>
+                            <th scope="col" class="text-center">{{#str}}watchedtime, mod_smartvideo{{/str}}</th>
+                            <th scope="col" class="text-center">{{#str}}lastposition, mod_smartvideo{{/str}}</th>
                             {{#hasactivityquestions}}
-                            <th scope="col" class="text-center">{{#str}}interactivequestionscol, mod_securevideo{{/str}}</th>
+                            <th scope="col" class="text-center">{{#str}}interactivequestionscol, mod_smartvideo{{/str}}</th>
                             {{/hasactivityquestions}}
-                            <th scope="col" class="text-center">{{#str}}status, mod_securevideo{{/str}}</th>
-                            <th scope="col" class="text-end pe-4">{{#str}}lastupdated, mod_securevideo{{/str}}</th>
+                            <th scope="col" class="text-center">{{#str}}status, mod_smartvideo{{/str}}</th>
+                            <th scope="col" class="text-end pe-4">{{#str}}lastupdated, mod_smartvideo{{/str}}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -172,7 +172,7 @@
             {{^hasstudents}}
             <div class="p-4 text-center text-muted">
                 <i class="fa fa-info-circle fa-2x mb-2 text-secondary" aria-hidden="true"></i>
-                <p class="mb-0">{{#str}}nostudentsfound, mod_securevideo{{/str}}</p>
+                <p class="mb-0">{{#str}}nostudentsfound, mod_smartvideo{{/str}}</p>
             </div>
             {{/hasstudents}}
         </div>
@@ -181,11 +181,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var searchInput = document.getElementById('securevideo-report-filter');
+    var searchInput = document.getElementById('smartvideo-report-filter') || document.getElementById('securevideo-report-filter');
     if (!searchInput) return;
     searchInput.addEventListener('input', function() {
         var query = this.value.toLowerCase().trim();
-        var rows = document.querySelectorAll('#securevideo-report-table .student-row');
+        var table = document.getElementById('smartvideo-report-table') || document.getElementById('securevideo-report-table');
+        if (!table) return;
+        var rows = table.querySelectorAll('.student-row');
         rows.forEach(function(row) {
             var searchData = (row.getAttribute('data-search') || '').toLowerCase();
             if (query === '' || searchData.indexOf(query) !== -1) {

@@ -16,7 +16,7 @@
 /**
  * Hardened HLS player engine, dynamic moving watermark, anti-seek, watch tracker, and in-video interactive questions.
  *
- * @module     mod_securevideo/player
+ * @module     mod_smartvideo/player
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -132,7 +132,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
      *
      * @param {HTMLElement} container
      */
-    function SecurePlayer(container) {
+    function SmartPlayer(container) {
         this.container = container;
         this.cmid = parseInt(container.dataset.cmid, 10);
         this.playlistUrl = container.dataset.playlisturl;
@@ -177,7 +177,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 this.questions = [];
             }
         } catch (e) {
-            console.error('[SecureVideo] Failed to parse questions JSON:', e, rawQuestions);
+            console.error('[SmartVideo] Failed to parse questions JSON:', e, rawQuestions);
             this.questions = [];
         }
 
@@ -185,9 +185,9 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             return (a.timecode || 0) - (b.timecode || 0);
         });
 
-        this.video = container.querySelector('#secureVideoElement');
-        this.canvas = container.querySelector('#secureVideoWatermarkCanvas');
-        this.questionOverlay = container.querySelector('#secureVideoQuestionOverlay');
+        this.video = container.querySelector('#smartVideoElement, #secureVideoElement, video');
+        this.canvas = container.querySelector('#smartVideoWatermarkCanvas, #secureVideoWatermarkCanvas, canvas');
+        this.questionOverlay = container.querySelector('#smartVideoQuestionOverlay, #secureVideoQuestionOverlay');
         this.activeQuestion = null;
         this.hls = null;
         this.beaconInterval = null;
@@ -262,20 +262,20 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             const video = this.video;
             const container = this.container;
 
-            const playBtn = container.querySelector('.securevideo-btn-play');
-            const bigPlayBtn = container.querySelector('.securevideo-btn-bigplay');
-            const centerOverlay = container.querySelector('.securevideo-center-overlay');
-            const muteBtn = container.querySelector('.securevideo-btn-mute');
-            const volumeSlider = container.querySelector('.securevideo-volume-slider');
-            const timelineWrapper = container.querySelector('.securevideo-timeline-wrapper');
-            const progressBar = container.querySelector('.securevideo-progress-bar');
-            const bufferedBar = container.querySelector('.securevideo-buffered-bar');
-            const maxMarker = container.querySelector('.securevideo-max-marker');
-            const currentTimeEl = container.querySelector('.securevideo-current-time');
-            const fullscreenBtn = container.querySelector('.securevideo-btn-fullscreen');
-            const speedItems = container.querySelectorAll('.securevideo-speed-menu button');
-            const resumeToast = container.querySelector('#secureVideoResumeToast');
-            const seekNotice = container.querySelector('#secureVideoSeekNotice');
+            const playBtn = container.querySelector('.smartvideo-btn-play, .securevideo-btn-play');
+            const bigPlayBtn = container.querySelector('.smartvideo-btn-bigplay, .securevideo-btn-bigplay');
+            const centerOverlay = container.querySelector('.smartvideo-center-overlay, .securevideo-center-overlay');
+            const muteBtn = container.querySelector('.smartvideo-btn-mute, .securevideo-btn-mute');
+            const volumeSlider = container.querySelector('.smartvideo-volume-slider, .securevideo-volume-slider');
+            const timelineWrapper = container.querySelector('.smartvideo-timeline-wrapper, .securevideo-timeline-wrapper');
+            const progressBar = container.querySelector('.smartvideo-progress-bar, .securevideo-progress-bar');
+            const bufferedBar = container.querySelector('.smartvideo-buffered-bar, .securevideo-buffered-bar');
+            const maxMarker = container.querySelector('.smartvideo-max-marker, .securevideo-max-marker');
+            const currentTimeEl = container.querySelector('.smartvideo-current-time, .securevideo-current-time');
+            const fullscreenBtn = container.querySelector('.smartvideo-btn-fullscreen, .securevideo-btn-fullscreen');
+            const speedItems = container.querySelectorAll('.smartvideo-speed-menu button, .securevideo-speed-menu button');
+            const resumeToast = container.querySelector('#smartVideoResumeToast, #secureVideoResumeToast');
+            const seekNotice = container.querySelector('#smartVideoSeekNotice, #secureVideoSeekNotice');
 
             // Play / Pause toggle function.
             const togglePlay = function() {
@@ -284,7 +284,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 }
                 if (video.paused || video.ended) {
                     video.play().catch(function(err) {
-                        console.warn('[SecureVideo] Autoplay blocked:', err);
+                        console.warn('[SmartVideo] Autoplay blocked:', err);
                     });
                 } else {
                     video.pause();
@@ -481,7 +481,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                         b.classList.remove('active');
                     });
                     item.classList.add('active');
-                    const label = container.querySelector('.securevideo-current-speed');
+                    const label = container.querySelector('.smartvideo-current-speed, .securevideo-current-speed');
                     if (label) {
                         label.textContent = item.textContent;
                     }
@@ -582,7 +582,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             // Auto-hide controls when idle (with controls hover preservation).
             let idleTimeout;
             let isOverControls = false;
-            const controlsBar = container.querySelector('.securevideo-controls-bar');
+            const controlsBar = container.querySelector('.smartvideo-controls-bar, .securevideo-controls-bar');
 
             const resetIdle = function() {
                 container.classList.remove('is-idle');
@@ -656,9 +656,9 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         setupQualityLevels: function(levels) {
             const self = this;
             const container = this.container;
-            const qualityContainer = container.querySelector('.securevideo-quality-container');
-            const qualityMenu = container.querySelector('.securevideo-quality-menu');
-            const qualityLabel = container.querySelector('.securevideo-current-quality');
+            const qualityContainer = container.querySelector('.smartvideo-quality-container, .securevideo-quality-container');
+            const qualityMenu = container.querySelector('.smartvideo-quality-menu, .securevideo-quality-menu');
+            const qualityLabel = container.querySelector('.smartvideo-current-quality, .securevideo-current-quality');
 
             if (!levels || levels.length <= 1 || !qualityContainer || !qualityMenu) {
                 return;
@@ -816,9 +816,9 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 return;
             }
 
-            const submitBtn = this.questionOverlay.querySelector('.securevideo-btn-submit');
-            const continueBtn = this.questionOverlay.querySelector('.securevideo-btn-continue');
-            const retryBtn = this.questionOverlay.querySelector('.securevideo-btn-retry');
+            const submitBtn = this.questionOverlay.querySelector('.smartvideo-btn-submit, .securevideo-btn-submit');
+            const continueBtn = this.questionOverlay.querySelector('.smartvideo-btn-continue, .securevideo-btn-continue');
+            const retryBtn = this.questionOverlay.querySelector('.smartvideo-btn-retry, .securevideo-btn-retry');
 
             if (submitBtn) {
                 submitBtn.addEventListener('click', function() {
@@ -841,7 +841,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             }
 
             // Timeline cue marker clicks.
-            this.container.querySelectorAll('.securevideo-cue-marker').forEach(function(marker) {
+            this.container.querySelectorAll('.smartvideo-cue-marker, .securevideo-cue-marker').forEach(function(marker) {
                 marker.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const cueId = parseInt(marker.dataset.cueid, 10);
@@ -1019,15 +1019,15 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             this.video.pause();
 
             const modalEl = overlay.querySelector('.sv-qmodal');
-            const titleEl = overlay.querySelector('.securevideo-q-title');
-            const timecodeEl = overlay.querySelector('.securevideo-q-timecode');
-            const loadingEl = overlay.querySelector('.securevideo-q-loading');
-            const contentEl = overlay.querySelector('.securevideo-q-content');
-            const feedbackEl = overlay.querySelector('.securevideo-q-feedback');
-            const submitBtn = overlay.querySelector('.securevideo-btn-submit');
-            const continueBtn = overlay.querySelector('.securevideo-btn-continue');
-            const retryBtn = overlay.querySelector('.securevideo-btn-retry');
-            const toggleStyleBtn = overlay.querySelector('.securevideo-btn-toggle-style');
+            const titleEl = overlay.querySelector('.smartvideo-q-title, .securevideo-q-title');
+            const timecodeEl = overlay.querySelector('.smartvideo-q-timecode, .securevideo-q-timecode');
+            const loadingEl = overlay.querySelector('.smartvideo-q-loading, .securevideo-q-loading');
+            const contentEl = overlay.querySelector('.smartvideo-q-content, .securevideo-q-content');
+            const feedbackEl = overlay.querySelector('.smartvideo-q-feedback, .securevideo-q-feedback');
+            const submitBtn = overlay.querySelector('.smartvideo-btn-submit, .securevideo-btn-submit');
+            const continueBtn = overlay.querySelector('.smartvideo-btn-continue, .securevideo-btn-continue');
+            const retryBtn = overlay.querySelector('.smartvideo-btn-retry, .securevideo-btn-retry');
+            const toggleStyleBtn = overlay.querySelector('.smartvideo-btn-toggle-style, .securevideo-btn-toggle-style');
             const styleLabel = overlay.querySelector('.sv-current-style-label');
 
             let currentStyle = question.questionstyle || 'compact';
@@ -1077,13 +1077,13 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             submitBtn.disabled = true;
 
             overlay.classList.remove('d-none');
-            const bodyEl = overlay.querySelector('.securevideo-q-body');
+            const bodyEl = overlay.querySelector('.smartvideo-q-body, .securevideo-q-body');
             if (bodyEl) {
                 bodyEl.scrollTop = 0;
             }
 
             Ajax.call([{
-                methodname: 'mod_securevideo_get_question_attempt',
+                methodname: 'mod_smartvideo_get_question_attempt',
                 args: {
                     cmid: self.cmid,
                     svquestionid: question.id,
@@ -1137,11 +1137,11 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         submitQuestionAnswer: function() {
             const self = this;
             const overlay = this.questionOverlay;
-            const contentEl = overlay.querySelector('.securevideo-q-content');
-            const feedbackEl = overlay.querySelector('.securevideo-q-feedback');
-            const submitBtn = overlay.querySelector('.securevideo-btn-submit');
-            const continueBtn = overlay.querySelector('.securevideo-btn-continue');
-            const retryBtn = overlay.querySelector('.securevideo-btn-retry');
+            const contentEl = overlay.querySelector('.smartvideo-q-content, .securevideo-q-content');
+            const feedbackEl = overlay.querySelector('.smartvideo-q-feedback, .securevideo-q-feedback');
+            const submitBtn = overlay.querySelector('.smartvideo-btn-submit, .securevideo-btn-submit');
+            const continueBtn = overlay.querySelector('.smartvideo-btn-continue, .securevideo-btn-continue');
+            const retryBtn = overlay.querySelector('.smartvideo-btn-retry, .securevideo-btn-retry');
             const q = this.activeQuestion;
 
             if (!q || !contentEl) {
@@ -1167,7 +1167,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Submitting...';
 
             Ajax.call([{
-                methodname: 'mod_securevideo_submit_question_attempt',
+                methodname: 'mod_smartvideo_submit_question_attempt',
                 args: {
                     cmid: self.cmid,
                     svquestionid: q.id,
@@ -1188,7 +1188,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 if (res.is_correct) {
                     q.passed = true;
                     // Update cue marker color.
-                    const marker = self.container.querySelector('.securevideo-cue-marker[data-cueid="' + q.id + '"]');
+                    const marker = self.container.querySelector(
+                        '.smartvideo-cue-marker[data-cueid="' + q.id + '"], ' +
+                        '.securevideo-cue-marker[data-cueid="' + q.id + '"]'
+                    );
                     if (marker) {
                         marker.classList.remove('bg-info');
                         marker.classList.add('bg-success');
@@ -1272,7 +1275,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             }
 
             this.video.play().catch(function(err) {
-                console.warn('[SecureVideo] Continue playback failed:', err);
+                console.warn('[SmartVideo] Continue playback failed:', err);
             });
         },
 
@@ -1285,11 +1288,11 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 return;
             }
 
-            let canvas = this.container.querySelector('#secureVideoWatermarkCanvas');
+            let canvas = this.container.querySelector('#smartVideoWatermarkCanvas, #secureVideoWatermarkCanvas, canvas');
             if (!canvas) {
                 canvas = document.createElement('canvas');
                 canvas.id = 'secureVideoWatermarkCanvas';
-                canvas.className = 'securevideo-watermark-canvas position-absolute top-0 start-0 w-100 h-100';
+                canvas.className = 'smartvideo-watermark-canvas securevideo-watermark-canvas position-absolute top-0 start-0 w-100 h-100';
                 canvas.style.pointerEvents = 'none';
                 canvas.style.zIndex = '50';
                 ratioDiv.appendChild(canvas);
@@ -1330,7 +1333,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             const maxPos = Math.floor(this.maxPosition || 0);
 
             const request = {
-                methodname: 'mod_securevideo_update_progress',
+                methodname: 'mod_smartvideo_update_progress',
                 args: {
                     cmid: self.cmid,
                     currentposition: cur,
@@ -1342,7 +1345,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
             Ajax.call([request])[0].done(function(response) {
                 if (response && response.status) {
-                    const badge = self.container.querySelector('.securevideo-progress-badge');
+                    const badge = self.container.querySelector('.smartvideo-progress-badge, .securevideo-progress-badge');
                     if (badge) {
                         const targetStr = self.completionMinPercent > 0 ?
                             ' (Target: ' + self.completionMinPercent + '%)' : '';
@@ -1354,7 +1357,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     }
                 }
             }).fail(function(err) {
-                console.error('[SecureVideo] Progress beacon failed:', err);
+                console.error('[SmartVideo] Progress beacon failed:', err);
             });
         }
     };
@@ -1366,9 +1369,9 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
          * @param {string} containerId
          */
         init: function(containerId) {
-            const container = document.getElementById(containerId);
+            const container = document.getElementById(containerId) || document.getElementById('smartVideoContainer') || document.getElementById('secureVideoContainer') || document.querySelector('.smartvideo-player-container, .securevideo-player-container');
             if (container) {
-                new SecurePlayer(container);
+                new SmartPlayer(container);
             }
         }
     };

@@ -15,13 +15,13 @@
     along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
-    @template mod_securevideo/player
+    @template mod_smartvideo/player
 
     Encrypted HLS video player with dynamic canvas watermark, interactive questions, and custom controls.
 }}
-<div class="mod-securevideo-wrapper my-3">
-    <div id="secureVideoContainer"
-         class="securevideo-player-container position-relative bg-black rounded shadow-lg overflow-hidden user-select-none"
+<div class="mod-smartvideo-wrapper mod-securevideo-wrapper my-3">
+    <div id="smartVideoContainer"
+         class="smartvideo-player-container securevideo-player-container position-relative bg-black rounded shadow-lg overflow-hidden user-select-none"
          tabindex="0"
          data-cmid="{{cmid}}"
          data-playlisturl="{{playlisturl}}"
@@ -43,7 +43,7 @@
 
         {{! Native video element (Blob via MSE) }}
         <div class="ratio ratio-16x9 position-relative bg-black">
-            <video id="secureVideoElement"
+            <video id="smartVideoElement"
                    class="w-100 h-100"
                    playsinline
                    preload="auto"
@@ -55,77 +55,77 @@
 
             {{! Dynamic moving canvas watermark overlay - floats over video & question overlay }}
             {{#watermarkenabled}}
-            <canvas id="secureVideoWatermarkCanvas"
-                    class="securevideo-watermark-canvas position-absolute top-0 start-0 w-100 h-100"
+            <canvas id="smartVideoWatermarkCanvas"
+                    class="smartvideo-watermark-canvas securevideo-watermark-canvas position-absolute top-0 start-0 w-100 h-100"
                     style="pointer-events: none; z-index: 50;">
             </canvas>
             {{/watermarkenabled}}
 
             {{! Center big play/pause button overlay }}
-            <div class="securevideo-center-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center cursor-pointer"
+            <div class="smartvideo-center-overlay securevideo-center-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center cursor-pointer"
                  style="z-index: 10;">
-                <button type="button" class="btn btn-dark bg-opacity-50 text-white rounded-circle p-3 securevideo-btn-bigplay" aria-label="{{#str}}play, mod_securevideo{{/str}}">
+                <button type="button" class="btn btn-dark bg-opacity-50 text-white rounded-circle p-3 smartvideo-btn-bigplay securevideo-btn-bigplay" aria-label="{{#str}}play, mod_smartvideo{{/str}}">
                     <i class="fa fa-play fa-2x" aria-hidden="true"></i>
                 </button>
             </div>
 
             {{! Resume Playback Toast }}
             {{#hasresume}}
-            <div id="secureVideoResumeToast"
-                 class="securevideo-resume-toast position-absolute top-0 start-50 translate-middle-x mt-3 bg-dark bg-opacity-90 text-white px-3 py-2 rounded shadow d-flex align-items-center gap-2 border border-secondary"
+            <div id="smartVideoResumeToast"
+                 class="smartvideo-resume-toast securevideo-resume-toast position-absolute top-0 start-50 translate-middle-x mt-3 bg-dark bg-opacity-90 text-white px-3 py-2 rounded shadow d-flex align-items-center gap-2 border border-secondary"
                  style="z-index: 25;">
                 <i class="fa fa-history text-info" aria-hidden="true"></i>
-                <span class="small">{{#str}}resumeprompt, mod_securevideo, {{lastposformatted}}{{/str}}</span>
-                <button type="button" class="btn btn-sm btn-primary py-0 px-2 btn-action-resume">{{#str}}resume, mod_securevideo{{/str}}</button>
-                <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 btn-action-dismiss">{{#str}}startover, mod_securevideo{{/str}}</button>
+                <span class="small">{{#str}}resumeprompt, mod_smartvideo, {{lastposformatted}}{{/str}}</span>
+                <button type="button" class="btn btn-sm btn-primary py-0 px-2 btn-action-resume">{{#str}}resume, mod_smartvideo{{/str}}</button>
+                <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 btn-action-dismiss">{{#str}}startover, mod_smartvideo{{/str}}</button>
             </div>
             {{/hasresume}}
 
             {{! Seeking locked notification }}
-            <div id="secureVideoSeekNotice"
-                 class="securevideo-seek-notice position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-90 text-white px-3 py-2 rounded shadow d-none"
+            <div id="smartVideoSeekNotice"
+                 class="smartvideo-seek-notice securevideo-seek-notice position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-90 text-white px-3 py-2 rounded shadow d-none"
                  style="z-index: 20;">
                 <i class="fa fa-lock text-warning me-1" aria-hidden="true"></i>
-                <span>{{#str}}seekinglocked, mod_securevideo{{/str}}</span>
+                <span>{{#str}}seekinglocked, mod_smartvideo{{/str}}</span>
             </div>
 
             {{! Interactive Question Overlay - inside player container for seamless fullscreen }}
-            <div id="secureVideoQuestionOverlay"
-                 class="securevideo-question-overlay d-none">
+            <div id="smartVideoQuestionOverlay"
+                 class="smartvideo-question-overlay securevideo-question-overlay d-none">
                 <div class="sv-qmodal">
                     <div class="sv-qmodal-header">
-                        <span class="sv-qmodal-title securevideo-q-title">
+                        <span class="sv-qmodal-title smartvideo-q-title securevideo-q-title">
                             <i class="fa fa-circle-question me-2" aria-hidden="true"></i>Knowledge Check
                         </span>
                         <div class="d-flex align-items-center gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 securevideo-btn-toggle-style" title="{{#str}}togglestyle, mod_securevideo{{/str}}">
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 smartvideo-btn-toggle-style securevideo-btn-toggle-style" title="{{#str}}togglestyle, mod_smartvideo{{/str}}">
                                 <i class="fa fa-sliders me-1" aria-hidden="true"></i><span class="sv-current-style-label">Compact</span>
                             </button>
-                            <span class="sv-qmodal-badge securevideo-q-timecode">00:00</span>
+                            <span class="sv-qmodal-badge smartvideo-q-timecode securevideo-q-timecode">00:00</span>
                         </div>
                     </div>
-                    <div class="sv-qmodal-body securevideo-q-body">
-                        <div class="securevideo-q-loading text-center py-4">
+                    <div class="sv-qmodal-body smartvideo-q-body securevideo-q-body">
+                        <div class="smartvideo-q-loading securevideo-q-loading text-center py-4">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Loading question...</span>
                             </div>
                         </div>
-                        <div class="securevideo-q-content d-none">
+                        <div class="smartvideo-q-content securevideo-q-content d-none">
                             {{! Injected Question Engine HTML }}
                         </div>
-                        <div class="securevideo-q-feedback d-none mt-2">
+                        <div class="smartvideo-q-feedback securevideo-q-feedback d-none mt-2">
                             {{! Injected Graded Feedback HTML }}
                         </div>
                     </div>
                     <div class="sv-qmodal-footer">
-                        <button type="button" class="btn btn-outline-secondary btn-sm securevideo-btn-retry d-none">
-                            <i class="fa fa-rotate-left me-1" aria-hidden="true"></i>{{#str}}tryagain, mod_securevideo{{/str}}
+                        <button type="button" class="btn btn-outline-secondary btn-sm smartvideo-btn-retry securevideo-btn-retry d-none">
+                            <i class="fa fa-rotate-left me-1" aria-hidden="true"></i>{{#str}}tryagain, mod_smartvideo{{/str}}
                         </button>
-                        <button type="button" class="btn btn-primary btn-sm ms-auto securevideo-btn-submit">
-                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}}submitanswer, mod_securevideo{{/str}}
+                        <button type="button" class="btn btn-primary btn-sm ms-auto smartvideo-btn-submit securevideo-btn-submit">
+                            <i class="fa fa-check me-1" aria-hidden="true"></i>{{#str}}submitanswer, mod_smartvideo{{/str}}
                         </button>
-                        <button type="button" class="btn btn-success btn-sm ms-auto securevideo-btn-continue d-none">
-                            <i class="fa fa-arrow-right me-1" aria-hidden="true"></i>{{#str}}continuevideo, mod_securevideo{{/str}}
+                        <button type="button" class="btn btn-success btn-sm ms-auto smartvideo-btn-continue securevideo-btn-continue d-none">
+                            <i class="fa fa-arrow-right me-1" aria-hidden="true"></i>{{#str}}continuevideo, mod_smartvideo{{/str}}
                         </button>
                     </div>
                 </div>
@@ -133,19 +133,19 @@
         </div>
 
         {{! Custom Controls Bar }}
-        <div class="securevideo-controls-bar bg-dark bg-opacity-95 text-white p-2" style="z-index: 30;">
+        <div class="smartvideo-controls-bar securevideo-controls-bar bg-dark bg-opacity-95 text-white p-2" style="z-index: 30;">
             {{! Scrubber / Timeline }}
-            <div class="securevideo-timeline-wrapper position-relative py-1 cursor-pointer">
-                <div class="securevideo-timeline-track bg-secondary rounded position-relative" style="height: 6px;">
-                    <div class="securevideo-buffered-bar bg-light bg-opacity-25 rounded position-absolute top-0 start-0 h-100" style="width: 0%;"></div>
-                    <div class="securevideo-progress-bar bg-primary rounded position-absolute top-0 start-0 h-100" style="width: 0%;"></div>
+            <div class="smartvideo-timeline-wrapper securevideo-timeline-wrapper position-relative py-1 cursor-pointer">
+                <div class="smartvideo-timeline-track securevideo-timeline-track bg-secondary rounded position-relative" style="height: 6px;">
+                    <div class="smartvideo-buffered-bar securevideo-buffered-bar bg-light bg-opacity-25 rounded position-absolute top-0 start-0 h-100" style="width: 0%;"></div>
+                    <div class="smartvideo-progress-bar securevideo-progress-bar bg-primary rounded position-absolute top-0 start-0 h-100" style="width: 0%;"></div>
                     {{#preventseeking}}
-                    <div class="securevideo-max-marker position-absolute top-0 h-100 bg-warning" style="width: 3px; left: 0%;" title="{{#str}}preventseeking, mod_securevideo{{/str}}"></div>
+                    <div class="smartvideo-max-marker securevideo-max-marker position-absolute top-0 h-100 bg-warning" style="width: 3px; left: 0%;" title="{{#str}}preventseeking, mod_smartvideo{{/str}}"></div>
                     {{/preventseeking}}
 
                     {{! Interactive question cue markers on timeline }}
                     {{#questions}}
-                    <div class="securevideo-cue-marker position-absolute top-50 rounded-circle border border-white {{#passed}}bg-success{{/passed}}{{^passed}}bg-info{{/passed}}"
+                    <div class="smartvideo-cue-marker securevideo-cue-marker position-absolute top-50 rounded-circle border border-white {{#passed}}bg-success{{/passed}}{{^passed}}bg-info{{/passed}}"
                          data-cueid="{{id}}"
                          data-timecode="{{timecode}}"
                          style="left: {{percent}}%; width: 10px; height: 10px; transform: translate(-50%, -50%); z-index: 5;"
@@ -158,17 +158,17 @@
             <div class="d-flex justify-content-between align-items-center mt-1">
                 {{! Left: Play, Volume, Time }}
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-link text-white p-1 securevideo-btn-play" title="{{#str}}play, mod_securevideo{{/str}}">
+                    <button type="button" class="btn btn-link text-white p-1 smartvideo-btn-play securevideo-btn-play" title="{{#str}}play, mod_smartvideo{{/str}}">
                         <i class="fa fa-play" aria-hidden="true"></i>
                     </button>
-                    <div class="d-flex align-items-center gap-1 securevideo-volume-group">
-                        <button type="button" class="btn btn-link text-white p-1 securevideo-btn-mute" title="{{#str}}mute, mod_securevideo{{/str}}">
+                    <div class="d-flex align-items-center gap-1 smartvideo-volume-group securevideo-volume-group">
+                        <button type="button" class="btn btn-link text-white p-1 smartvideo-btn-mute securevideo-btn-mute" title="{{#str}}mute, mod_smartvideo{{/str}}">
                             <i class="fa fa-volume-up" aria-hidden="true"></i>
                         </button>
-                        <input type="range" class="form-range securevideo-volume-slider" min="0" max="1" step="0.05" value="1" style="width: 70px;">
+                        <input type="range" class="form-range smartvideo-volume-slider securevideo-volume-slider" min="0" max="1" step="0.05" value="1" style="width: 70px;">
                     </div>
                     <span class="small font-monospace text-white-50 ms-1">
-                        <span class="securevideo-current-time text-white">00:00</span> / {{durationformatted}}
+                        <span class="smartvideo-current-time securevideo-current-time text-white">00:00</span> / {{durationformatted}}
                     </span>
                 </div>
 
@@ -176,15 +176,15 @@
                 <div class="d-flex align-items-center gap-2">
                     {{! Playback Speed Dropup }}
                     <div class="dropup">
-                        <button class="btn btn-sm btn-link text-white text-decoration-none p-1 dropdown-toggle securevideo-btn-speed"
+                        <button class="btn btn-sm btn-link text-white text-decoration-none p-1 dropdown-toggle smartvideo-btn-speed securevideo-btn-speed"
                                 type="button"
                                 data-bs-toggle="dropdown"
                                 data-bs-display="static"
                                 aria-expanded="false"
-                                title="{{#str}}speed, mod_securevideo{{/str}}">
-                            <span class="securevideo-current-speed">1x</span>
+                                title="{{#str}}speed, mod_smartvideo{{/str}}">
+                            <span class="smartvideo-current-speed securevideo-current-speed">1x</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end securevideo-speed-menu">
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end smartvideo-speed-menu securevideo-speed-menu">
                             <li><button class="dropdown-item" type="button" data-speed="0.75">0.75x</button></li>
                             <li><button class="dropdown-item active" type="button" data-speed="1.0">1x (Normal)</button></li>
                             <li><button class="dropdown-item" type="button" data-speed="1.25">1.25x</button></li>
@@ -194,22 +194,22 @@
                     </div>
 
                     {{! Quality Dropup }}
-                    <div class="dropup securevideo-quality-container d-none">
-                        <button class="btn btn-sm btn-link text-white text-decoration-none p-1 dropdown-toggle securevideo-btn-quality"
+                    <div class="dropup smartvideo-quality-container securevideo-quality-container d-none">
+                        <button class="btn btn-sm btn-link text-white text-decoration-none p-1 dropdown-toggle smartvideo-btn-quality securevideo-btn-quality"
                                 type="button"
                                 data-bs-toggle="dropdown"
                                 data-bs-display="static"
                                 aria-expanded="false"
-                                title="{{#str}}quality, mod_securevideo{{/str}}">
-                            <i class="fa fa-cog me-1" aria-hidden="true"></i><span class="securevideo-current-quality">{{#str}}auto, mod_securevideo{{/str}}</span>
+                                title="{{#str}}quality, mod_smartvideo{{/str}}">
+                            <i class="fa fa-cog me-1" aria-hidden="true"></i><span class="smartvideo-current-quality securevideo-current-quality">{{#str}}auto, mod_smartvideo{{/str}}</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end securevideo-quality-menu">
-                            <li><button class="dropdown-item active" type="button" data-level="-1">{{#str}}auto, mod_securevideo{{/str}}</button></li>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end smartvideo-quality-menu securevideo-quality-menu">
+                            <li><button class="dropdown-item active" type="button" data-level="-1">{{#str}}auto, mod_smartvideo{{/str}}</button></li>
                         </ul>
                     </div>
 
                     {{! Fullscreen Toggle }}
-                    <button type="button" class="btn btn-link text-white p-1 securevideo-btn-fullscreen" title="{{#str}}fullscreen, mod_securevideo{{/str}}">
+                    <button type="button" class="btn btn-link text-white p-1 smartvideo-btn-fullscreen securevideo-btn-fullscreen" title="{{#str}}fullscreen, mod_smartvideo{{/str}}">
                         <i class="fa fa-expand" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -222,15 +222,15 @@
         <div class="small text-muted d-flex align-items-center gap-2">
             <span>
                 {{#hascompletionrule}}
-                {{#str}}watchprogress, mod_securevideo, { "percent": {{percentcompleted}}, "min": {{completionminpercent}} }{{/str}}
+                {{#str}}watchprogress, mod_smartvideo, { "percent": {{percentcompleted}}, "min": {{completionminpercent}} }{{/str}}
                 {{/hascompletionrule}}
                 {{^hascompletionrule}}
-                {{#str}}watchprogress_no_min, mod_securevideo, {{percentcompleted}}{{/str}}
+                {{#str}}watchprogress_no_min, mod_smartvideo, {{percentcompleted}}{{/str}}
                 {{/hascompletionrule}}
             </span>
             {{#canmanage}}
-            <a href="{{resetattemptsurl}}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="{{#str}}resetmyattempts_desc, mod_securevideo{{/str}}">
-                <i class="fa fa-refresh me-1" aria-hidden="true"></i>{{#str}}resetmyattempts, mod_securevideo{{/str}}
+            <a href="{{resetattemptsurl}}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="{{#str}}resetmyattempts_desc, mod_smartvideo{{/str}}">
+                <i class="fa fa-refresh me-1" aria-hidden="true"></i>{{#str}}resetmyattempts, mod_smartvideo{{/str}}
             </a>
             {{/canmanage}}
         </div>
@@ -247,7 +247,7 @@
 </div>
 
 {{#js}}
-require(['mod_securevideo/player'], function(Player) {
-    Player.init('secureVideoContainer');
+require(['mod_smartvideo/player'], function(Player) {
+    Player.init('smartVideoContainer');
 });
 {{/js}}

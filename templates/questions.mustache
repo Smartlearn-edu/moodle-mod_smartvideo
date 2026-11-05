@@ -15,25 +15,25 @@
     along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
-    @template mod_securevideo/questions
+    @template mod_smartvideo/questions
 
     Management page for in-video interactive questions and cuepoints.
 }}
-<div class="mod-securevideo-questions-container my-3" data-cmid="{{cmid}}" data-duration="{{duration}}">
+<div class="mod-smartvideo-questions-container mod-securevideo-questions-container my-3" data-cmid="{{cmid}}" data-duration="{{duration}}">
     {{! Header & Actions }}
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h3 class="mb-1">
-                <i class="fa fa-question-circle text-primary me-2" aria-hidden="true"></i>{{#str}}managequestions, mod_securevideo{{/str}}
+                <i class="fa fa-question-circle text-primary me-2" aria-hidden="true"></i>{{#str}}managequestions, mod_smartvideo{{/str}}
             </h3>
-            <p class="text-muted mb-0">{{#str}}managequestions_desc, mod_securevideo{{/str}}</p>
+            <p class="text-muted mb-0">{{#str}}managequestions_desc, mod_smartvideo{{/str}}</p>
         </div>
         <div class="d-flex gap-2">
             <a href="{{backtovideourl}}" class="btn btn-outline-secondary">
-                <i class="fa fa-arrow-left me-1" aria-hidden="true"></i>{{#str}}backtovideo, mod_securevideo{{/str}}
+                <i class="fa fa-arrow-left me-1" aria-hidden="true"></i>{{#str}}backtovideo, mod_smartvideo{{/str}}
             </a>
             <button type="button" class="btn btn-primary btn-add-question" data-timecode="0">
-                <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_securevideo{{/str}}
+                <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
             </button>
         </div>
     </div>
@@ -45,13 +45,13 @@
             <span class="fw-semibold text-secondary">
                 <i class="fa fa-video me-1" aria-hidden="true"></i>{{videoname}}
             </span>
-            <span class="badge bg-secondary securevideo-preview-timer">00:00 / {{durationformatted}}</span>
+            <span class="badge bg-secondary smartvideo-preview-timer securevideo-preview-timer">00:00 / {{durationformatted}}</span>
         </div>
         <div class="card-body p-3">
             <div class="row align-items-center g-3">
                 <div class="col-md-5 col-lg-4">
                     <div class="ratio ratio-16x9 bg-black rounded overflow-hidden shadow-sm position-relative">
-                        <video id="secureVideoPreviewElement"
+                        <video id="smartVideoPreviewElement"
                                class="w-100 h-100"
                                preload="metadata"
                                poster="{{thumbnailurl}}"
@@ -68,15 +68,15 @@
                     <div class="d-flex align-items-center gap-3 mb-3">
                         <div class="input-group" style="max-width: 200px;">
                             <span class="input-group-text"><i class="fa fa-clock" aria-hidden="true"></i></span>
-                            <input type="text" id="secureVideoScrubTimeInput" class="form-control text-center fw-bold" value="00:00" readonly>
+                            <input type="text" id="smartVideoScrubTimeInput" class="form-control text-center fw-bold" value="00:00" readonly>
                         </div>
                         <button type="button" class="btn btn-success btn-add-at-current">
-                            <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_securevideo{{/str}}
+                            <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
                         </button>
                     </div>
                     <div class="small text-secondary">
                         <i class="fa fa-info-circle me-1" aria-hidden="true"></i>
-                        {{#str}}questioncount, mod_securevideo, {{questioncount}}{{/str}}
+                        {{#str}}questioncount, mod_smartvideo, {{questioncount}}{{/str}}
                     </div>
                 </div>
             </div>
@@ -88,7 +88,7 @@
     <div class="card shadow-sm border-0">
         <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-semibold">
-                <i class="fa fa-list-check text-info me-2" aria-hidden="true"></i>{{#str}}interactivequestions, mod_securevideo{{/str}}
+                <i class="fa fa-list-check text-info me-2" aria-hidden="true"></i>{{#str}}interactivequestions, mod_smartvideo{{/str}}
             </h5>
             <span class="badge bg-primary rounded-pill">{{questioncount}}</span>
         </div>
@@ -98,10 +98,10 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 120px;">{{#str}}timecode, mod_securevideo{{/str}}</th>
-                            <th>{{#str}}selectquestion, mod_securevideo{{/str}}</th>
-                            <th style="width: 140px;">{{#str}}requirecorrect, mod_securevideo{{/str}}</th>
-                            <th style="width: 150px;">{{#str}}rewindto, mod_securevideo{{/str}}</th>
+                            <th style="width: 120px;">{{#str}}timecode, mod_smartvideo{{/str}}</th>
+                            <th>{{#str}}selectquestion, mod_smartvideo{{/str}}</th>
+                            <th style="width: 140px;">{{#str}}requirecorrect, mod_smartvideo{{/str}}</th>
+                            <th style="width: 150px;">{{#str}}rewindto, mod_smartvideo{{/str}}</th>
                             <th style="width: 140px;" class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -109,7 +109,7 @@
                         {{#questions}}
                         <tr data-cueid="{{id}}" data-timecode="{{timecode}}" data-qid="{{questionid}}" data-qbeid="{{questionbankentryid}}" data-title="{{title}}" data-req="{{#requirecorrect}}1{{/requirecorrect}}{{^requirecorrect}}0{{/requirecorrect}}" data-rewindto="{{rewindto}}" data-rewind="{{rewindonfail}}" data-style="{{questionstyle}}">
                             <td>
-                                <button type="button" class="btn btn-sm btn-outline-primary btn-jump-to-time font-monospace" data-timecode="{{timecode}}" title="{{#str}}jumpto, mod_securevideo{{/str}} {{timeformatted}}">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-jump-to-time font-monospace" data-timecode="{{timecode}}" title="{{#str}}jumpto, mod_smartvideo{{/str}} {{timeformatted}}">
                                     <i class="fa fa-play fa-xs me-1" aria-hidden="true"></i>{{timeformatted}}
                                 </button>
                             </td>
@@ -143,19 +143,19 @@
                             <td>
                                 {{#hasrewind}}
                                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
-                                    <i class="fa fa-rotate-left me-1" aria-hidden="true"></i>{{#str}}jumpto, mod_securevideo{{/str}} {{rewindtoformatted}}
+                                    <i class="fa fa-rotate-left me-1" aria-hidden="true"></i>{{#str}}jumpto, mod_smartvideo{{/str}} {{rewindtoformatted}}
                                 </span>
                                 {{/hasrewind}}
                                 {{^hasrewind}}
-                                <span class="badge bg-light text-muted border">{{#str}}retryonspot, mod_securevideo{{/str}}</span>
+                                <span class="badge bg-light text-muted border">{{#str}}retryonspot, mod_smartvideo{{/str}}</span>
                                 {{/hasrewind}}
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
-                                    <button type="button" class="btn btn-outline-secondary btn-edit-cue" title="{{#str}}editquestion, mod_securevideo{{/str}}">
+                                    <button type="button" class="btn btn-outline-secondary btn-edit-cue" title="{{#str}}editquestion, mod_smartvideo{{/str}}">
                                         <i class="fa fa-pencil" aria-hidden="true"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-danger btn-delete-cue" title="{{#str}}deletequestion, mod_securevideo{{/str}}">
+                                    <button type="button" class="btn btn-outline-danger btn-delete-cue" title="{{#str}}deletequestion, mod_smartvideo{{/str}}">
                                         <i class="fa fa-trash" aria-hidden="true"></i>
                                     </button>
                                 </div>
@@ -169,9 +169,9 @@
             {{^hasquestions}}
             <div class="text-center py-5">
                 <i class="fa fa-question-circle fa-3x text-muted opacity-50 mb-3" aria-hidden="true"></i>
-                <h6 class="text-secondary fw-normal">{{#str}}noquestionsconfigured, mod_securevideo{{/str}}</h6>
+                <h6 class="text-secondary fw-normal">{{#str}}noquestionsconfigured, mod_smartvideo{{/str}}</h6>
                 <button type="button" class="btn btn-primary btn-sm mt-2 btn-add-question" data-timecode="0">
-                    <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_securevideo{{/str}}
+                    <i class="fa fa-plus me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
                 </button>
             </div>
             {{/hasquestions}}
@@ -179,17 +179,17 @@
     </div>
 
     {{! Add / Edit Question Modal }}
-    <div class="modal fade" id="secureVideoAddQuestionModal" tabindex="-1" aria-labelledby="secureVideoAddQuestionModalLabel" aria-hidden="true">
+    <div class="modal fade" id="smartVideoAddQuestionModal" tabindex="-1" aria-labelledby="smartVideoAddQuestionModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow border-0">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="secureVideoAddQuestionModalLabel">
-                        <i class="fa fa-question-circle me-2" aria-hidden="true"></i><span class="modal-title-text">{{#str}}addquestion, mod_securevideo{{/str}}</span>
+                    <h5 class="modal-title" id="smartVideoAddQuestionModalLabel">
+                        <i class="fa fa-question-circle me-2" aria-hidden="true"></i><span class="modal-title-text">{{#str}}addquestion, mod_smartvideo{{/str}}</span>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <form id="secureVideoCueForm">
+                    <form id="smartVideoCueForm">
                         <input type="hidden" id="cueId" value="0">
                         <input type="hidden" id="cueQid" value="0">
                         <input type="hidden" id="cueQbeId" value="0">
@@ -197,42 +197,42 @@
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
                                 <label for="cueTimecode" class="form-label fw-semibold">
-                                    {{#str}}timecode, mod_securevideo{{/str}} <span class="text-danger">*</span>
+                                    {{#str}}timecode, mod_smartvideo{{/str}} <span class="text-danger">*</span>
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fa fa-clock" aria-hidden="true"></i></span>
                                     <input type="text" id="cueTimecode" class="form-control" placeholder="05:20 or 320" required>
                                 </div>
-                                <div class="form-text small">{{#str}}timecode_help, mod_securevideo{{/str}}</div>
+                                <div class="form-text small">{{#str}}timecode_help, mod_smartvideo{{/str}}</div>
                             </div>
                             <div class="col-sm-6">
                                 <label for="cueRewindTo" class="form-label fw-semibold">
-                                    {{#str}}rewindto, mod_securevideo{{/str}}
+                                    {{#str}}rewindto, mod_smartvideo{{/str}}
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fa fa-rotate-left" aria-hidden="true"></i></span>
                                     <input type="text" id="cueRewindTo" class="form-control" placeholder="03:00 or 180 (optional)">
                                 </div>
-                                <div class="form-text small">{{#str}}rewindto_help, mod_securevideo{{/str}}</div>
+                                <div class="form-text small">{{#str}}rewindto_help, mod_smartvideo{{/str}}</div>
                             </div>
                         </div>
 
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
                                 <label for="cueTitle" class="form-label fw-semibold">
-                                    {{#str}}questiontitle, mod_securevideo{{/str}}
+                                    {{#str}}questiontitle, mod_smartvideo{{/str}}
                                 </label>
-                                <input type="text" id="cueTitle" class="form-control" placeholder="{{#str}}questiontitle_default, mod_securevideo{{/str}}">
+                                <input type="text" id="cueTitle" class="form-control" placeholder="{{#str}}questiontitle_default, mod_smartvideo{{/str}}">
                             </div>
                             <div class="col-sm-6">
                                 <label for="cueQuestionStyle" class="form-label fw-semibold">
-                                    {{#str}}questionstyle, mod_securevideo{{/str}}
+                                    {{#str}}questionstyle, mod_smartvideo{{/str}}
                                 </label>
                                 <select id="cueQuestionStyle" class="form-select">
-                                    <option value="compact" selected>{{#str}}questionstyle_compact, mod_securevideo{{/str}}</option>
-                                    <option value="native">{{#str}}questionstyle_native, mod_securevideo{{/str}}</option>
+                                    <option value="compact" selected>{{#str}}questionstyle_compact, mod_smartvideo{{/str}}</option>
+                                    <option value="native">{{#str}}questionstyle_native, mod_smartvideo{{/str}}</option>
                                 </select>
-                                <div class="form-text small">{{#str}}questionstyle_help, mod_securevideo{{/str}}</div>
+                                <div class="form-text small">{{#str}}questionstyle_help, mod_smartvideo{{/str}}</div>
                             </div>
                         </div>
 
@@ -240,27 +240,27 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" role="switch" id="cueRequireCorrect" checked>
                                 <label class="form-check-label fw-semibold" for="cueRequireCorrect">
-                                    {{#str}}requirecorrect, mod_securevideo{{/str}}
+                                    {{#str}}requirecorrect, mod_smartvideo{{/str}}
                                 </label>
                             </div>
-                            <div class="form-text small">{{#str}}requirecorrect_help, mod_securevideo{{/str}}</div>
+                            <div class="form-text small">{{#str}}requirecorrect_help, mod_smartvideo{{/str}}</div>
                         </div>
 
                         <div class="mb-3">
                             <label for="cueCategorySelect" class="form-label fw-semibold">
-                                {{#str}}questioncategory, mod_securevideo{{/str}} <span class="text-danger">*</span>
+                                {{#str}}questioncategory, mod_smartvideo{{/str}} <span class="text-danger">*</span>
                             </label>
                             <select id="cueCategorySelect" class="form-select" required>
-                                <option value="">{{#str}}choosecategory, mod_securevideo{{/str}}</option>
+                                <option value="">{{#str}}choosecategory, mod_smartvideo{{/str}}</option>
                             </select>
                         </div>
 
                         <div class="mb-3">
                             <label for="cueQuestionSelect" class="form-label fw-semibold">
-                                {{#str}}selectquestion, mod_securevideo{{/str}} <span class="text-danger">*</span>
+                                {{#str}}selectquestion, mod_smartvideo{{/str}} <span class="text-danger">*</span>
                             </label>
                             <select id="cueQuestionSelect" class="form-select" disabled required>
-                                <option value="">{{#str}}choosequestion, mod_securevideo{{/str}}</option>
+                                <option value="">{{#str}}choosequestion, mod_smartvideo{{/str}}</option>
                             </select>
                         </div>
 
@@ -277,7 +277,7 @@
                 <div class="modal-footer bg-light py-2">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary btn-save-cue">
-                        <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savecuepoint, mod_securevideo{{/str}}
+                        <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savecuepoint, mod_smartvideo{{/str}}
                     </button>
                 </div>
             </div>

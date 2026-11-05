@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Standard library callbacks and lifecycle hooks for mod_securevideo.
+ * Standard library callbacks and lifecycle hooks for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -25,12 +25,12 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * List of features supported in mod_securevideo.
+ * List of features supported in mod_smartvideo.
  *
  * @param string $feature FEATURE_xx constant for requested feature
  * @return mixed True if module supports feature, false if not, null if doesn't know
  */
-function securevideo_supports(string $feature): ?bool {
+function smartvideo_supports(string $feature): ?bool {
     switch ($feature) {
         case FEATURE_MOD_INTRO:
             return true;
@@ -48,13 +48,13 @@ function securevideo_supports(string $feature): ?bool {
 }
 
 /**
- * Add a new securevideo instance.
+ * Add a new smartvideo instance.
  *
  * @param stdClass $data Post data from the form.
- * @param mod_securevideo_mod_form|null $mform The form object.
+ * @param mod_smartvideo_mod_form|null $mform The form object.
  * @return int The ID of the newly created instance.
  */
-function securevideo_add_instance(stdClass $data, ?mod_securevideo_mod_form $mform = null): int {
+function smartvideo_add_instance(stdClass $data, ?mod_smartvideo_mod_form $mform = null): int {
     global $DB;
 
     $data->timecreated = time();
@@ -66,17 +66,17 @@ function securevideo_add_instance(stdClass $data, ?mod_securevideo_mod_form $mfo
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
 
-    return $DB->insert_record('securevideo', $data);
+    return $DB->insert_record('smartvideo', $data);
 }
 
 /**
- * Update an existing securevideo instance.
+ * Update an existing smartvideo instance.
  *
  * @param stdClass $data Post data from the form.
- * @param mod_securevideo_mod_form|null $mform The form object.
+ * @param mod_smartvideo_mod_form|null $mform The form object.
  * @return bool True on success.
  */
-function securevideo_update_instance(stdClass $data, ?mod_securevideo_mod_form $mform = null): bool {
+function smartvideo_update_instance(stdClass $data, ?mod_smartvideo_mod_form $mform = null): bool {
     global $DB;
 
     $data->id = $data->instance;
@@ -88,27 +88,27 @@ function securevideo_update_instance(stdClass $data, ?mod_securevideo_mod_form $
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
 
-    return $DB->update_record('securevideo', $data);
+    return $DB->update_record('smartvideo', $data);
 }
 
 /**
- * Delete an existing securevideo instance and associated student progress.
+ * Delete an existing smartvideo instance and associated student progress.
  *
  * @param int $id The instance ID.
  * @return bool True on success.
  */
-function securevideo_delete_instance(int $id): bool {
+function smartvideo_delete_instance(int $id): bool {
     global $DB;
 
-    if (!$DB->record_exists('securevideo', ['id' => $id])) {
+    if (!$DB->record_exists('smartvideo', ['id' => $id])) {
         return false;
     }
 
-    $DB->delete_records('securevideo_progress', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo_progress', ['instanceid' => $id]);
 
     // Clean up Question Engine usages.
     $qubaids = $DB->get_fieldset_select(
-        'securevideo_qattempts',
+        'smartvideo_qattempts',
         'qubaid',
         'instanceid = :instanceid AND qubaid > 0',
         ['instanceid' => $id]
@@ -118,9 +118,9 @@ function securevideo_delete_instance(int $id): bool {
         \question_engine::delete_questions_usage_by_activities(new \qubaid_list($qubaids));
     }
 
-    $DB->delete_records('securevideo_qattempts', ['instanceid' => $id]);
-    $DB->delete_records('securevideo_questions', ['instanceid' => $id]);
-    $DB->delete_records('securevideo', ['id' => $id]);
+    $DB->delete_records('smartvideo_qattempts', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo_questions', ['instanceid' => $id]);
+    $DB->delete_records('smartvideo', ['id' => $id]);
 
     return true;
 }
@@ -132,41 +132,45 @@ function securevideo_delete_instance(int $id): bool {
  * @param navigation_node|null $navref The current node reference.
  * @return void
  */
-function securevideo_extend_settings_navigation(
+function smartvideo_extend_settings_navigation(
     settings_navigation $settingsnav,
     ?navigation_node $navref = null
 ): void {
     global $PAGE;
 
     $cm = $PAGE->cm;
-    if (!$cm || $cm->modname !== 'securevideo' || !$navref) {
+    if (!$cm || $cm->modname !== 'smartvideo' || !$navref) {
         return;
     }
 
     $context = context_module::instance($cm->id);
 
     // Interactive Questions tab.
-    if (has_capability('moodle/course:manageactivities', $context) || has_capability('mod/securevideo:addinstance', $context)) {
-        $questionsurl = new moodle_url('/mod/securevideo/questions.php', ['id' => $cm->id]);
+    if (
+        has_capability('moodle/course:manageactivities', $context)
+        || has_capability('mod/smartvideo:addinstance', $context)
+        || has_capability('mod/smartvideo:managequestions', $context)
+    ) {
+        $questionsurl = new moodle_url('/mod/smartvideo/questions.php', ['id' => $cm->id]);
         $navref->add(
-            get_string('interactivequestions', 'mod_securevideo'),
+            get_string('interactivequestions', 'mod_smartvideo'),
             $questionsurl,
             settings_navigation::TYPE_SETTING,
             null,
-            'securevideo_questions',
+            'smartvideo_questions',
             new pix_icon('i/questions', '')
         );
     }
 
     // Watch Progress Report tab.
-    if (has_capability('mod/securevideo:viewreports', $context)) {
-        $reporturl = new moodle_url('/mod/securevideo/report.php', ['id' => $cm->id]);
+    if (has_capability('mod/smartvideo:viewreports', $context)) {
+        $reporturl = new moodle_url('/mod/smartvideo/report.php', ['id' => $cm->id]);
         $navref->add(
-            get_string('report', 'mod_securevideo'),
+            get_string('report', 'mod_smartvideo'),
             $reporturl,
             settings_navigation::TYPE_SETTING,
             null,
-            'securevideo_report',
+            'smartvideo_report',
             new pix_icon('i/report', '')
         );
     }
@@ -177,7 +181,7 @@ function securevideo_extend_settings_navigation(
  *
  * @param stdClass $course Course object.
  * @param stdClass $context Context object.
- * @param string $component Component name (mod_securevideo).
+ * @param string $component Component name (mod_smartvideo).
  * @param string $filearea File area name.
  * @param int $qubaid Question usage ID.
  * @param int $slot Question slot number.
@@ -186,7 +190,7 @@ function securevideo_extend_settings_navigation(
  * @param array $fileoptions File options.
  * @return void
  */
-function securevideo_question_pluginfile(
+function smartvideo_question_pluginfile(
     $course,
     $context,
     $component,
@@ -201,13 +205,13 @@ function securevideo_question_pluginfile(
 
     require_login($course, false);
 
-    $attempt = $DB->get_record('securevideo_qattempts', ['qubaid' => $qubaid, 'slot' => $slot]);
+    $attempt = $DB->get_record('smartvideo_qattempts', ['qubaid' => $qubaid, 'slot' => $slot]);
     if (!$attempt) {
         send_file_not_found();
     }
 
     $modcontext = context_module::instance($context->instanceid);
-    if ($attempt->userid != $USER->id && !has_capability('mod/securevideo:viewreports', $modcontext)) {
+    if ($attempt->userid != $USER->id && !has_capability('mod/smartvideo:viewreports', $modcontext)) {
         send_file_not_found();
     }
 
@@ -243,14 +247,14 @@ function securevideo_question_pluginfile(
  * @param bool $type The completion type.
  * @return bool True if completed, false otherwise.
  */
-function securevideo_get_completion_state(stdClass $course, $cm, int $userid, bool $type): bool {
+function smartvideo_get_completion_state(stdClass $course, $cm, int $userid, bool $type): bool {
     global $DB;
 
-    $instance = $DB->get_record('securevideo', ['id' => $cm->instance], '*', MUST_EXIST);
+    $instance = $DB->get_record('smartvideo', ['id' => $cm->instance], '*', MUST_EXIST);
 
     // Rule 1: Watch percentage.
     if (!empty($instance->completionminpercent)) {
-        $progress = $DB->get_record('securevideo_progress', [
+        $progress = $DB->get_record('smartvideo_progress', [
             'instanceid' => $instance->id,
             'userid'     => $userid,
         ]);
@@ -262,15 +266,15 @@ function securevideo_get_completion_state(stdClass $course, $cm, int $userid, bo
 
     // Rule 2: Passing all required interactive questions.
     if (!empty($instance->completionrequirequestions)) {
-        $totalquestions = $DB->count_records('securevideo_questions', [
+        $totalquestions = $DB->count_records('smartvideo_questions', [
             'instanceid'     => $instance->id,
             'requirecorrect' => 1,
         ]);
 
         if ($totalquestions > 0) {
             $sql = "SELECT COUNT(qa.id)
-                      FROM {securevideo_qattempts} qa
-                      JOIN {securevideo_questions} sq ON sq.id = qa.svquestionid
+                      FROM {smartvideo_qattempts} qa
+                      JOIN {smartvideo_questions} sq ON sq.id = qa.svquestionid
                      WHERE qa.instanceid = :instanceid
                        AND qa.userid = :userid
                        AND sq.requirecorrect = 1

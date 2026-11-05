@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Course activity player view controller for mod_securevideo.
+ * Course activity player view controller for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,84 +26,85 @@ require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
 $id = optional_param('id', 0, PARAM_INT); // Course Module ID.
-$s  = optional_param('s', 0, PARAM_INT);  // securevideo instance ID.
+$s  = optional_param('s', 0, PARAM_INT);  // smartvideo instance ID.
 
 if ($id) {
-    $cm = get_coursemodule_from_id('securevideo', $id, 0, false, MUST_EXIST);
+    $cm = get_coursemodule_from_id('smartvideo', $id, 0, false, MUST_EXIST);
     $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
-    $securevideo = $DB->get_record('securevideo', ['id' => $cm->instance], '*', MUST_EXIST);
+    $smartvideo = $DB->get_record('smartvideo', ['id' => $cm->instance], '*', MUST_EXIST);
 } else if ($s) {
-    $securevideo = $DB->get_record('securevideo', ['id' => $s], '*', MUST_EXIST);
-    $course = $DB->get_record('course', ['id' => $securevideo->course], '*', MUST_EXIST);
-    $cm = get_coursemodule_from_instance('securevideo', $securevideo->id, $course->id, false, MUST_EXIST);
+    $smartvideo = $DB->get_record('smartvideo', ['id' => $s], '*', MUST_EXIST);
+    $course = $DB->get_record('course', ['id' => $smartvideo->course], '*', MUST_EXIST);
+    $cm = get_coursemodule_from_instance('smartvideo', $smartvideo->id, $course->id, false, MUST_EXIST);
 } else {
     throw new moodle_exception('invalidcoursemodule');
 }
 
 require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
-require_capability('mod/securevideo:view', $context);
+require_capability('mod/smartvideo:view', $context);
 
 // Trigger course_module_viewed event.
-$event = \mod_securevideo\event\course_module_viewed::create([
+$event = \mod_smartvideo\event\course_module_viewed::create([
     'context'  => $context,
-    'objectid' => $securevideo->id,
+    'objectid' => $smartvideo->id,
 ]);
 $event->add_record_snapshot('course_modules', $cm);
 $event->add_record_snapshot('course', $course);
-$event->add_record_snapshot('securevideo', $securevideo);
+$event->add_record_snapshot('smartvideo', $smartvideo);
 $event->trigger();
 
 // Completion view tracking.
 $completion = new \completion_info($course);
 $completion->set_module_viewed($cm);
 
-$pageurl = new moodle_url('/mod/securevideo/view.php', ['id' => $cm->id]);
+$pageurl = new moodle_url('/mod/smartvideo/view.php', ['id' => $cm->id]);
 $PAGE->set_url($pageurl);
-$PAGE->set_title($securevideo->name);
+$PAGE->set_title($smartvideo->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
-$PAGE->set_activity_record($securevideo);
+$PAGE->set_activity_record($smartvideo);
 
 $canmanage = has_capability('moodle/course:manageactivities', $context)
-    || has_capability('mod/securevideo:addinstance', $context);
+    || has_capability('mod/smartvideo:addinstance', $context)
+    || has_capability('mod/smartvideo:managequestions', $context);
 
 // Allow teachers/admins to reset their own attempts for testing.
 if ($canmanage && optional_param('resetmyattempts', 0, PARAM_INT) && confirm_sesskey()) {
-    $DB->delete_records('securevideo_qattempts', [
-        'instanceid' => $securevideo->id,
+    $DB->delete_records('smartvideo_qattempts', [
+        'instanceid' => $smartvideo->id,
         'userid'     => $USER->id,
     ]);
-    $DB->delete_records('securevideo_progress', [
-        'instanceid' => $securevideo->id,
+    $DB->delete_records('smartvideo_progress', [
+        'instanceid' => $smartvideo->id,
         'userid'     => $USER->id,
     ]);
-    redirect(new moodle_url('/mod/securevideo/view.php', ['id' => $cm->id]));
+    redirect(new moodle_url('/mod/smartvideo/view.php', ['id' => $cm->id]));
 }
 
 // Fetch linked media record from central library.
 $media = null;
-if (!empty($securevideo->mediaid)) {
-    $media = $DB->get_record('local_securevideolibrary_media', ['id' => $securevideo->mediaid]);
+if (!empty($smartvideo->mediaid)) {
+    $media = $DB->get_record('local_securevideolibrary_media', ['id' => $smartvideo->mediaid]);
 }
 
 echo $OUTPUT->header();
 
-$intro = format_module_intro('securevideo', $securevideo, $cm->id);
+$intro = format_module_intro('smartvideo', $smartvideo, $cm->id);
 if (!empty($intro)) {
     echo $intro;
 }
 
 if (!$media || $media->status !== 'ready') {
     if ($media && ($media->status === 'queued' || $media->status === 'processing')) {
-        echo $OUTPUT->notification(get_string('videonotready', 'mod_securevideo'), 'info');
+        echo $OUTPUT->notification(get_string('videonotready', 'mod_smartvideo'), 'info');
     } else {
-        echo $OUTPUT->notification(get_string('novideowarning', 'mod_securevideo'), 'warning');
+        echo $OUTPUT->notification(get_string('novideowarning', 'mod_smartvideo'), 'warning');
     }
 } else {
     // Fetch user progress.
-    $progress = $DB->get_record('securevideo_progress', [
-        'instanceid' => $securevideo->id,
+    $progress = $DB->get_record('smartvideo_progress', [
+        'instanceid' => $smartvideo->id,
         'userid'     => $USER->id,
     ]);
 
@@ -124,12 +125,12 @@ if (!$media || $media->status !== 'ready') {
     $percentcompleted = $progress ? (int)$progress->percentcompleted : 0;
 
     // Fetch configured interactive questions.
-    $questions = $DB->get_records('securevideo_questions', ['instanceid' => $securevideo->id], 'timecode ASC');
+    $questions = $DB->get_records('smartvideo_questions', ['instanceid' => $smartvideo->id], 'timecode ASC');
     $questionsdata = [];
     $firstunpassedtime = null;
 
     foreach ($questions as $q) {
-        $passed = $DB->record_exists('securevideo_qattempts', [
+        $passed = $DB->record_exists('smartvideo_qattempts', [
             'svquestionid' => $q->id,
             'userid'       => $USER->id,
             'passed'       => 1,
@@ -150,7 +151,7 @@ if (!$media || $media->status !== 'ready') {
             'timecode'       => (int)$q->timecode,
             'timeformatted'  => $timeformatted,
             'percent'        => $percent,
-            'title'          => !empty($q->title) ? format_string($q->title) : get_string('knowledgecheck', 'mod_securevideo'),
+            'title'          => !empty($q->title) ? format_string($q->title) : get_string('knowledgecheck', 'mod_smartvideo'),
             'requirecorrect' => (int)$q->requirecorrect,
             'rewindonfail'   => (int)($q->rewindonfail ?? 0),
             'rewindto'       => $rewindto,
@@ -178,7 +179,7 @@ if (!$media || $media->status !== 'ready') {
 
     $playerdata = [
         'cmid'                 => (int)$cm->id,
-        'title'                => $securevideo->name,
+        'title'                => $smartvideo->name,
         'playlisturl'          => $playlisturl,
         'thumbnailurl'         => $thumbnailurl,
         'duration'             => (int)$media->duration,
@@ -190,11 +191,11 @@ if (!$media || $media->status !== 'ready') {
         'watchedseconds'       => $progress ? (int)$progress->watchedseconds : 0,
         'watchedintervals'     => s($progress ? $progress->watchedintervals : '[]'),
         'percentcompleted'     => $percentcompleted,
-        'completionminpercent' => (int)$securevideo->completionminpercent,
-        'hascompletionrule'    => (!empty($securevideo->completionminpercent)),
-        'preventseeking'       => !empty($securevideo->preventseeking),
-        'watermarkenabled'     => !empty($securevideo->watermarkenabled),
-        'watermarkopacity'     => (float)($securevideo->watermarkopacity / 100),
+        'completionminpercent' => (int)$smartvideo->completionminpercent,
+        'hascompletionrule'    => (!empty($smartvideo->completionminpercent)),
+        'preventseeking'       => !empty($smartvideo->preventseeking),
+        'watermarkenabled'     => !empty($smartvideo->watermarkenabled),
+        'watermarkopacity'     => (float)($smartvideo->watermarkopacity / 100),
         'studentname'          => fullname($USER),
         'studentid'            => (int)$USER->id,
         'studentip'            => getremoteaddr(),
@@ -203,14 +204,14 @@ if (!$media || $media->status !== 'ready') {
         'hasquestions'         => !empty($questionsdata),
         'questionsjson'        => s(json_encode($questionsdata)),
         'canmanage'            => $canmanage,
-        'resetattemptsurl'     => (new moodle_url('/mod/securevideo/view.php', [
+        'resetattemptsurl'     => (new moodle_url('/mod/smartvideo/view.php', [
             'id'              => $cm->id,
             'resetmyattempts' => 1,
             'sesskey'         => sesskey(),
         ]))->out(false),
     ];
 
-    echo $OUTPUT->render_from_template('mod_securevideo/player', $playerdata);
+    echo $OUTPUT->render_from_template('mod_smartvideo/player', $playerdata);
 }
 
 echo $OUTPUT->footer();

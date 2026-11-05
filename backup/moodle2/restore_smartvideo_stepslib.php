@@ -15,18 +15,18 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Define all the restore steps for mod_securevideo.
+ * Define all the restore steps for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @category   backup
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
- * Structure step to restore one securevideo activity.
+ * Structure step to restore one smartvideo activity.
  */
-class restore_securevideo_activity_structure_step extends restore_activity_structure_step {
+class restore_smartvideo_activity_structure_step extends restore_activity_structure_step {
     /**
      * Define the structure of the restore step.
      *
@@ -34,25 +34,25 @@ class restore_securevideo_activity_structure_step extends restore_activity_struc
      */
     protected function define_structure(): array {
         $paths = [];
-        $paths[] = new restore_path_element('securevideo', '/activity/securevideo');
-        $paths[] = new restore_path_element('securevideo_question', '/activity/securevideo/questions/question');
+        $paths[] = new restore_path_element('smartvideo', '/activity/smartvideo');
+        $paths[] = new restore_path_element('smartvideo_question', '/activity/smartvideo/questions/question');
 
         return $this->prepare_activity_structure($paths);
     }
 
     /**
-     * Process a securevideo restore element.
+     * Process a smartvideo restore element.
      *
      * @param array $data The data to restore.
      * @return void
      */
-    protected function process_securevideo(array $data): void {
+    protected function process_smartvideo(array $data): void {
         global $DB;
 
         $data = (object)$data;
         $data->course = $this->get_courseid();
 
-        $newitemid = $DB->insert_record('securevideo', $data);
+        $newitemid = $DB->insert_record('smartvideo', $data);
         $this->apply_activity_instance($newitemid);
     }
 
@@ -62,11 +62,11 @@ class restore_securevideo_activity_structure_step extends restore_activity_struc
      * @param array $data
      * @return void
      */
-    protected function process_securevideo_question(array $data): void {
+    protected function process_smartvideo_question(array $data): void {
         global $DB;
 
         $data = (object)$data;
-        $data->instanceid = $this->get_new_parentid('securevideo');
+        $data->instanceid = $this->get_new_parentid('smartvideo');
 
         // Remap question ID if question was restored or exists.
         $newquestionid = $this->get_mappingid('question', $data->questionid);
@@ -74,7 +74,7 @@ class restore_securevideo_activity_structure_step extends restore_activity_struc
             $data->questionid = $newquestionid;
         }
 
-        $DB->insert_record('securevideo_questions', $data);
+        $DB->insert_record('smartvideo_questions', $data);
     }
 
     /**
@@ -83,6 +83,6 @@ class restore_securevideo_activity_structure_step extends restore_activity_struc
      * @return void
      */
     protected function after_execute(): void {
-        $this->add_related_files('mod_securevideo', 'intro', null);
+        $this->add_related_files('mod_smartvideo', 'intro', null);
     }
 }

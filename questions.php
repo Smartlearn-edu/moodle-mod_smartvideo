@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Teacher management page for in-video interactive questions in mod_securevideo.
+ * Teacher management page for in-video interactive questions in mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,30 +26,31 @@ require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
 $id = required_param('id', PARAM_INT);
-$cm = get_coursemodule_from_id('securevideo', $id, 0, false, MUST_EXIST);
+$cm = get_coursemodule_from_id('smartvideo', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
-$securevideo = $DB->get_record('securevideo', ['id' => $cm->instance], '*', MUST_EXIST);
+$smartvideo = $DB->get_record('smartvideo', ['id' => $cm->instance], '*', MUST_EXIST);
 
 require_login($course, false, $cm);
 $context = context_module::instance($cm->id);
 
 if (
     !has_capability('moodle/course:manageactivities', $context)
-    && !has_capability('mod/securevideo:addinstance', $context)
+    && !has_capability('mod/smartvideo:addinstance', $context)
+    && !has_capability('mod/smartvideo:managequestions', $context)
 ) {
     throw new moodle_exception('nopermissions', 'error', '', 'manage questions');
 }
 
-$pageurl = new moodle_url('/mod/securevideo/questions.php', ['id' => $cm->id]);
+$pageurl = new moodle_url('/mod/smartvideo/questions.php', ['id' => $cm->id]);
 $PAGE->set_url($pageurl);
-$PAGE->set_title(get_string('interactivequestions', 'mod_securevideo') . ': ' . $securevideo->name);
+$PAGE->set_title(get_string('interactivequestions', 'mod_smartvideo') . ': ' . $smartvideo->name);
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
 
 // Fetch linked media record.
 $media = null;
-if (!empty($securevideo->mediaid)) {
-    $media = $DB->get_record('local_securevideolibrary_media', ['id' => $securevideo->mediaid]);
+if (!empty($smartvideo->mediaid)) {
+    $media = $DB->get_record('local_securevideolibrary_media', ['id' => $smartvideo->mediaid]);
 }
 
 $duration = $media ? (int)$media->duration : 0;
@@ -72,7 +73,7 @@ if ($media) {
 }
 
 // Fetch configured questions.
-$questions = $DB->get_records('securevideo_questions', ['instanceid' => $securevideo->id], 'timecode ASC');
+$questions = $DB->get_records('smartvideo_questions', ['instanceid' => $smartvideo->id], 'timecode ASC');
 $questionsdata = [];
 
 foreach ($questions as $q) {
@@ -82,9 +83,9 @@ foreach ($questions as $q) {
 
     $qid = (int)$q->questionid;
     if ($qid <= 0 && !empty($q->questionbankentryid)) {
-        $qid = \mod_securevideo\question_helper::get_latest_question_id((int)$q->questionbankentryid, 0);
+        $qid = \mod_smartvideo\question_helper::get_latest_question_id((int)$q->questionbankentryid, 0);
         if ($qid > 0) {
-            $DB->set_field('securevideo_questions', 'questionid', $qid, ['id' => $q->id]);
+            $DB->set_field('smartvideo_questions', 'questionid', $qid, ['id' => $q->id]);
         }
     }
 
@@ -122,7 +123,7 @@ foreach ($questions as $q) {
         'timecode'            => (int)$q->timecode,
         'timeformatted'       => $timeformatted,
         'percent'             => $percent,
-        'title'               => !empty($q->title) ? format_string($q->title) : get_string('knowledgecheck', 'mod_securevideo'),
+        'title'               => !empty($q->title) ? format_string($q->title) : get_string('knowledgecheck', 'mod_smartvideo'),
         'questionname'        => $qname,
         'qtype'               => $qtype,
         'snippet'             => $snippet,
@@ -138,8 +139,8 @@ foreach ($questions as $q) {
 
 $templatecontext = [
     'cmid'              => (int)$cm->id,
-    'videoname'         => format_string($securevideo->name),
-    'backtovideourl'    => (new moodle_url('/mod/securevideo/view.php', ['id' => $cm->id]))->out(false),
+    'videoname'         => format_string($smartvideo->name),
+    'backtovideourl'    => (new moodle_url('/mod/smartvideo/view.php', ['id' => $cm->id]))->out(false),
     'hasmedia'          => ($media && $media->status === 'ready'),
     'playlisturl'       => $playlisturl,
     'thumbnailurl'      => $thumbnailurl,
@@ -151,11 +152,11 @@ $templatecontext = [
     'questionsjson'     => s(json_encode($questionsdata)),
 ];
 
-$PAGE->requires->js_call_amd('mod_securevideo/questions', 'init', [[
+$PAGE->requires->js_call_amd('mod_smartvideo/questions', 'init', [[
     'cmid'     => (int)$cm->id,
     'duration' => $duration,
 ]]);
 
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('mod_securevideo/questions', $templatecontext);
+echo $OUTPUT->render_from_template('mod_smartvideo/questions', $templatecontext);
 echo $OUTPUT->footer();

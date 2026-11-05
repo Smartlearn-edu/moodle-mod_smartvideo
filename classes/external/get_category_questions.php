@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo\external;
+namespace mod_smartvideo\external;
 
 use core_external\external_api;
 use core_external\external_function_parameters;
@@ -22,12 +22,12 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use context_module;
-use mod_securevideo\question_helper;
+use mod_smartvideo\question_helper;
 
 /**
  * External web service to retrieve ready questions in a Question Bank category.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -57,13 +57,14 @@ class get_category_questions extends external_api {
             'categoryid' => $categoryid,
         ]);
 
-        $cm = get_coursemodule_from_id('securevideo', $params['cmid'], 0, false, MUST_EXIST);
+        $cm = get_coursemodule_from_id('smartvideo', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
 
         if (
             !has_capability('moodle/course:manageactivities', $context)
-            && !has_capability('mod/securevideo:addinstance', $context)
+            && !has_capability('mod/smartvideo:addinstance', $context)
+            && !has_capability('mod/smartvideo:managequestions', $context)
         ) {
             throw new \moodle_exception('nopermissions', 'error', '', 'manage questions');
         }

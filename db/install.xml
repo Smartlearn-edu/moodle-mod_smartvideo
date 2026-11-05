@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/securevideo/db" VERSION="20261029" COMMENT="XMLDB file for mod_securevideo"
+<XMLDB PATH="mod/smartvideo/db" VERSION="20261105" COMMENT="XMLDB file for mod_smartvideo"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
-    <TABLE NAME="securevideo" COMMENT="Defines instances of the Secure Video course activity">
+    <TABLE NAME="smartvideo" COMMENT="Defines instances of the Smart Video course activity">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Course ID"/>
@@ -28,10 +28,10 @@
         <INDEX NAME="mediaid_idx" UNIQUE="false" FIELDS="mediaid"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="securevideo_progress" COMMENT="Stores student watch progress, bookmarks and merged intervals">
+    <TABLE NAME="smartvideo_progress" COMMENT="Stores student watch progress, bookmarks and merged intervals">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to securevideo.id"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="User ID"/>
         <FIELD NAME="lastposition" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Last playback position in seconds"/>
         <FIELD NAME="maxposition" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Furthest watched position in seconds for anti-seeking"/>
@@ -42,17 +42,17 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="securevideo" REFFIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="instanceid_userid_idx" UNIQUE="true" FIELDS="instanceid, userid"/>
         <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="securevideo_questions" COMMENT="Interactive question cuepoints configured on video timeline">
+    <TABLE NAME="smartvideo_questions" COMMENT="Interactive question cuepoints configured on video timeline">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to securevideo.id"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
         <FIELD NAME="questionbankentryid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to question_bank_entries.id"/>
         <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to question.id"/>
         <FIELD NAME="timecode" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Playback timestamp in seconds where video pauses"/>
@@ -66,17 +66,17 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="securevideo" REFFIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="instanceid_timecode_idx" UNIQUE="false" FIELDS="instanceid, timecode"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="securevideo_qattempts" COMMENT="Tracks student attempts and pass status for in-video questions">
+    <TABLE NAME="smartvideo_qattempts" COMMENT="Tracks student attempts and pass status for in-video questions">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to securevideo.id"/>
-        <FIELD NAME="svquestionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to securevideo_questions.id"/>
+        <FIELD NAME="instanceid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo.id"/>
+        <FIELD NAME="svquestionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to smartvideo_questions.id"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="User ID"/>
         <FIELD NAME="qubaid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK to question_usages.id"/>
         <FIELD NAME="slot" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Slot number in quba"/>
@@ -87,8 +87,8 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="securevideo" REFFIELDS="id"/>
-        <KEY NAME="svquestionid_fk" TYPE="foreign" FIELDS="svquestionid" REFTABLE="securevideo_questions" REFFIELDS="id"/>
+        <KEY NAME="instanceid_fk" TYPE="foreign" FIELDS="instanceid" REFTABLE="smartvideo" REFFIELDS="id"/>
+        <KEY NAME="svquestionid_fk" TYPE="foreign" FIELDS="svquestionid" REFTABLE="smartvideo_questions" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="svquestionid_userid_idx" UNIQUE="true" FIELDS="svquestionid, userid"/>

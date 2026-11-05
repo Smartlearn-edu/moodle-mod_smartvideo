@@ -15,20 +15,20 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Version details for mod_securevideo.
+ * Version details for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'mod_securevideo';
-$plugin->version   = 2026102910;
+$plugin->component = 'mod_smartvideo';
+$plugin->version   = 2026110501;
 $plugin->requires  = 2024100700; // Requires Moodle 5.0+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = 'v1.0.0';
+$plugin->release   = 'v1.1.0';
 $plugin->dependencies = [
     'local_securevideolibrary' => 2026102806,
 ];

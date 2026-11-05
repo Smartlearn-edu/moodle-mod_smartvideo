@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Web service declarations for mod_securevideo.
+ * Web service declarations for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -25,50 +25,50 @@
 defined('MOODLE_INTERNAL') || die();
 
 $functions = [
-    'mod_securevideo_update_progress' => [
-        'classname'   => 'mod_securevideo\external\update_progress',
+    'mod_smartvideo_update_progress' => [
+        'classname'   => 'mod_smartvideo\external\update_progress',
         'methodname'  => 'execute',
         'description' => 'Update student watch progress, bookmark and evaluate completion',
         'type'        => 'write',
         'ajax'        => true,
     ],
-    'mod_securevideo_get_course_categories' => [
-        'classname'   => 'mod_securevideo\external\get_course_categories',
+    'mod_smartvideo_get_course_categories' => [
+        'classname'   => 'mod_smartvideo\external\get_course_categories',
         'methodname'  => 'execute',
         'description' => 'Get Question Bank categories for the current course',
         'type'        => 'read',
         'ajax'        => true,
     ],
-    'mod_securevideo_get_category_questions' => [
-        'classname'   => 'mod_securevideo\external\get_category_questions',
+    'mod_smartvideo_get_category_questions' => [
+        'classname'   => 'mod_smartvideo\external\get_category_questions',
         'methodname'  => 'execute',
         'description' => 'Get ready questions in a specific Question Bank category',
         'type'        => 'read',
         'ajax'        => true,
     ],
-    'mod_securevideo_save_cuepoint' => [
-        'classname'   => 'mod_securevideo\external\save_cuepoint',
+    'mod_smartvideo_save_cuepoint' => [
+        'classname'   => 'mod_smartvideo\external\save_cuepoint',
         'methodname'  => 'execute',
         'description' => 'Create or update an interactive question cuepoint on the video timeline',
         'type'        => 'write',
         'ajax'        => true,
     ],
-    'mod_securevideo_delete_cuepoint' => [
-        'classname'   => 'mod_securevideo\external\delete_cuepoint',
+    'mod_smartvideo_delete_cuepoint' => [
+        'classname'   => 'mod_smartvideo\external\delete_cuepoint',
         'methodname'  => 'execute',
         'description' => 'Delete an interactive question cuepoint and its attempts',
         'type'        => 'write',
         'ajax'        => true,
     ],
-    'mod_securevideo_get_question_attempt' => [
-        'classname'   => 'mod_securevideo\external\get_question_attempt',
+    'mod_smartvideo_get_question_attempt' => [
+        'classname'   => 'mod_smartvideo\external\get_question_attempt',
         'methodname'  => 'execute',
         'description' => 'Get or start a question attempt for in-video interactive playback',
         'type'        => 'write',
         'ajax'        => true,
     ],
-    'mod_securevideo_submit_question_attempt' => [
-        'classname'   => 'mod_securevideo\external\submit_question_attempt',
+    'mod_smartvideo_submit_question_attempt' => [
+        'classname'   => 'mod_smartvideo\external\submit_question_attempt',
         'methodname'  => 'execute',
         'description' => 'Submit student response to in-video question and evaluate correctness',
         'type'        => 'write',

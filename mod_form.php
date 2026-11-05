@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Activity settings form for mod_securevideo.
+ * Activity settings form for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -29,7 +29,7 @@ require_once($CFG->dirroot . '/course/moodleform_mod.php');
 /**
  * Module settings form.
  */
-class mod_securevideo_mod_form extends moodleform_mod {
+class mod_smartvideo_mod_form extends moodleform_mod {
     /**
      * Define the form elements.
      *
@@ -58,7 +58,7 @@ class mod_securevideo_mod_form extends moodleform_mod {
 
         // -------------------------------------------------------------------------------
         // Video Selection Section.
-        $mform->addElement('header', 'videoselectionheader', get_string('videoselection', 'mod_securevideo'));
+        $mform->addElement('header', 'videoselectionheader', get_string('videoselection', 'mod_smartvideo'));
 
         // Hidden input storing selected media ID.
         $mform->addElement('hidden', 'mediaid', 0, ['id' => 'id_mediaid']);
@@ -75,7 +75,7 @@ class mod_securevideo_mod_form extends moodleform_mod {
             $selectedmedia = $DB->get_record('local_securevideolibrary_media', ['id' => $currentmediaid]);
         }
 
-        $previewhtml = '<div id="securevideo_selected_preview" class="mb-3">';
+        $previewhtml = '<div id="smartvideo_selected_preview" class="mb-3">';
         if ($selectedmedia) {
             $mins = floor($selectedmedia->duration / 60);
             $secs = $selectedmedia->duration % 60;
@@ -85,7 +85,7 @@ class mod_securevideo_mod_form extends moodleform_mod {
                 'file'    => 'thumbnail.jpg',
             ]))->out(false);
 
-            $videolabel = get_string('selectedvideo', 'mod_securevideo') . ' #' . $selectedmedia->id;
+            $videolabel = get_string('selectedvideo', 'mod_smartvideo') . ' #' . $selectedmedia->id;
             $previewhtml .= '
             <div class="card border p-3 d-flex flex-row align-items-center gap-3 bg-light" style="max-width: 500px;">
                 <div class="ratio ratio-16x9 bg-dark rounded overflow-hidden" style="width: 140px; flex-shrink: 0;">
@@ -101,38 +101,38 @@ class mod_securevideo_mod_form extends moodleform_mod {
             $previewhtml .= '
             <div class="alert alert-warning d-flex align-items-center gap-2 mb-0" style="max-width: 500px;">
                 <i class="fa fa-exclamation-circle fa-lg" aria-hidden="true"></i>
-                <span>' . get_string('novideoselected', 'mod_securevideo') . '</span>
+                <span>' . get_string('novideoselected', 'mod_smartvideo') . '</span>
             </div>';
         }
         $previewhtml .= '</div>';
 
-        $mform->addElement('static', 'videopreview', get_string('selectedvideo', 'mod_securevideo'), $previewhtml);
+        $mform->addElement('static', 'videopreview', get_string('selectedvideo', 'mod_smartvideo'), $previewhtml);
 
         // Button opening the modal picker.
         $selectbutton = '<button type="button" class="btn btn-primary" '
-            . 'data-bs-toggle="modal" data-bs-target="#secureVideoPickerModal" '
-            . 'data-toggle="modal" data-target="#secureVideoPickerModal">'
+            . 'data-bs-toggle="modal" data-bs-target="#smartVideoPickerModal" '
+            . 'data-toggle="modal" data-target="#smartVideoPickerModal">'
             . '<i class="fa fa-film me-1" aria-hidden="true"></i>'
-            . get_string('selectfromlibrary', 'mod_securevideo')
+            . get_string('selectfromlibrary', 'mod_smartvideo')
             . '</button>';
         $mform->addElement('static', 'selectvideobutton', '', $selectbutton);
 
         // -------------------------------------------------------------------------------
         // Playback & Security Options.
-        $mform->addElement('header', 'playbacksecurityheader', get_string('playbacksecurity', 'mod_securevideo'));
+        $mform->addElement('header', 'playbacksecurityheader', get_string('playbacksecurity', 'mod_smartvideo'));
 
-        $mform->addElement('checkbox', 'watermarkenabled', get_string('watermarkenabled', 'mod_securevideo'));
-        $mform->addHelpButton('watermarkenabled', 'watermarkenabled', 'mod_securevideo');
+        $mform->addElement('checkbox', 'watermarkenabled', get_string('watermarkenabled', 'mod_smartvideo'));
+        $mform->addHelpButton('watermarkenabled', 'watermarkenabled', 'mod_smartvideo');
         $mform->setDefault('watermarkenabled', 1);
 
-        $mform->addElement('text', 'watermarkopacity', get_string('watermarkopacity', 'mod_securevideo'), ['size' => '5']);
+        $mform->addElement('text', 'watermarkopacity', get_string('watermarkopacity', 'mod_smartvideo'), ['size' => '5']);
         $mform->setType('watermarkopacity', PARAM_INT);
-        $mform->addHelpButton('watermarkopacity', 'watermarkopacity', 'mod_securevideo');
+        $mform->addHelpButton('watermarkopacity', 'watermarkopacity', 'mod_smartvideo');
         $mform->setDefault('watermarkopacity', 35);
         $mform->hideIf('watermarkopacity', 'watermarkenabled', 'notchecked');
 
-        $mform->addElement('checkbox', 'preventseeking', get_string('preventseeking', 'mod_securevideo'));
-        $mform->addHelpButton('preventseeking', 'preventseeking', 'mod_securevideo');
+        $mform->addElement('checkbox', 'preventseeking', get_string('preventseeking', 'mod_smartvideo'));
+        $mform->addHelpButton('preventseeking', 'preventseeking', 'mod_smartvideo');
         $mform->setDefault('preventseeking', 0);
 
         // -------------------------------------------------------------------------------
@@ -151,11 +151,11 @@ class mod_securevideo_mod_form extends moodleform_mod {
             'uploadurl' => $uploadurl,
         ];
 
-        $PAGE->requires->js_call_amd('mod_securevideo/picker', 'init', [[
+        $PAGE->requires->js_call_amd('mod_smartvideo/picker', 'init', [[
             'courseid' => (int)$course->id,
         ]]);
 
-        $mform->addElement('html', $OUTPUT->render_from_template('mod_securevideo/picker_modal', $modaldata));
+        $mform->addElement('html', $OUTPUT->render_from_template('mod_smartvideo/picker_modal', $modaldata));
     }
 
     /**
@@ -171,7 +171,7 @@ class mod_securevideo_mod_form extends moodleform_mod {
             'checkbox',
             'completionminpercentenabled',
             '',
-            get_string('completionminpercent', 'mod_securevideo')
+            get_string('completionminpercent', 'mod_smartvideo')
         );
         $group[] = $mform->createElement('text', 'completionminpercent', '', ['size' => '3']);
         $mform->setType('completionminpercent', PARAM_INT);
@@ -180,20 +180,20 @@ class mod_securevideo_mod_form extends moodleform_mod {
         $mform->addGroup(
             $group,
             'completionminpercentgroup',
-            get_string('completionminpercent', 'mod_securevideo'),
+            get_string('completionminpercent', 'mod_smartvideo'),
             [' '],
             false
         );
-        $mform->addHelpButton('completionminpercentgroup', 'completionminpercent', 'mod_securevideo');
+        $mform->addHelpButton('completionminpercentgroup', 'completionminpercent', 'mod_smartvideo');
         $mform->disabledIf('completionminpercent', 'completionminpercentenabled', 'notchecked');
 
         $mform->addElement(
             'checkbox',
             'completionrequirequestions',
-            get_string('completionrequirequestions', 'mod_securevideo'),
-            get_string('completionrequirequestions', 'mod_securevideo')
+            get_string('completionrequirequestions', 'mod_smartvideo'),
+            get_string('completionrequirequestions', 'mod_smartvideo')
         );
-        $mform->addHelpButton('completionrequirequestions', 'completionrequirequestions', 'mod_securevideo');
+        $mform->addHelpButton('completionrequirequestions', 'completionrequirequestions', 'mod_smartvideo');
 
         return ['completionminpercentgroup', 'completionrequirequestions'];
     }
@@ -238,7 +238,7 @@ class mod_securevideo_mod_form extends moodleform_mod {
         $errors = parent::validation($data, $files);
 
         if (empty($data['mediaid'])) {
-            $errors['videopreview'] = get_string('err_novideoselected', 'mod_securevideo');
+            $errors['videopreview'] = get_string('err_novideoselected', 'mod_smartvideo');
         }
 
         if (!empty($data['watermarkenabled'])) {

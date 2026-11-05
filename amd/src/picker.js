@@ -14,9 +14,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Interactive video library picker modal for mod_securevideo.
+ * Interactive video library picker modal for mod_smartvideo.
  *
- * @module     mod_securevideo/picker
+ * @module     mod_smartvideo/picker
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -28,19 +28,24 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
     let currentSearch = '';
     let searchDebounceTimeout = null;
 
+    function getModalElement() {
+        return document.getElementById('smartVideoPickerModal') ||
+               document.getElementById('secureVideoPickerModal');
+    }
+
     /**
      * Fetch videos from local_securevideolibrary via web service.
      */
     function fetchVideos() {
-        const modalEl = document.getElementById('secureVideoPickerModal');
+        const modalEl = getModalElement();
         if (!modalEl) {
             return;
         }
 
-        const gridEl = modalEl.querySelector('.securevideo-picker-grid');
-        const loadingEl = modalEl.querySelector('.securevideo-picker-loading');
-        const emptyEl = modalEl.querySelector('.securevideo-picker-empty');
-        const refreshBtn = modalEl.querySelector('.securevideo-picker-refresh i');
+        const gridEl = modalEl.querySelector('.smartvideo-picker-grid, .securevideo-picker-grid');
+        const loadingEl = modalEl.querySelector('.smartvideo-picker-loading, .securevideo-picker-loading');
+        const emptyEl = modalEl.querySelector('.smartvideo-picker-empty, .securevideo-picker-empty');
+        const refreshBtn = modalEl.querySelector('.smartvideo-picker-refresh i, .securevideo-picker-refresh i');
 
         if (loadingEl) {
             loadingEl.classList.remove('d-none');
@@ -86,7 +91,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
             }
 
             const renderPromises = readyVideos.map(function(video) {
-                return Templates.render('mod_securevideo/picker_card', video);
+                return Templates.render('mod_smartvideo/picker_card', video);
             });
 
             Promise.all(renderPromises).then(function(renderedHtmls) {
@@ -124,7 +129,8 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
 
         const nameInput = document.getElementById('id_name') ||
                           document.querySelector('input[name="name"]');
-        const previewEl = document.getElementById('securevideo_selected_preview');
+        const previewEl = document.getElementById('smartvideo_selected_preview') ||
+                          document.getElementById('securevideo_selected_preview');
 
         if (mediaIdInput) {
             mediaIdInput.value = String(video.id);
@@ -135,7 +141,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
                 // Ignore.
             }
         } else {
-            console.error('[SecureVideo] mediaid input element not found in form.');
+            console.error('[SmartVideo] mediaid input element not found in form.');
         }
 
         // Auto-fill activity name if empty.
@@ -146,6 +152,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
         // Clear any validation error message displayed under videopreview.
         const errorElements = document.querySelectorAll(
             '#id_error_videopreview, [data-field="videopreview"] .invalid-feedback, ' +
+            '#smartvideo_selected_preview + .text-danger, #smartvideo_selected_preview + .error, ' +
             '#securevideo_selected_preview + .text-danger, #securevideo_selected_preview + .error'
         );
         errorElements.forEach(function(el) {
@@ -179,7 +186,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
         }
 
         // Close modal.
-        const modalEl = document.getElementById('secureVideoPickerModal');
+        const modalEl = getModalElement();
         if (modalEl) {
             if (window.bootstrap && window.bootstrap.Modal) {
                 const bsModal = window.bootstrap.Modal.getInstance(modalEl) ||
@@ -199,7 +206,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
      * Setup event listeners.
      */
     function setupEvents() {
-        const modalEl = document.getElementById('secureVideoPickerModal');
+        const modalEl = getModalElement();
         if (!modalEl) {
             return;
         }
@@ -210,7 +217,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
         });
 
         // Scope tabs.
-        const tabButtons = modalEl.querySelectorAll('.securevideo-picker-tabs button');
+        const tabButtons = modalEl.querySelectorAll('.smartvideo-picker-tabs button, .securevideo-picker-tabs button');
         tabButtons.forEach(function(btn) {
             btn.addEventListener('click', function() {
                 tabButtons.forEach(function(b) {
@@ -223,7 +230,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
         });
 
         // Search input with debounce.
-        const searchInput = modalEl.querySelector('.securevideo-picker-search');
+        const searchInput = modalEl.querySelector('.smartvideo-picker-search, .securevideo-picker-search');
         if (searchInput) {
             searchInput.addEventListener('input', function(e) {
                 clearTimeout(searchDebounceTimeout);
@@ -235,7 +242,7 @@ define(['core/ajax', 'core/notification', 'core/templates'], function(Ajax, Noti
         }
 
         // Refresh button.
-        const refreshBtn = modalEl.querySelector('.securevideo-picker-refresh');
+        const refreshBtn = modalEl.querySelector('.smartvideo-picker-refresh, .securevideo-picker-refresh');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', function() {
                 fetchVideos();

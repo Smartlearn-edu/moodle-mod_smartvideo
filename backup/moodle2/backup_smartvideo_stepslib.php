@@ -15,18 +15,18 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Define all the backup steps for mod_securevideo.
+ * Define all the backup steps for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @category   backup
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
- * Define the complete securevideo structure for backup.
+ * Define the complete smartvideo structure for backup.
  */
-class backup_securevideo_activity_structure_step extends backup_activity_structure_step {
+class backup_smartvideo_activity_structure_step extends backup_activity_structure_step {
     /**
      * Define the structure of the backup.
      *
@@ -34,7 +34,7 @@ class backup_securevideo_activity_structure_step extends backup_activity_structu
      */
     protected function define_structure(): backup_nested_element {
         // Define root activity element.
-        $securevideo = new backup_nested_element('securevideo', ['id'], [
+        $smartvideo = new backup_nested_element('smartvideo', ['id'], [
             'name',
             'intro',
             'introformat',
@@ -60,17 +60,17 @@ class backup_securevideo_activity_structure_step extends backup_activity_structu
             'timemodified',
         ]);
 
-        $securevideo->add_child($questions);
+        $smartvideo->add_child($questions);
         $questions->add_child($question);
 
         // Sources.
-        $securevideo->set_source_table('securevideo', ['id' => backup::VAR_ACTIVITYID]);
-        $question->set_source_table('securevideo_questions', ['instanceid' => backup::VAR_PARENTID]);
+        $smartvideo->set_source_table('smartvideo', ['id' => backup::VAR_ACTIVITYID]);
+        $question->set_source_table('smartvideo_questions', ['instanceid' => backup::VAR_PARENTID]);
 
         // Annotations.
         $question->annotate_ids('question', 'questionid');
-        $securevideo->annotate_files('mod_securevideo', 'intro', null);
+        $smartvideo->annotate_files('mod_smartvideo', 'intro', null);
 
-        return $this->prepare_activity_structure($securevideo);
+        return $this->prepare_activity_structure($smartvideo);
     }
 }

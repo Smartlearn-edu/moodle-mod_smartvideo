@@ -15,25 +15,26 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * English strings for mod_securevideo.
+ * English strings for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Secure Video';
-$string['modulename'] = 'Secure Video';
-$string['modulenameplural'] = 'Secure Videos';
-$string['modulename_help'] = 'Protected HTML5 video player with AES-128 HLS encryption, anti-download shielding, dynamic moving watermark, and granular watch-time completion tracking.';
-$string['pluginadministration'] = 'Secure Video administration';
+$string['pluginname'] = 'Smart Video';
+$string['modulename'] = 'Smart Video';
+$string['modulenameplural'] = 'Smart Videos';
+$string['modulename_help'] = 'Interactive smart video player with HLS streaming, question bank checkpoints, dynamic moving watermark, and granular watch-time completion tracking.';
+$string['pluginadministration'] = 'Smart Video administration';
 
 // Capabilities.
-$string['securevideo:addinstance'] = 'Add a new secure video activity';
-$string['securevideo:view'] = 'View the secure video activity';
-$string['securevideo:viewreports'] = 'View student watch progress reports';
+$string['smartvideo:addinstance'] = 'Add a new Smart Video activity';
+$string['smartvideo:view'] = 'View the Smart Video activity';
+$string['smartvideo:viewreports'] = 'View student watch progress reports';
+$string['smartvideo:managequestions'] = 'Manage interactive questions in Smart Video';
 
 // Activity Form & Video Selection.
 $string['videoselection'] = 'Video Selection';
@@ -171,18 +172,18 @@ $string['interactivequestions_summary'] = 'Passed {$a->passed} of {$a->total} ({
 $string['noquestionsactivity'] = 'No interactive questions';
 
 // Privacy API.
-$string['privacy:metadata:securevideo_progress'] = 'Stores watch progress, bookmarks, and completion tracking for each student.';
-$string['privacy:metadata:securevideo_progress:userid'] = 'The user ID of the student.';
-$string['privacy:metadata:securevideo_progress:lastposition'] = 'The last playback timestamp in seconds for resume bookmarking.';
-$string['privacy:metadata:securevideo_progress:maxposition'] = 'The furthest position reached in seconds for forward-seek locking.';
-$string['privacy:metadata:securevideo_progress:watchedseconds'] = 'Total unique seconds watched across sessions.';
-$string['privacy:metadata:securevideo_progress:percentcompleted'] = 'Calculated percentage of video watched.';
-$string['privacy:metadata:securevideo_progress:timemodified'] = 'The timestamp when progress was last recorded.';
-$string['privacy:metadata:securevideo_qattempts'] = 'Stores student attempts, scores, and pass status for in-video interactive questions.';
-$string['privacy:metadata:securevideo_qattempts:userid'] = 'The ID of the student answering the question.';
-$string['privacy:metadata:securevideo_qattempts:svquestionid'] = 'The ID of the interactive question cuepoint.';
-$string['privacy:metadata:securevideo_qattempts:passed'] = 'Whether the student answered the question correctly.';
-$string['privacy:metadata:securevideo_qattempts:attempts'] = 'The number of attempts made by the student.';
-$string['privacy:metadata:securevideo_qattempts:fraction'] = 'The score fraction obtained from the question engine.';
-$string['privacy:metadata:securevideo_qattempts:timemodified'] = 'The timestamp of the last attempt interaction.';
-$string['privacy:metadata:core_question'] = 'The Secure Video activity uses Moodle\'s Question Engine subsystem to evaluate and store interactive question attempts.';
+$string['privacy:metadata:smartvideo_progress'] = 'Stores watch progress, bookmarks, and completion tracking for each student.';
+$string['privacy:metadata:smartvideo_progress:userid'] = 'The user ID of the student.';
+$string['privacy:metadata:smartvideo_progress:lastposition'] = 'The last playback timestamp in seconds for resume bookmarking.';
+$string['privacy:metadata:smartvideo_progress:maxposition'] = 'The furthest position reached in seconds for forward-seek locking.';
+$string['privacy:metadata:smartvideo_progress:watchedseconds'] = 'Total unique seconds watched across sessions.';
+$string['privacy:metadata:smartvideo_progress:percentcompleted'] = 'Calculated percentage of video watched.';
+$string['privacy:metadata:smartvideo_progress:timemodified'] = 'The timestamp when progress was last recorded.';
+$string['privacy:metadata:smartvideo_qattempts'] = 'Stores student attempts, scores, and pass status for in-video interactive questions.';
+$string['privacy:metadata:smartvideo_qattempts:userid'] = 'The ID of the student answering the question.';
+$string['privacy:metadata:smartvideo_qattempts:svquestionid'] = 'The ID of the interactive question cuepoint.';
+$string['privacy:metadata:smartvideo_qattempts:passed'] = 'Whether the student answered the question correctly.';
+$string['privacy:metadata:smartvideo_qattempts:attempts'] = 'The number of attempts made by the student.';
+$string['privacy:metadata:smartvideo_qattempts:fraction'] = 'The score fraction obtained from the question engine.';
+$string['privacy:metadata:smartvideo_qattempts:timemodified'] = 'The timestamp of the last attempt interaction.';
+$string['privacy:metadata:core_question'] = 'The Smart Video activity uses Moodle\'s Question Engine subsystem to evaluate and store interactive question attempts.';

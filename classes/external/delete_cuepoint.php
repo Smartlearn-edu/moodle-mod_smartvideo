@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo\external;
+namespace mod_smartvideo\external;
 
 use core_external\external_api;
 use core_external\external_function_parameters;
@@ -27,7 +27,7 @@ use qubaid_list;
 /**
  * External web service to delete an interactive question cuepoint.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -59,26 +59,27 @@ class delete_cuepoint extends external_api {
             'cueid' => $cueid,
         ]);
 
-        $cm = get_coursemodule_from_id('securevideo', $params['cmid'], 0, false, MUST_EXIST);
+        $cm = get_coursemodule_from_id('smartvideo', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
 
         if (
             !has_capability('moodle/course:manageactivities', $context)
-            && !has_capability('mod/securevideo:addinstance', $context)
+            && !has_capability('mod/smartvideo:addinstance', $context)
+            && !has_capability('mod/smartvideo:managequestions', $context)
         ) {
             throw new \moodle_exception('nopermissions', 'error', '', 'manage questions');
         }
 
-        $instance = $DB->get_record('securevideo', ['id' => $cm->instance], '*', MUST_EXIST);
-        $cue = $DB->get_record('securevideo_questions', [
+        $instance = $DB->get_record('smartvideo', ['id' => $cm->instance], '*', MUST_EXIST);
+        $cue = $DB->get_record('smartvideo_questions', [
             'id'         => $params['cueid'],
             'instanceid' => $instance->id,
         ], '*', MUST_EXIST);
 
         // Clean up question engine usages.
         $qubaids = $DB->get_fieldset_select(
-            'securevideo_qattempts',
+            'smartvideo_qattempts',
             'qubaid',
             'svquestionid = :cueid AND qubaid > 0',
             ['cueid' => $cue->id]
@@ -88,8 +89,8 @@ class delete_cuepoint extends external_api {
             question_engine::delete_questions_usage_by_activities(new qubaid_list($qubaids));
         }
 
-        $DB->delete_records('securevideo_qattempts', ['svquestionid' => $cue->id]);
-        $DB->delete_records('securevideo_questions', ['id' => $cue->id]);
+        $DB->delete_records('smartvideo_qattempts', ['svquestionid' => $cue->id]);
+        $DB->delete_records('smartvideo_questions', ['id' => $cue->id]);
 
         return [
             'status' => true,

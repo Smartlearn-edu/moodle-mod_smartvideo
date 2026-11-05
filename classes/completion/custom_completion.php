@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
-namespace mod_securevideo\completion;
+namespace mod_smartvideo\completion;
 
 use core_completion\activity_custom_completion;
 
 /**
- * Activity custom completion implementation for mod_securevideo.
+ * Activity custom completion implementation for mod_smartvideo.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -37,14 +37,14 @@ class custom_completion extends activity_custom_completion {
 
         $this->validate_rule($rule);
 
-        $instance = $DB->get_record('securevideo', ['id' => $this->cm->instance], '*', MUST_EXIST);
+        $instance = $DB->get_record('smartvideo', ['id' => $this->cm->instance], '*', MUST_EXIST);
 
         if ($rule === 'completionminpercent') {
             if (empty($instance->completionminpercent)) {
                 return COMPLETION_COMPLETE;
             }
 
-            $progress = $DB->get_record('securevideo_progress', [
+            $progress = $DB->get_record('smartvideo_progress', [
                 'instanceid' => $instance->id,
                 'userid'     => $this->userid,
             ]);
@@ -57,7 +57,7 @@ class custom_completion extends activity_custom_completion {
                 return COMPLETION_COMPLETE;
             }
 
-            $totalquestions = $DB->count_records('securevideo_questions', [
+            $totalquestions = $DB->count_records('smartvideo_questions', [
                 'instanceid'     => $instance->id,
                 'requirecorrect' => 1,
             ]);
@@ -67,8 +67,8 @@ class custom_completion extends activity_custom_completion {
             }
 
             $sql = "SELECT COUNT(qa.id)
-                      FROM {securevideo_qattempts} qa
-                      JOIN {securevideo_questions} sq ON sq.id = qa.svquestionid
+                      FROM {smartvideo_qattempts} qa
+                      JOIN {smartvideo_questions} sq ON sq.id = qa.svquestionid
                      WHERE qa.instanceid = :instanceid
                        AND qa.userid = :userid
                        AND sq.requirecorrect = 1
@@ -107,8 +107,8 @@ class custom_completion extends activity_custom_completion {
     public function get_custom_rule_descriptions(): array {
         global $DB;
 
-        $instance = $DB->get_record('securevideo', ['id' => $this->cm->instance], '*', MUST_EXIST);
-        $totalquestions = $DB->count_records('securevideo_questions', [
+        $instance = $DB->get_record('smartvideo', ['id' => $this->cm->instance], '*', MUST_EXIST);
+        $totalquestions = $DB->count_records('smartvideo_questions', [
             'instanceid'     => $instance->id,
             'requirecorrect' => 1,
         ]);
@@ -116,12 +116,12 @@ class custom_completion extends activity_custom_completion {
         return [
             'completionminpercent' => get_string(
                 'completionminpercent_desc',
-                'mod_securevideo',
+                'mod_smartvideo',
                 $instance->completionminpercent
             ),
             'completionrequirequestions' => get_string(
                 'completionrequirequestions_desc',
-                'mod_securevideo',
+                'mod_smartvideo',
                 $totalquestions
             ),
         ];

@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Defines backup_securevideo_activity_task class.
+ * Defines backup_smartvideo_activity_task class.
  *
- * @package    mod_securevideo
+ * @package    mod_smartvideo
  * @category   backup
  * @copyright  2025 Mohammad Nabil <mohammad@smartlearn.education>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -25,12 +25,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot . '/mod/securevideo/backup/moodle2/backup_securevideo_stepslib.php');
+require_once($CFG->dirroot . '/mod/smartvideo/backup/moodle2/backup_smartvideo_stepslib.php');
 
 /**
- * Provides the steps to perform one complete backup of the securevideo instance.
+ * Provides the steps to perform one complete backup of the smartvideo instance.
  */
-class backup_securevideo_activity_task extends backup_activity_task {
+class backup_smartvideo_activity_task extends backup_activity_task {
     /**
      * No specific settings for this activity.
      */
@@ -38,12 +38,12 @@ class backup_securevideo_activity_task extends backup_activity_task {
     }
 
     /**
-     * Defines a backup step to store the instance data in the securevideo.xml file.
+     * Defines a backup step to store the instance data in the smartvideo.xml file.
      */
     protected function define_my_steps(): void {
-        $this->add_step(new backup_securevideo_activity_structure_step(
-            'securevideo_structure',
-            'securevideo.xml'
+        $this->add_step(new backup_smartvideo_activity_structure_step(
+            'smartvideo_structure',
+            'smartvideo.xml'
         ));
     }
 
@@ -58,13 +58,13 @@ class backup_securevideo_activity_task extends backup_activity_task {
 
         $base = preg_quote($CFG->wwwroot, '/');
 
-        // Link to the list of securevideos.
-        $search = '/(' . $base . '\/mod\/securevideo\/index\.php\?id\=)([0-9]+)/';
-        $content = preg_replace($search, '$@SECUREVIDEOINDEX*$2@$', $content);
+        // Link to the list of smartvideos.
+        $search = '/(' . $base . '\/mod\/smartvideo\/index\.php\?id\=)([0-9]+)/';
+        $content = preg_replace($search, '$@SMARTVIDEOINDEX*$2@$', $content);
 
-        // Link to securevideo view by moduleid.
-        $search = '/(' . $base . '\/mod\/securevideo\/view\.php\?id\=)([0-9]+)/';
-        $content = preg_replace($search, '$@SECUREVIDEOVIEWBYID*$2@$', $content);
+        // Link to smartvideo view by moduleid.
+        $search = '/(' . $base . '\/mod\/smartvideo\/view\.php\?id\=)([0-9]+)/';
+        $content = preg_replace($search, '$@SMARTVIDEOVIEWBYID*$2@$', $content);
 
         return $content;
     }
