@@ -95,7 +95,7 @@
                     <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
                         <div class="input-group" style="max-width: 170px;">
                             <span class="input-group-text"><i class="fa fa-clock" aria-hidden="true"></i></span>
-                            <input type="text" id="smartVideoScrubTimeInput" class="form-control text-center fw-bold" value="00:00" readonly>
+                            <input type="text" id="smartVideoScrubTimeInput" class="form-control text-center fw-bold" value="00:00" placeholder="00:00" title="Type MM:SS timestamp or scrub the video">
                         </div>
                         <button type="button" class="btn btn-success btn-add-at-current">
                             <i class="fa fa-plus-circle me-1" aria-hidden="true"></i>{{#str}}addquestion, mod_smartvideo{{/str}}
@@ -430,7 +430,7 @@
                     <h5 class="modal-title" id="smartVideoAddQuestionModalLabel">
                         <i class="fa fa-question-circle me-2" aria-hidden="true"></i><span class="modal-title-text">{{#str}}addquestion, mod_smartvideo{{/str}}</span>
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     {{! Inner Source Selector Tabs }}
@@ -608,7 +608,7 @@
                     </form>
                 </div>
                 <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary btn-save-cue">
                         <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savecuepoint, mod_smartvideo{{/str}}
                     </button>
@@ -625,7 +625,7 @@
                     <h5 class="modal-title" id="smartVideoChapterModalLabel">
                         <i class="fa fa-bookmark me-2" aria-hidden="true"></i><span class="chapter-modal-title-text">{{#str}}addchapter, mod_smartvideo{{/str}}</span>
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <form id="smartVideoChapterForm">
@@ -649,7 +649,7 @@
                     </form>
                 </div>
                 <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-success btn-save-chapter">
                         <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savechapter, mod_smartvideo{{/str}}
                     </button>
@@ -666,7 +666,7 @@
                     <h5 class="modal-title" id="smartVideoCalloutModalLabel">
                         <i class="fa fa-bullhorn me-2" aria-hidden="true"></i><span class="callout-modal-title-text">{{#str}}addcallout, mod_smartvideo{{/str}}</span>
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <form id="smartVideoCalloutForm">
@@ -742,13 +742,13 @@
                                 <label for="calloutLinkUrl" class="form-label fw-semibold">
                                     {{#str}}calloutlinkurl, mod_smartvideo{{/str}}
                                 </label>
-                                <input type="url" id="calloutLinkUrl" class="form-control" placeholder="https://example.com/guidelines">
+                                <input type="text" id="calloutLinkUrl" class="form-control" placeholder="https://example.com/guidelines">
                             </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-info text-white btn-save-callout">
                         <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savecallout, mod_smartvideo{{/str}}
                     </button>
@@ -765,7 +765,7 @@
                     <h5 class="modal-title" id="smartVideoSubtitlesModalLabel">
                         <i class="fa fa-cc me-2" aria-hidden="true"></i><span class="subtitles-modal-title-text">{{#str}}addsubtitles, mod_smartvideo{{/str}}</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <form id="smartVideoSubtitlesForm">
@@ -804,7 +804,7 @@
                     </form>
                 </div>
                 <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-warning text-dark btn-save-subtitles">
                         <i class="fa fa-save me-1" aria-hidden="true"></i>{{#str}}savesubtitles, mod_smartvideo{{/str}}
                     </button>

@@ -197,8 +197,9 @@ class save_cuepoint extends external_api {
         }
 
         return [
-            'status' => true,
-            'cueid'  => (int)$savedid,
+            'status'  => true,
+            'success' => true,
+            'cueid'   => (int)$savedid,
         ];
     }
 
@@ -209,8 +210,9 @@ class save_cuepoint extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'status' => new external_value(PARAM_BOOL, 'Operation status'),
-            'cueid'  => new external_value(PARAM_INT, 'Saved cuepoint ID'),
+            'status'  => new external_value(PARAM_BOOL, 'Operation status'),
+            'success' => new external_value(PARAM_BOOL, 'Operation status', VALUE_DEFAULT, true),
+            'cueid'   => new external_value(PARAM_INT, 'Saved cuepoint ID'),
         ]);
     }
 }

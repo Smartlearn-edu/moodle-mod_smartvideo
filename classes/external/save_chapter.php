@@ -102,6 +102,7 @@ class save_chapter extends external_api {
         $timeformatted = sprintf('%02d:%02d', $mins, $secs);
 
         return [
+            'status'        => true,
             'success'       => true,
             'id'            => (int)$id,
             'timecode'      => (int)$record->timecode,
@@ -117,7 +118,8 @@ class save_chapter extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'success'       => new external_value(PARAM_BOOL, 'True on success'),
+            'status'        => new external_value(PARAM_BOOL, 'True on success', VALUE_DEFAULT, true),
+            'success'       => new external_value(PARAM_BOOL, 'True on success', VALUE_DEFAULT, true),
             'id'            => new external_value(PARAM_INT, 'Chapter ID'),
             'timecode'      => new external_value(PARAM_INT, 'Timecode in seconds'),
             'timeformatted' => new external_value(PARAM_TEXT, 'Formatted time (MM:SS)'),

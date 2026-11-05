@@ -274,7 +274,7 @@
                     <h5 class="modal-title" id="teacherReportModalLabel">
                         <i class="fa fa-stethoscope me-2"></i><span id="modalReportStudentName">Case Report</span>
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
@@ -295,7 +295,7 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-light py-2">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -323,6 +323,81 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     var reportModalEl = document.getElementById('smartVideoTeacherReportModal');
+
+    function hideTeacherModal() {
+        if (!reportModalEl) return;
+        if (window.jQuery && typeof window.jQuery(reportModalEl).modal === 'function') {
+            try { window.jQuery(reportModalEl).modal('hide'); } catch (e) {}
+        }
+        if (window.bootstrap && window.bootstrap.Modal) {
+            try {
+                var inst = (typeof window.bootstrap.Modal.getInstance === 'function') ?
+                    window.bootstrap.Modal.getInstance(reportModalEl) : null;
+                if (inst) inst.hide();
+            } catch (e) {}
+        }
+        reportModalEl.classList.remove('show');
+        reportModalEl.setAttribute('aria-hidden', 'true');
+        setTimeout(function() {
+            reportModalEl.style.display = 'none';
+        }, 150);
+        var bd = document.querySelector('.smartvideo-report-backdrop');
+        if (bd) {
+            bd.classList.remove('show');
+            setTimeout(function() { bd.remove(); }, 150);
+        }
+        document.body.classList.remove('modal-open');
+    }
+
+    function showTeacherModal() {
+        if (!reportModalEl) return;
+
+        // Bind dismiss listeners once
+        if (!reportModalEl.dataset.dismissBound) {
+            reportModalEl.dataset.dismissBound = '1';
+            reportModalEl.querySelectorAll('.btn-modal-close, [data-bs-dismiss="modal"], [data-dismiss="modal"]').forEach(function(b) {
+                b.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    hideTeacherModal();
+                });
+            });
+            reportModalEl.addEventListener('click', function(e) {
+                if (e.target === reportModalEl) {
+                    hideTeacherModal();
+                }
+            });
+        }
+
+        if (window.jQuery && typeof window.jQuery(reportModalEl).modal === 'function') {
+            try {
+                window.jQuery(reportModalEl).modal('show');
+                return;
+            } catch (e) {}
+        }
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            try {
+                var modal = (typeof window.bootstrap.Modal.getOrCreateInstance === 'function') ?
+                    window.bootstrap.Modal.getOrCreateInstance(reportModalEl) :
+                    new window.bootstrap.Modal(reportModalEl);
+                modal.show();
+                return;
+            } catch (e) {}
+        }
+
+        // Standalone fallback
+        var bd = document.createElement('div');
+        bd.className = 'modal-backdrop fade smartvideo-report-backdrop show';
+        bd.style.zIndex = '1055';
+        document.body.appendChild(bd);
+
+        document.body.classList.add('modal-open');
+        reportModalEl.style.display = 'block';
+        reportModalEl.style.zIndex = '1060';
+        void reportModalEl.offsetWidth;
+        reportModalEl.classList.add('show');
+    }
+
     document.querySelectorAll('.btn-view-report').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var name = btn.getAttribute('data-studentname') || 'Student';
@@ -331,19 +406,18 @@ document.addEventListener('DOMContentLoaded', function() {
             var diagnosis = btn.getAttribute('data-diagnosis') || 'None recorded.';
             var recommendations = btn.getAttribute('data-recommendations') || 'None recorded.';
 
-            document.getElementById('modalReportStudentName').textContent = name + ' - Case Report';
-            document.getElementById('modalReportFindings').textContent = findings;
-            document.getElementById('modalReportImpression').textContent = impression;
-            document.getElementById('modalReportDiagnosis').textContent = diagnosis;
-            document.getElementById('modalReportRecommendations').textContent = recommendations;
+            var nameEl = document.getElementById('modalReportStudentName');
+            if (nameEl) nameEl.textContent = name + ' - Case Report';
+            var fEl = document.getElementById('modalReportFindings');
+            if (fEl) fEl.textContent = findings;
+            var impEl = document.getElementById('modalReportImpression');
+            if (impEl) impEl.textContent = impression;
+            var dEl = document.getElementById('modalReportDiagnosis');
+            if (dEl) dEl.textContent = diagnosis;
+            var rEl = document.getElementById('modalReportRecommendations');
+            if (rEl) rEl.textContent = recommendations;
 
-            if (window.bootstrap && window.bootstrap.Modal) {
-                var modal = window.bootstrap.Modal.getOrCreateInstance(reportModalEl);
-                modal.show();
-            } else {
-                reportModalEl.classList.add('show');
-                reportModalEl.style.display = 'block';
-            }
+            showTeacherModal();
         });
     });
 

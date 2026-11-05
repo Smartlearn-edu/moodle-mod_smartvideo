@@ -112,6 +112,7 @@ class save_subtitles extends external_api {
 
         return [
             'status'   => true,
+            'success'  => true,
             'id'       => (int)$id,
             'cuecount' => count($cues),
         ];
@@ -125,6 +126,7 @@ class save_subtitles extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'status'   => new external_value(PARAM_BOOL, 'Operation success status'),
+            'success'  => new external_value(PARAM_BOOL, 'Operation success status', VALUE_DEFAULT, true),
             'id'       => new external_value(PARAM_INT, 'Subtitle track ID'),
             'cuecount' => new external_value(PARAM_INT, 'Number of parsed cues'),
         ]);

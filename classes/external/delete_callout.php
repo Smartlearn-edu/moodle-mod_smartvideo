@@ -70,7 +70,10 @@ class delete_callout extends external_api {
             'instanceid' => $smartvideo->id,
         ]);
 
-        return ['success' => true];
+        return [
+            'status'  => true,
+            'success' => true,
+        ];
     }
 
     /**
@@ -80,7 +83,8 @@ class delete_callout extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'success' => new external_value(PARAM_BOOL, 'True on success'),
+            'status'  => new external_value(PARAM_BOOL, 'True on success', VALUE_DEFAULT, true),
+            'success' => new external_value(PARAM_BOOL, 'True on success', VALUE_DEFAULT, true),
         ]);
     }
 }

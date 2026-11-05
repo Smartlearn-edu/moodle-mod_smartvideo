@@ -106,6 +106,11 @@ class save_callout extends external_api {
             throw new \invalid_parameter_exception('Callout title cannot be empty.');
         }
 
+        $linkurl = trim($params['linkurl']);
+        if (!empty($linkurl) && !preg_match('~^(https?://|//|/|#)~i', $linkurl)) {
+            $linkurl = 'https://' . $linkurl;
+        }
+
         $now = time();
         $record = new stdClass();
         $record->instanceid   = $smartvideo->id;
@@ -113,7 +118,7 @@ class save_callout extends external_api {
         $record->duration     = max(2, min(300, $params['duration']));
         $record->title        = $title;
         $record->body         = clean_text($params['body'], FORMAT_HTML);
-        $record->linkurl      = clean_param($params['linkurl'], PARAM_URL);
+        $record->linkurl      = !empty($linkurl) ? clean_param($linkurl, PARAM_URL) : '';
         $record->linklabel    = trim($params['linklabel']);
         $record->autopause    = !empty($params['autopause']) ? 1 : 0;
         $record->position     = in_array($params['position'], ['bottom-right', 'top-right', 'bottom-left', 'top-left', 'lower-third'])
@@ -138,6 +143,7 @@ class save_callout extends external_api {
         $timeformatted = sprintf('%02d:%02d', $mins, $secs);
 
         return [
+            'status'        => true,
             'success'       => true,
             'id'            => (int)$id,
             'timecode'      => (int)$record->timecode,
@@ -159,7 +165,8 @@ class save_callout extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'success'       => new external_value(PARAM_BOOL, 'True on success'),
+            'status'        => new external_value(PARAM_BOOL, 'True on success', VALUE_DEFAULT, true),
+            'success'       => new external_value(PARAM_BOOL, 'True on success', VALUE_DEFAULT, true),
             'id'            => new external_value(PARAM_INT, 'Callout ID'),
             'timecode'      => new external_value(PARAM_INT, 'Timecode in seconds'),
             'timeformatted' => new external_value(PARAM_TEXT, 'Formatted time (MM:SS)'),

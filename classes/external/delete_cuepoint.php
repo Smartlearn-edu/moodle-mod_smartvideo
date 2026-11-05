@@ -93,7 +93,8 @@ class delete_cuepoint extends external_api {
         $DB->delete_records('smartvideo_questions', ['id' => $cue->id]);
 
         return [
-            'status' => true,
+            'status'  => true,
+            'success' => true,
         ];
     }
 
@@ -104,7 +105,8 @@ class delete_cuepoint extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'status' => new external_value(PARAM_BOOL, 'Operation status'),
+            'status'  => new external_value(PARAM_BOOL, 'Operation status'),
+            'success' => new external_value(PARAM_BOOL, 'Operation status', VALUE_DEFAULT, true),
         ]);
     }
 }

@@ -59,7 +59,50 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
     }
 
     /**
-     * Show Bootstrap 5 modal safely.
+     * Get or create backdrop element for modal display.
+     *
+     * @return {HTMLElement}
+     */
+    function getOrCreateBackdrop() {
+        let backdrop = document.querySelector('.smartvideo-modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade smartvideo-modal-backdrop';
+            backdrop.style.zIndex = '1055';
+            document.body.appendChild(backdrop);
+        }
+        return backdrop;
+    }
+
+    /**
+     * Bind dismiss handlers to any modal element safely.
+     *
+     * @param {HTMLElement} el
+     */
+    function bindModalDismiss(el) {
+        if (!el || el.dataset.dismissBound) {
+            return;
+        }
+        el.dataset.dismissBound = '1';
+
+        // Close on any dismiss button (Cancel, X, Close, etc.)
+        el.querySelectorAll('[data-bs-dismiss="modal"], [data-dismiss="modal"], .btn-close, .btn-secondary, .btn-modal-close').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                hideModal(el);
+            });
+        });
+
+        // Close on click outside modal dialog content
+        el.addEventListener('click', function(e) {
+            if (e.target === el) {
+                hideModal(el);
+            }
+        });
+    }
+
+    /**
+     * Show modal safely in any Moodle theme/environment.
      *
      * @param {HTMLElement} el
      */
@@ -67,17 +110,55 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         if (!el) {
             return;
         }
-        if (window.bootstrap && window.bootstrap.Modal) {
-            const modal = window.bootstrap.Modal.getOrCreateInstance(el);
-            modal.show();
-        } else {
-            el.classList.add('show');
-            el.style.display = 'block';
+
+        // Always ensure dismiss listeners are bound regardless of display engine.
+        bindModalDismiss(el);
+
+        // Try jQuery / Bootstrap modal plugin if loaded.
+        if (window.jQuery && typeof window.jQuery(el).modal === 'function') {
+            try {
+                window.jQuery(el).modal('show');
+                return;
+            } catch (e) {
+                // Fallback to native / standalone display.
+            }
         }
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            try {
+                if (typeof window.bootstrap.Modal.getOrCreateInstance === 'function') {
+                    window.bootstrap.Modal.getOrCreateInstance(el).show();
+                    return;
+                } else if (typeof window.bootstrap.Modal === 'function') {
+                    const inst = new window.bootstrap.Modal(el);
+                    inst.show();
+                    return;
+                }
+            } catch (e) {
+                // Fallback to standalone display.
+            }
+        }
+
+        // Bulletproof standalone fallback:
+        // 1. Show backdrop
+        const backdrop = getOrCreateBackdrop();
+        backdrop.style.display = 'block';
+        void backdrop.offsetWidth; // Force reflow
+        backdrop.classList.add('show');
+
+        // 2. Prepare modal element
+        document.body.classList.add('modal-open');
+        el.style.display = 'block';
+        el.style.zIndex = '1060';
+        el.removeAttribute('aria-hidden');
+        el.setAttribute('aria-modal', 'true');
+        el.setAttribute('role', 'dialog');
+        void el.offsetWidth; // Force reflow for CSS opacity transition
+        el.classList.add('show');
     }
 
     /**
-     * Hide Bootstrap 5 modal safely.
+     * Hide modal safely.
      *
      * @param {HTMLElement} el
      */
@@ -85,16 +166,71 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
         if (!el) {
             return;
         }
-        if (window.bootstrap && window.bootstrap.Modal) {
-            const modal = window.bootstrap.Modal.getInstance(el);
-            if (modal) {
-                modal.hide();
+
+        if (window.jQuery && typeof window.jQuery(el).modal === 'function') {
+            try {
+                window.jQuery(el).modal('hide');
+            } catch (e) {
+                // Continue with manual hide.
             }
-        } else {
-            el.classList.remove('show');
+        }
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            try {
+                if (typeof window.bootstrap.Modal.getInstance === 'function') {
+                    const inst = window.bootstrap.Modal.getInstance(el);
+                    if (inst) {
+                        inst.hide();
+                    }
+                }
+            } catch (e) {
+                // Continue with manual hide.
+            }
+        }
+
+        // Standalone hide:
+        el.classList.remove('show');
+        el.setAttribute('aria-hidden', 'true');
+        el.removeAttribute('aria-modal');
+
+        setTimeout(function() {
             el.style.display = 'none';
+        }, 150);
+
+        // Hide backdrop if no other modals are open
+        const openModals = document.querySelectorAll('.modal.show');
+        if (openModals.length <= 1) {
+            const backdrop = document.querySelector('.smartvideo-modal-backdrop');
+            if (backdrop) {
+                backdrop.classList.remove('show');
+                setTimeout(function() {
+                    backdrop.style.display = 'none';
+                }, 150);
+            }
+            // Remove any lingering Bootstrap modal backdrops
+            document.querySelectorAll('.modal-backdrop').forEach(function(bd) {
+                bd.classList.remove('show');
+                setTimeout(function() {
+                    if (bd.parentNode) {
+                        bd.remove();
+                    }
+                }, 150);
+            });
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('padding-right');
+            document.body.style.removeProperty('overflow');
         }
     }
+
+    // Global Escape key listener to close modals.
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            const openModal = document.querySelector('.modal.show');
+            if (openModal) {
+                hideModal(openModal);
+            }
+        }
+    });
 
     /**
      * Timeline Studio Authoring Manager.
@@ -122,10 +258,93 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * Initialize events, preview player, and load categories.
          */
         init: function() {
+            this.setupTabPersistence();
             this.setupPreviewPlayer();
             this.setupEventListeners();
             this.setupQuickQuestionUI();
             this.loadCategories();
+        },
+
+        /**
+         * Check if web service response was successful.
+         *
+         * @param {Object} res
+         * @return {boolean}
+         */
+        isSuccessResponse: function(res) {
+            if (!res) {
+                return false;
+            }
+            if (res.status === true || res.success === true) {
+                return true;
+            }
+            if ((res.id !== undefined && res.id > 0) || (res.cueid !== undefined && res.cueid > 0)) {
+                return true;
+            }
+            return (res.status !== false && res.success !== false);
+        },
+
+        /**
+         * Set active tab in sessionStorage and URL hash so it persists across page reloads.
+         *
+         * @param {string} tabTarget E.g. '#tab-chapters'
+         */
+        setActiveTab: function(tabTarget) {
+            if (!tabTarget) {
+                return;
+            }
+            try {
+                sessionStorage.setItem('smartvideo_active_tab_' + this.cmid, tabTarget);
+            } catch (e) {}
+            try {
+                window.location.hash = tabTarget;
+            } catch (e) {}
+        },
+
+        /**
+         * Setup tab switching persistence so the user stays on the right tab after reload.
+         */
+        setupTabPersistence: function() {
+            const self = this;
+            const root = this.container || document;
+
+            // Track tab changes and save in sessionStorage and URL hash.
+            root.querySelectorAll('#timelineStudioTabs button[data-bs-toggle="tab"], #timelineStudioTabs a[data-bs-toggle="tab"]').forEach(function(btn) {
+                btn.addEventListener('shown.bs.tab', function(e) {
+                    const target = e.target.getAttribute('data-bs-target') || e.target.getAttribute('href');
+                    if (target) {
+                        self.setActiveTab(target);
+                    }
+                });
+            });
+
+            // Restore active tab from location hash or sessionStorage.
+            let activeTab = null;
+            if (window.location.hash && window.location.hash.startsWith('#tab-')) {
+                activeTab = window.location.hash;
+            } else {
+                try {
+                    activeTab = sessionStorage.getItem('smartvideo_active_tab_' + self.cmid);
+                } catch (e) {}
+            }
+
+            if (activeTab) {
+                const targetBtn = root.querySelector('#timelineStudioTabs button[data-bs-target="' + activeTab + '"]') ||
+                                  root.querySelector('#timelineStudioTabs a[href="' + activeTab + '"]');
+                if (targetBtn) {
+                    if (window.bootstrap && window.bootstrap.Tab) {
+                        try {
+                            const tab = (typeof window.bootstrap.Tab.getOrCreateInstance === 'function') ?
+                                window.bootstrap.Tab.getOrCreateInstance(targetBtn) : new window.bootstrap.Tab(targetBtn);
+                            tab.show();
+                        } catch (e) {}
+                    } else if (window.jQuery && typeof window.jQuery(targetBtn).tab === 'function') {
+                        try {
+                            window.jQuery(targetBtn).tab('show');
+                        } catch (e) {}
+                    }
+                }
+            }
         },
 
         /**
@@ -147,7 +366,7 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 const containerData = document.getElementById('smartVideoContainer') ||
                                       document.getElementById('secureVideoContainer') ||
                                       self.container;
-                const playlistUrl = containerData.dataset.playlisturl;
+                const playlistUrl = containerData ? containerData.dataset.playlisturl : null;
 
                 if (playlistUrl && HlsClass && HlsClass.isSupported()) {
                     const hls = new HlsClass({debug: false});
@@ -158,15 +377,37 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 // Native playback fallback.
             });
 
+            // Sync video playback to time badge and scrub input (only if user is not currently typing in it).
             video.addEventListener('timeupdate', function() {
                 const formatted = formatTime(video.currentTime);
-                if (scrubInput) {
+                if (scrubInput && document.activeElement !== scrubInput) {
                     scrubInput.value = formatted;
                 }
                 if (timerBadge) {
                     timerBadge.textContent = formatted + ' / ' + formatTime(self.duration);
                 }
             });
+
+            // When user manually types or changes the time in the scrub input box.
+            if (scrubInput) {
+                const syncTimeFromInput = function() {
+                    const secs = parseTime(scrubInput.value);
+                    scrubInput.value = formatTime(secs);
+                    if (video) {
+                        video.currentTime = (self.duration > 0) ? Math.min(secs, self.duration) : secs;
+                    }
+                };
+
+                scrubInput.addEventListener('change', syncTimeFromInput);
+                scrubInput.addEventListener('blur', syncTimeFromInput);
+                scrubInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        syncTimeFromInput();
+                        scrubInput.blur();
+                    }
+                });
+            }
         },
 
         /**
@@ -252,10 +493,17 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          */
         setupEventListeners: function() {
             const self = this;
+            const root = this.container || document;
             const video = document.getElementById('smartVideoPreviewElement');
 
+            // Pre-bind dismiss on all 4 modals to ensure Cancel/X buttons always work.
+            bindModalDismiss(this.questionModalEl || document.getElementById('smartVideoAddQuestionModal'));
+            bindModalDismiss(this.chapterModalEl || document.getElementById('smartVideoChapterModal'));
+            bindModalDismiss(this.calloutModalEl || document.getElementById('smartVideoCalloutModal'));
+            bindModalDismiss(this.subtitlesModalEl || document.getElementById('smartVideoSubtitlesModal'));
+
             // --- Jump to time button in all tables ---
-            this.container.querySelectorAll('.btn-jump-to-time').forEach(function(btn) {
+            root.querySelectorAll('.btn-jump-to-time').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const timecode = parseInt(btn.dataset.timecode, 10) || 0;
                     if (video) {
@@ -265,30 +513,42 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 });
             });
 
+            // Helper to get timecode from user-typed input or current video time.
+            const getCurrentScrubTime = function() {
+                const scrubInput = document.getElementById('smartVideoScrubTimeInput');
+                if (scrubInput && scrubInput.value) {
+                    const typed = parseTime(scrubInput.value);
+                    if (typed > 0 || (video && video.currentTime === 0)) {
+                        return typed;
+                    }
+                }
+                return video ? Math.floor(video.currentTime) : 0;
+            };
+
             // --- Question Event Listeners ---
-            this.container.querySelectorAll('.btn-add-question').forEach(function(btn) {
+            root.querySelectorAll('.btn-add-question').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     self.openQuestionModalForAdd(btn.dataset.timecode || 0);
                 });
             });
 
-            const addQuestionAtCurrentBtn = this.container.querySelector('.btn-add-at-current');
+            const addQuestionAtCurrentBtn = root.querySelector('.btn-add-at-current');
             if (addQuestionAtCurrentBtn) {
-                addQuestionAtCurrentBtn.addEventListener('click', function() {
-                    const currentTime = video ? Math.floor(video.currentTime) : 0;
-                    self.openQuestionModalForAdd(currentTime);
+                addQuestionAtCurrentBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    self.openQuestionModalForAdd(getCurrentScrubTime());
                 });
             }
 
-            this.container.querySelectorAll('.btn-edit-cue').forEach(function(btn) {
+            root.querySelectorAll('.btn-edit-cue').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const row = btn.closest('tr');
                     self.openQuestionModalForEdit(row);
                 });
             });
 
-            this.container.querySelectorAll('.btn-delete-cue').forEach(function(btn) {
+            root.querySelectorAll('.btn-delete-cue').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const row = btn.closest('tr');
                     const cueId = parseInt(row.dataset.cueid, 10);
@@ -310,8 +570,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 });
             }
 
-            if (this.questionModalEl) {
-                const saveQuestionBtn = this.questionModalEl.querySelector('.btn-save-cue');
+            const questionModal = this.questionModalEl || document.getElementById('smartVideoAddQuestionModal');
+            if (questionModal) {
+                const saveQuestionBtn = questionModal.querySelector('.btn-save-cue');
                 if (saveQuestionBtn) {
                     saveQuestionBtn.addEventListener('click', function() {
                         self.saveQuestion();
@@ -320,29 +581,29 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             }
 
             // --- Chapter Event Listeners ---
-            this.container.querySelectorAll('.btn-add-chapter').forEach(function(btn) {
+            root.querySelectorAll('.btn-add-chapter').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     self.openChapterModalForAdd(btn.dataset.timecode || 0);
                 });
             });
 
-            const addChapterAtCurrentBtn = this.container.querySelector('.btn-add-chapter-at-current');
+            const addChapterAtCurrentBtn = root.querySelector('.btn-add-chapter-at-current');
             if (addChapterAtCurrentBtn) {
-                addChapterAtCurrentBtn.addEventListener('click', function() {
-                    const currentTime = video ? Math.floor(video.currentTime) : 0;
-                    self.openChapterModalForAdd(currentTime);
+                addChapterAtCurrentBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    self.openChapterModalForAdd(getCurrentScrubTime());
                 });
             }
 
-            this.container.querySelectorAll('.btn-edit-chapter').forEach(function(btn) {
+            root.querySelectorAll('.btn-edit-chapter').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const row = btn.closest('tr');
                     self.openChapterModalForEdit(row);
                 });
             });
 
-            this.container.querySelectorAll('.btn-delete-chapter').forEach(function(btn) {
+            root.querySelectorAll('.btn-delete-chapter').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const row = btn.closest('tr');
                     const chapterId = parseInt(row.dataset.chapterid, 10);
@@ -350,8 +611,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 });
             });
 
-            if (this.chapterModalEl) {
-                const saveChapterBtn = this.chapterModalEl.querySelector('.btn-save-chapter');
+            const chapterModal = this.chapterModalEl || document.getElementById('smartVideoChapterModal');
+            if (chapterModal) {
+                const saveChapterBtn = chapterModal.querySelector('.btn-save-chapter');
                 if (saveChapterBtn) {
                     saveChapterBtn.addEventListener('click', function() {
                         self.saveChapter();
@@ -360,29 +622,29 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             }
 
             // --- Callout Event Listeners ---
-            this.container.querySelectorAll('.btn-add-callout').forEach(function(btn) {
+            root.querySelectorAll('.btn-add-callout').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     self.openCalloutModalForAdd(btn.dataset.timecode || 0);
                 });
             });
 
-            const addCalloutAtCurrentBtn = this.container.querySelector('.btn-add-callout-at-current');
+            const addCalloutAtCurrentBtn = root.querySelector('.btn-add-callout-at-current');
             if (addCalloutAtCurrentBtn) {
-                addCalloutAtCurrentBtn.addEventListener('click', function() {
-                    const currentTime = video ? Math.floor(video.currentTime) : 0;
-                    self.openCalloutModalForAdd(currentTime);
+                addCalloutAtCurrentBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    self.openCalloutModalForAdd(getCurrentScrubTime());
                 });
             }
 
-            this.container.querySelectorAll('.btn-edit-callout').forEach(function(btn) {
+            root.querySelectorAll('.btn-edit-callout').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const row = btn.closest('tr');
                     self.openCalloutModalForEdit(row);
                 });
             });
 
-            this.container.querySelectorAll('.btn-delete-callout').forEach(function(btn) {
+            root.querySelectorAll('.btn-delete-callout').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const row = btn.closest('tr');
                     const calloutId = parseInt(row.dataset.calloutid, 10);
@@ -390,8 +652,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 });
             });
 
-            if (this.calloutModalEl) {
-                const saveCalloutBtn = this.calloutModalEl.querySelector('.btn-save-callout');
+            const calloutModal = this.calloutModalEl || document.getElementById('smartVideoCalloutModal');
+            if (calloutModal) {
+                const saveCalloutBtn = calloutModal.querySelector('.btn-save-callout');
                 if (saveCalloutBtn) {
                     saveCalloutBtn.addEventListener('click', function() {
                         self.saveCallout();
@@ -400,21 +663,21 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             }
 
             // --- Subtitles Event Listeners ---
-            this.container.querySelectorAll('.btn-add-subtitles').forEach(function(btn) {
+            root.querySelectorAll('.btn-add-subtitles').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     self.openSubtitlesModalForAdd();
                 });
             });
 
-            this.container.querySelectorAll('.btn-edit-subtitles').forEach(function(btn) {
+            root.querySelectorAll('.btn-edit-subtitles').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const row = btn.closest('tr');
                     self.openSubtitlesModalForEdit(row);
                 });
             });
 
-            this.container.querySelectorAll('.btn-delete-subtitles').forEach(function(btn) {
+            root.querySelectorAll('.btn-delete-subtitles').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const row = btn.closest('tr');
                     const trackId = parseInt(row.dataset.trackid, 10);
@@ -444,8 +707,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 });
             }
 
-            if (this.subtitlesModalEl) {
-                const saveSubtitlesBtn = this.subtitlesModalEl.querySelector('.btn-save-subtitles');
+            const subtitlesModal = this.subtitlesModalEl || document.getElementById('smartVideoSubtitlesModal');
+            if (subtitlesModal) {
+                const saveSubtitlesBtn = subtitlesModal.querySelector('.btn-save-subtitles');
                 if (saveSubtitlesBtn) {
                     saveSubtitlesBtn.addEventListener('click', function() {
                         self.saveSubtitles();
@@ -594,12 +858,23 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * @param {number|string} initialTimecode
          */
         openQuestionModalForAdd: function(initialTimecode) {
-            document.getElementById('cueId').value = '0';
-            document.getElementById('cueQid').value = '0';
-            document.getElementById('cueQbeId').value = '0';
-            document.getElementById('cueTimecode').value = formatTime(parseTime(initialTimecode));
-            document.getElementById('cueTitle').value = '';
-            document.getElementById('cueCategorySelect').value = '';
+            const modalEl = this.questionModalEl || document.getElementById('smartVideoAddQuestionModal');
+            if (!modalEl) {
+                return;
+            }
+
+            const cueIdInput = document.getElementById('cueId');
+            if (cueIdInput) cueIdInput.value = '0';
+            const cueQidInput = document.getElementById('cueQid');
+            if (cueQidInput) cueQidInput.value = '0';
+            const cueQbeIdInput = document.getElementById('cueQbeId');
+            if (cueQbeIdInput) cueQbeIdInput.value = '0';
+            const cueTimecodeInput = document.getElementById('cueTimecode');
+            if (cueTimecodeInput) cueTimecodeInput.value = formatTime(parseTime(initialTimecode));
+            const cueTitleInput = document.getElementById('cueTitle');
+            if (cueTitleInput) cueTitleInput.value = '';
+            const cueCatSelect = document.getElementById('cueCategorySelect');
+            if (cueCatSelect) cueCatSelect.value = '';
 
             const qSelect = document.getElementById('cueQuestionSelect');
             if (qSelect) {
@@ -627,8 +902,10 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 this.renderDefaultQuickChoices(choicesList);
             }
 
-            document.getElementById('cueRequireCorrect').checked = true;
-            document.getElementById('cueRewindTo').value = '';
+            const cueReqInput = document.getElementById('cueRequireCorrect');
+            if (cueReqInput) cueReqInput.checked = true;
+            const cueRewindInput = document.getElementById('cueRewindTo');
+            if (cueRewindInput) cueRewindInput.value = '';
             const styleSelect = document.getElementById('cueQuestionStyle');
             if (styleSelect) {
                 styleSelect.value = 'compact';
@@ -637,12 +914,20 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             // Default to Question Bank tab
             const bankTabBtn = document.getElementById('source-bank-tab');
             if (bankTabBtn && window.bootstrap && window.bootstrap.Tab) {
-                const tab = window.bootstrap.Tab.getOrCreateInstance(bankTabBtn);
-                tab.show();
+                try {
+                    const tab = (typeof window.bootstrap.Tab.getOrCreateInstance === 'function') ?
+                        window.bootstrap.Tab.getOrCreateInstance(bankTabBtn) : new window.bootstrap.Tab(bankTabBtn);
+                    tab.show();
+                } catch (e) {
+                    // Ignore tab show error
+                }
             }
 
-            this.questionModalEl.querySelector('.modal-title-text').textContent = 'Add Interactive Question';
-            showModal(this.questionModalEl);
+            const titleText = modalEl.querySelector('.modal-title-text');
+            if (titleText) {
+                titleText.textContent = 'Add Interactive Question';
+            }
+            showModal(modalEl);
         },
 
         /**
@@ -651,22 +936,34 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * @param {HTMLElement} row
          */
         openQuestionModalForEdit: function(row) {
-            const cueId = row.dataset.cueid;
-            const timecode = parseInt(row.dataset.timecode, 10);
-            const qid = parseInt(row.dataset.qid, 10);
-            const qbeId = parseInt(row.dataset.qbeid, 10);
+            const modalEl = this.questionModalEl || document.getElementById('smartVideoAddQuestionModal');
+            if (!modalEl || !row) {
+                return;
+            }
+
+            const cueId = row.dataset.cueid || '0';
+            const timecode = parseInt(row.dataset.timecode, 10) || 0;
+            const qid = parseInt(row.dataset.qid, 10) || 0;
+            const qbeId = parseInt(row.dataset.qbeid, 10) || 0;
             const title = row.dataset.title || '';
             const req = row.dataset.req === '1';
             const rewindTo = (row.dataset.rewindto !== undefined && row.dataset.rewindto !== '') ?
                 parseInt(row.dataset.rewindto, 10) : -1;
 
-            document.getElementById('cueId').value = cueId;
-            document.getElementById('cueQid').value = qid;
-            document.getElementById('cueQbeId').value = qbeId;
-            document.getElementById('cueTimecode').value = formatTime(timecode);
-            document.getElementById('cueTitle').value = title;
-            document.getElementById('cueRequireCorrect').checked = req;
-            document.getElementById('cueRewindTo').value = (rewindTo >= 0) ? formatTime(rewindTo) : '';
+            const cueIdInput = document.getElementById('cueId');
+            if (cueIdInput) cueIdInput.value = cueId;
+            const cueQidInput = document.getElementById('cueQid');
+            if (cueQidInput) cueQidInput.value = qid;
+            const cueQbeIdInput = document.getElementById('cueQbeId');
+            if (cueQbeIdInput) cueQbeIdInput.value = qbeId;
+            const cueTimecodeInput = document.getElementById('cueTimecode');
+            if (cueTimecodeInput) cueTimecodeInput.value = formatTime(timecode);
+            const cueTitleInput = document.getElementById('cueTitle');
+            if (cueTitleInput) cueTitleInput.value = title;
+            const cueReqInput = document.getElementById('cueRequireCorrect');
+            if (cueReqInput) cueReqInput.checked = req;
+            const cueRewindInput = document.getElementById('cueRewindTo');
+            if (cueRewindInput) cueRewindInput.value = (rewindTo >= 0) ? formatTime(rewindTo) : '';
             const styleSelect = document.getElementById('cueQuestionStyle');
             if (styleSelect) {
                 styleSelect.value = row.dataset.style || 'compact';
@@ -675,12 +972,20 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             // When editing an existing cuepoint, activate Question Bank tab
             const bankTabBtn = document.getElementById('source-bank-tab');
             if (bankTabBtn && window.bootstrap && window.bootstrap.Tab) {
-                const tab = window.bootstrap.Tab.getOrCreateInstance(bankTabBtn);
-                tab.show();
+                try {
+                    const tab = (typeof window.bootstrap.Tab.getOrCreateInstance === 'function') ?
+                        window.bootstrap.Tab.getOrCreateInstance(bankTabBtn) : new window.bootstrap.Tab(bankTabBtn);
+                    tab.show();
+                } catch (e) {
+                    // Ignore tab show error
+                }
             }
 
-            this.questionModalEl.querySelector('.modal-title-text').textContent = 'Edit Interactive Question';
-            showModal(this.questionModalEl);
+            const titleText = modalEl.querySelector('.modal-title-text');
+            if (titleText) {
+                titleText.textContent = 'Edit Interactive Question';
+            }
+            showModal(modalEl);
         },
 
         /**
@@ -769,6 +1074,12 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     correctIndex = (tfTrue && tfTrue.checked) ? 0 : 1;
                 }
 
+                const modalEl = self.questionModalEl || document.getElementById('smartVideoAddQuestionModal');
+                const saveBtn = modalEl ? modalEl.querySelector('.btn-save-cue') : null;
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                }
+
                 Ajax.call([{
                     methodname: 'mod_smartvideo_create_quick_question',
                     args: {
@@ -786,10 +1097,17 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                         questionstyle: questionStyle
                     }
                 }])[0].then(function(res) {
-                    if (res.status) {
+                    if (self.isSuccessResponse(res)) {
+                        hideModal(modalEl);
+                        self.setActiveTab('#tab-questions');
                         window.location.reload();
+                    } else {
+                        if (saveBtn) saveBtn.disabled = false;
                     }
-                }).catch(Notification.exception);
+                }).catch(function(err) {
+                    if (saveBtn) saveBtn.disabled = false;
+                    Notification.exception(err);
+                });
 
             } else {
                 // Save via mod_smartvideo_save_cuepoint
@@ -808,6 +1126,12 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     return;
                 }
 
+                const modalEl = self.questionModalEl || document.getElementById('smartVideoAddQuestionModal');
+                const saveBtn = modalEl ? modalEl.querySelector('.btn-save-cue') : null;
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                }
+
                 Ajax.call([{
                     methodname: 'mod_smartvideo_save_cuepoint',
                     args: {
@@ -823,10 +1147,17 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                         questionstyle: questionStyle
                     }
                 }])[0].then(function(res) {
-                    if (res.status) {
+                    if (self.isSuccessResponse(res)) {
+                        hideModal(modalEl);
+                        self.setActiveTab('#tab-questions');
                         window.location.reload();
+                    } else {
+                        if (saveBtn) saveBtn.disabled = false;
                     }
-                }).catch(Notification.exception);
+                }).catch(function(err) {
+                    if (saveBtn) saveBtn.disabled = false;
+                    Notification.exception(err);
+                });
             }
         },
 
@@ -847,8 +1178,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                             cueid: cueId
                         }
                     }])[0].then(function(res) {
-                        if (res.status) {
+                        if (self.isSuccessResponse(res)) {
                             row.remove();
+                            self.setActiveTab('#tab-questions');
                             window.location.reload();
                         }
                     }).catch(Notification.exception);
@@ -866,12 +1198,23 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * @param {number|string} initialTimecode
          */
         openChapterModalForAdd: function(initialTimecode) {
-            document.getElementById('chapterId').value = '0';
-            document.getElementById('chapterTimecode').value = formatTime(parseTime(initialTimecode));
-            document.getElementById('chapterTitle').value = '';
+            const modalEl = this.chapterModalEl || document.getElementById('smartVideoChapterModal');
+            if (!modalEl) {
+                return;
+            }
 
-            this.chapterModalEl.querySelector('.chapter-modal-title-text').textContent = 'Add Chapter';
-            showModal(this.chapterModalEl);
+            const idField = document.getElementById('chapterId');
+            if (idField) idField.value = '0';
+            const tcField = document.getElementById('chapterTimecode');
+            if (tcField) tcField.value = formatTime(parseTime(initialTimecode));
+            const titleField = document.getElementById('chapterTitle');
+            if (titleField) titleField.value = '';
+
+            const titleText = modalEl.querySelector('.chapter-modal-title-text');
+            if (titleText) {
+                titleText.textContent = 'Add Chapter';
+            }
+            showModal(modalEl);
         },
 
         /**
@@ -880,16 +1223,27 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * @param {HTMLElement} row
          */
         openChapterModalForEdit: function(row) {
-            const chapterId = row.dataset.chapterid;
-            const timecode = parseInt(row.dataset.timecode, 10);
+            const modalEl = this.chapterModalEl || document.getElementById('smartVideoChapterModal');
+            if (!modalEl || !row) {
+                return;
+            }
+
+            const chapterId = row.dataset.chapterid || '0';
+            const timecode = parseInt(row.dataset.timecode, 10) || 0;
             const title = row.dataset.title || '';
 
-            document.getElementById('chapterId').value = chapterId;
-            document.getElementById('chapterTimecode').value = formatTime(timecode);
-            document.getElementById('chapterTitle').value = title;
+            const idField = document.getElementById('chapterId');
+            if (idField) idField.value = chapterId;
+            const tcField = document.getElementById('chapterTimecode');
+            if (tcField) tcField.value = formatTime(timecode);
+            const titleField = document.getElementById('chapterTitle');
+            if (titleField) titleField.value = title;
 
-            this.chapterModalEl.querySelector('.chapter-modal-title-text').textContent = 'Edit Chapter';
-            showModal(this.chapterModalEl);
+            const titleText = modalEl.querySelector('.chapter-modal-title-text');
+            if (titleText) {
+                titleText.textContent = 'Edit Chapter';
+            }
+            showModal(modalEl);
         },
 
         /**
@@ -897,9 +1251,13 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          */
         saveChapter: function() {
             const self = this;
-            const chapterId = parseInt(document.getElementById('chapterId').value, 10) || 0;
-            const timecode = parseTime(document.getElementById('chapterTimecode').value);
-            const title = (document.getElementById('chapterTitle').value || '').trim();
+            const idField = document.getElementById('chapterId');
+            const tcField = document.getElementById('chapterTimecode');
+            const titleField = document.getElementById('chapterTitle');
+
+            const chapterId = idField ? (parseInt(idField.value, 10) || 0) : 0;
+            const timecode = tcField ? parseTime(tcField.value) : 0;
+            const title = titleField ? (titleField.value || '').trim() : '';
 
             if (!title) {
                 Notification.alert('Validation Error', 'Chapter title cannot be empty.', 'OK');
@@ -915,6 +1273,12 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 return;
             }
 
+            const modalEl = self.chapterModalEl || document.getElementById('smartVideoChapterModal');
+            const saveBtn = modalEl ? modalEl.querySelector('.btn-save-chapter') : null;
+            if (saveBtn) {
+                saveBtn.disabled = true;
+            }
+
             Ajax.call([{
                 methodname: 'mod_smartvideo_save_chapter',
                 args: {
@@ -924,10 +1288,17 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     title: title
                 }
             }])[0].then(function(res) {
-                if (res.status) {
+                if (self.isSuccessResponse(res)) {
+                    hideModal(modalEl);
+                    self.setActiveTab('#tab-chapters');
                     window.location.reload();
+                } else {
+                    if (saveBtn) saveBtn.disabled = false;
                 }
-            }).catch(Notification.exception);
+            }).catch(function(err) {
+                if (saveBtn) saveBtn.disabled = false;
+                Notification.exception(err);
+            });
         },
 
         /**
@@ -947,8 +1318,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                             chapterid: chapterId
                         }
                     }])[0].then(function(res) {
-                        if (res.status) {
+                        if (self.isSuccessResponse(res)) {
                             row.remove();
+                            self.setActiveTab('#tab-chapters');
                             window.location.reload();
                         }
                     }).catch(Notification.exception);
@@ -966,18 +1338,35 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * @param {number|string} initialTimecode
          */
         openCalloutModalForAdd: function(initialTimecode) {
-            document.getElementById('calloutId').value = '0';
-            document.getElementById('calloutTimecode').value = formatTime(parseTime(initialTimecode));
-            document.getElementById('calloutDuration').value = '8';
-            document.getElementById('calloutTitle').value = '';
-            document.getElementById('calloutBody').value = '';
-            document.getElementById('calloutPosition').value = 'bottom-right';
-            document.getElementById('calloutAutopause').checked = false;
-            document.getElementById('calloutLinkLabel').value = '';
-            document.getElementById('calloutLinkUrl').value = '';
+            const modalEl = this.calloutModalEl || document.getElementById('smartVideoCalloutModal');
+            if (!modalEl) {
+                return;
+            }
 
-            this.calloutModalEl.querySelector('.callout-modal-title-text').textContent = 'Add Callout Card';
-            showModal(this.calloutModalEl);
+            const idField = document.getElementById('calloutId');
+            if (idField) idField.value = '0';
+            const tcField = document.getElementById('calloutTimecode');
+            if (tcField) tcField.value = formatTime(parseTime(initialTimecode));
+            const durField = document.getElementById('calloutDuration');
+            if (durField) durField.value = '8';
+            const titleField = document.getElementById('calloutTitle');
+            if (titleField) titleField.value = '';
+            const bodyField = document.getElementById('calloutBody');
+            if (bodyField) bodyField.value = '';
+            const posField = document.getElementById('calloutPosition');
+            if (posField) posField.value = 'bottom-right';
+            const autoField = document.getElementById('calloutAutopause');
+            if (autoField) autoField.checked = false;
+            const labelField = document.getElementById('calloutLinkLabel');
+            if (labelField) labelField.value = '';
+            const urlField = document.getElementById('calloutLinkUrl');
+            if (urlField) urlField.value = '';
+
+            const titleText = modalEl.querySelector('.callout-modal-title-text');
+            if (titleText) {
+                titleText.textContent = 'Add Callout Card';
+            }
+            showModal(modalEl);
         },
 
         /**
@@ -986,18 +1375,35 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * @param {HTMLElement} row
          */
         openCalloutModalForEdit: function(row) {
-            document.getElementById('calloutId').value = row.dataset.calloutid;
-            document.getElementById('calloutTimecode').value = formatTime(parseInt(row.dataset.timecode, 10));
-            document.getElementById('calloutDuration').value = row.dataset.duration || '8';
-            document.getElementById('calloutTitle').value = row.dataset.title || '';
-            document.getElementById('calloutBody').value = row.dataset.body || '';
-            document.getElementById('calloutPosition').value = row.dataset.position || 'bottom-right';
-            document.getElementById('calloutAutopause').checked = (row.dataset.autopause === '1');
-            document.getElementById('calloutLinkLabel').value = row.dataset.linklabel || '';
-            document.getElementById('calloutLinkUrl').value = row.dataset.linkurl || '';
+            const modalEl = this.calloutModalEl || document.getElementById('smartVideoCalloutModal');
+            if (!modalEl || !row) {
+                return;
+            }
 
-            this.calloutModalEl.querySelector('.callout-modal-title-text').textContent = 'Edit Callout Card';
-            showModal(this.calloutModalEl);
+            const idField = document.getElementById('calloutId');
+            if (idField) idField.value = row.dataset.calloutid || '0';
+            const tcField = document.getElementById('calloutTimecode');
+            if (tcField) tcField.value = formatTime(parseInt(row.dataset.timecode, 10) || 0);
+            const durField = document.getElementById('calloutDuration');
+            if (durField) durField.value = row.dataset.duration || '8';
+            const titleField = document.getElementById('calloutTitle');
+            if (titleField) titleField.value = row.dataset.title || '';
+            const bodyField = document.getElementById('calloutBody');
+            if (bodyField) bodyField.value = row.dataset.body || '';
+            const posField = document.getElementById('calloutPosition');
+            if (posField) posField.value = row.dataset.position || 'bottom-right';
+            const autoField = document.getElementById('calloutAutopause');
+            if (autoField) autoField.checked = (row.dataset.autopause === '1');
+            const labelField = document.getElementById('calloutLinkLabel');
+            if (labelField) labelField.value = row.dataset.linklabel || '';
+            const urlField = document.getElementById('calloutLinkUrl');
+            if (urlField) urlField.value = row.dataset.linkurl || '';
+
+            const titleText = modalEl.querySelector('.callout-modal-title-text');
+            if (titleText) {
+                titleText.textContent = 'Edit Callout Card';
+            }
+            showModal(modalEl);
         },
 
         /**
@@ -1005,15 +1411,28 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          */
         saveCallout: function() {
             const self = this;
-            const calloutId = parseInt(document.getElementById('calloutId').value, 10) || 0;
-            const timecode = parseTime(document.getElementById('calloutTimecode').value);
-            const duration = parseInt(document.getElementById('calloutDuration').value, 10) || 8;
-            const title = (document.getElementById('calloutTitle').value || '').trim();
-            const body = (document.getElementById('calloutBody').value || '').trim();
-            const position = document.getElementById('calloutPosition').value || 'bottom-right';
-            const autopause = document.getElementById('calloutAutopause').checked ? 1 : 0;
-            const linklabel = (document.getElementById('calloutLinkLabel').value || '').trim();
-            const linkurl = (document.getElementById('calloutLinkUrl').value || '').trim();
+            const idField = document.getElementById('calloutId');
+            const tcField = document.getElementById('calloutTimecode');
+            const durField = document.getElementById('calloutDuration');
+            const titleField = document.getElementById('calloutTitle');
+            const bodyField = document.getElementById('calloutBody');
+            const posField = document.getElementById('calloutPosition');
+            const autoField = document.getElementById('calloutAutopause');
+            const labelField = document.getElementById('calloutLinkLabel');
+            const urlField = document.getElementById('calloutLinkUrl');
+
+            const calloutId = idField ? (parseInt(idField.value, 10) || 0) : 0;
+            const timecode = tcField ? parseTime(tcField.value) : 0;
+            const duration = durField ? (parseInt(durField.value, 10) || 8) : 8;
+            const title = titleField ? (titleField.value || '').trim() : '';
+            const body = bodyField ? (bodyField.value || '').trim() : '';
+            const position = posField ? (posField.value || 'bottom-right') : 'bottom-right';
+            const autopause = autoField && autoField.checked ? 1 : 0;
+            const linklabel = labelField ? (labelField.value || '').trim() : '';
+            let linkurl = urlField ? (urlField.value || '').trim() : '';
+            if (linkurl && !/^(https?:\/\/|\/\/|\/|#)/i.test(linkurl)) {
+                linkurl = 'https://' + linkurl;
+            }
 
             if (!title) {
                 Notification.alert('Validation Error', 'Callout title cannot be empty.', 'OK');
@@ -1027,6 +1446,12 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     'OK'
                 );
                 return;
+            }
+
+            const modalEl = self.calloutModalEl || document.getElementById('smartVideoCalloutModal');
+            const saveBtn = modalEl ? modalEl.querySelector('.btn-save-callout') : null;
+            if (saveBtn) {
+                saveBtn.disabled = true;
             }
 
             Ajax.call([{
@@ -1044,10 +1469,17 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     position: position
                 }
             }])[0].then(function(res) {
-                if (res.status) {
+                if (self.isSuccessResponse(res)) {
+                    hideModal(modalEl);
+                    self.setActiveTab('#tab-callouts');
                     window.location.reload();
+                } else {
+                    if (saveBtn) saveBtn.disabled = false;
                 }
-            }).catch(Notification.exception);
+            }).catch(function(err) {
+                if (saveBtn) saveBtn.disabled = false;
+                Notification.exception(err);
+            });
         },
 
         /**
@@ -1067,8 +1499,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                             calloutid: calloutId
                         }
                     }])[0].then(function(res) {
-                        if (res.status) {
+                        if (self.isSuccessResponse(res)) {
                             row.remove();
+                            self.setActiveTab('#tab-callouts');
                             window.location.reload();
                         }
                     }).catch(Notification.exception);
@@ -1084,13 +1517,25 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * Open modal to add a new subtitle track.
          */
         openSubtitlesModalForAdd: function() {
-            document.getElementById('subTrackId').value = '0';
-            document.getElementById('subLang').value = 'en';
-            document.getElementById('subLabel').value = 'English';
-            document.getElementById('subVttContent').value = "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nWelcome to this session.\n";
+            const modalEl = this.subtitlesModalEl || document.getElementById('smartVideoSubtitlesModal');
+            if (!modalEl) {
+                return;
+            }
 
-            this.subtitlesModalEl.querySelector('.subtitles-modal-title-text').textContent = 'Add Subtitles Track';
-            showModal(this.subtitlesModalEl);
+            const trackIdField = document.getElementById('subTrackId');
+            if (trackIdField) trackIdField.value = '0';
+            const langField = document.getElementById('subLang');
+            if (langField) langField.value = 'en';
+            const labelField = document.getElementById('subLabel');
+            if (labelField) labelField.value = 'English';
+            const vttField = document.getElementById('subVttContent');
+            if (vttField) vttField.value = "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nWelcome to this session.\n";
+
+            const titleText = modalEl.querySelector('.subtitles-modal-title-text');
+            if (titleText) {
+                titleText.textContent = 'Add Subtitles Track';
+            }
+            showModal(modalEl);
         },
 
         /**
@@ -1099,13 +1544,25 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
          * @param {HTMLElement} row
          */
         openSubtitlesModalForEdit: function(row) {
-            document.getElementById('subTrackId').value = row.dataset.trackid || '0';
-            document.getElementById('subLang').value = row.dataset.lang || 'en';
-            document.getElementById('subLabel').value = row.dataset.label || '';
-            document.getElementById('subVttContent').value = row.dataset.content || '';
+            const modalEl = this.subtitlesModalEl || document.getElementById('smartVideoSubtitlesModal');
+            if (!modalEl || !row) {
+                return;
+            }
 
-            this.subtitlesModalEl.querySelector('.subtitles-modal-title-text').textContent = 'Edit Subtitles Track';
-            showModal(this.subtitlesModalEl);
+            const trackIdField = document.getElementById('subTrackId');
+            if (trackIdField) trackIdField.value = row.dataset.trackid || '0';
+            const langField = document.getElementById('subLang');
+            if (langField) langField.value = row.dataset.lang || 'en';
+            const labelField = document.getElementById('subLabel');
+            if (labelField) labelField.value = row.dataset.label || '';
+            const vttField = document.getElementById('subVttContent');
+            if (vttField) vttField.value = row.dataset.content || '';
+
+            const titleText = modalEl.querySelector('.subtitles-modal-title-text');
+            if (titleText) {
+                titleText.textContent = 'Edit Subtitles Track';
+            }
+            showModal(modalEl);
         },
 
         /**
@@ -1128,6 +1585,12 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                 return;
             }
 
+            const modalEl = self.subtitlesModalEl || document.getElementById('smartVideoSubtitlesModal');
+            const saveBtn = modalEl ? modalEl.querySelector('.btn-save-subtitles') : null;
+            if (saveBtn) {
+                saveBtn.disabled = true;
+            }
+
             Ajax.call([{
                 methodname: 'mod_smartvideo_save_subtitles',
                 args: {
@@ -1138,10 +1601,17 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     content: content
                 }
             }])[0].then(function(res) {
-                if (res.status) {
+                if (self.isSuccessResponse(res)) {
+                    hideModal(modalEl);
+                    self.setActiveTab('#tab-subtitles');
                     window.location.reload();
+                } else {
+                    if (saveBtn) saveBtn.disabled = false;
                 }
-            }).catch(Notification.exception);
+            }).catch(function(err) {
+                if (saveBtn) saveBtn.disabled = false;
+                Notification.exception(err);
+            });
         },
 
         /**
@@ -1160,8 +1630,9 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                         trackid: trackId
                     }
                 }])[0].then(function(res) {
-                    if (res.status) {
+                    if (self.isSuccessResponse(res)) {
                         row.remove();
+                        self.setActiveTab('#tab-subtitles');
                         window.location.reload();
                     }
                 }).catch(Notification.exception);
