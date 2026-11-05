@@ -304,6 +304,18 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     }
                 });
             }
+            if (video) {
+                video.addEventListener('click', function(e) {
+                    if (e.target === video) {
+                        togglePlay();
+                    }
+                });
+                video.addEventListener('dblclick', function(e) {
+                    if (e.target === video) {
+                        toggleFullscreen();
+                    }
+                });
+            }
 
             // Sync play state UI.
             video.addEventListener('play', function() {
@@ -476,26 +488,72 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 });
             });
 
-            // Fullscreen toggle.
-            if (fullscreenBtn) {
-                fullscreenBtn.addEventListener('click', function() {
-                    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                        if (container.requestFullscreen) {
-                            container.requestFullscreen();
-                        } else if (container.webkitRequestFullscreen) {
-                            container.webkitRequestFullscreen();
-                        }
-                        fullscreenBtn.innerHTML = '<i class="fa fa-compress" aria-hidden="true"></i>';
-                    } else {
-                        if (document.exitFullscreen) {
-                            document.exitFullscreen();
-                        } else if (document.webkitExitFullscreen) {
-                            document.webkitExitFullscreen();
-                        }
-                        fullscreenBtn.innerHTML = '<i class="fa fa-expand" aria-hidden="true"></i>';
+            // Fullscreen toggle function supporting standard and vendor prefixes.
+            const toggleFullscreen = function() {
+                const isFullscreen = !!(document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.mozFullScreenElement ||
+                    document.msFullscreenElement);
+
+                if (!isFullscreen) {
+                    if (container.requestFullscreen) {
+                        container.requestFullscreen();
+                    } else if (container.webkitRequestFullscreen) {
+                        container.webkitRequestFullscreen();
+                    } else if (container.mozRequestFullScreen) {
+                        container.mozRequestFullScreen();
+                    } else if (container.msRequestFullscreen) {
+                        container.msRequestFullscreen();
                     }
-                });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            };
+
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', toggleFullscreen);
             }
+
+            // Keep fullscreen state and button icon synchronized (handles Esc, F11, etc.).
+            const handleFullscreenChange = function() {
+                const isFullscreen = !!(document.fullscreenElement ||
+                    document.webkitFullscreenElement ||
+                    document.mozFullScreenElement ||
+                    document.msFullscreenElement);
+
+                if (isFullscreen) {
+                    container.classList.add('is-fullscreen');
+                    if (fullscreenBtn) {
+                        fullscreenBtn.innerHTML = '<i class="fa fa-compress" aria-hidden="true"></i>';
+                        fullscreenBtn.setAttribute('title', 'Exit Fullscreen');
+                    }
+                } else {
+                    container.classList.remove('is-fullscreen');
+                    if (fullscreenBtn) {
+                        fullscreenBtn.innerHTML = '<i class="fa fa-expand" aria-hidden="true"></i>';
+                        fullscreenBtn.setAttribute('title', 'Fullscreen');
+                    }
+                }
+
+                if (self.canvas && typeof self.resizeCanvas === 'function') {
+                    setTimeout(function() {
+                        self.resizeCanvas();
+                    }, 60);
+                }
+            };
+
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
             // Resume bookmark actions.
             if (resumeToast) {
@@ -521,20 +579,73 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 }
             }
 
-            // Auto-hide controls when idle.
+            // Auto-hide controls when idle (with controls hover preservation).
             let idleTimeout;
+            let isOverControls = false;
+            const controlsBar = container.querySelector('.securevideo-controls-bar');
+
             const resetIdle = function() {
                 container.classList.remove('is-idle');
                 clearTimeout(idleTimeout);
-                if (!video.paused) {
+                if (!video.paused && !isOverControls) {
                     idleTimeout = setTimeout(function() {
-                        container.classList.add('is-idle');
+                        if (!isOverControls) {
+                            container.classList.add('is-idle');
+                        }
                     }, 3000);
                 }
             };
 
+            if (controlsBar) {
+                controlsBar.addEventListener('mouseenter', function() {
+                    isOverControls = true;
+                    container.classList.remove('is-idle');
+                    clearTimeout(idleTimeout);
+                });
+                controlsBar.addEventListener('mouseleave', function() {
+                    isOverControls = false;
+                    resetIdle();
+                });
+            }
+
             container.addEventListener('mousemove', resetIdle);
             container.addEventListener('click', resetIdle);
+            container.addEventListener('touchstart', resetIdle, {passive: true});
+
+            // Keyboard hotkeys for player container.
+            container.addEventListener('keydown', function(e) {
+                const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+                if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+                    return;
+                }
+                if (self.activeQuestion) {
+                    return;
+                }
+
+                if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+                    e.preventDefault();
+                    togglePlay();
+                } else if (e.key === 'f' || e.key === 'F') {
+                    e.preventDefault();
+                    toggleFullscreen();
+                } else if (e.key === 'm' || e.key === 'M') {
+                    e.preventDefault();
+                    video.muted = !video.muted;
+                    if (muteBtn) {
+                        muteBtn.innerHTML = video.muted ?
+                            '<i class="fa fa-volume-off" aria-hidden="true"></i>' :
+                            '<i class="fa fa-volume-up" aria-hidden="true"></i>';
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    const dur = video.duration || self.duration;
+                    const target = Math.min(dur, video.currentTime + 5);
+                    if (!self.preventSeeking || target <= self.maxPosition + 2) {
+                        video.currentTime = target;
+                    }
+                } else if (e.key === 'ArrowLeft') {
+                    video.currentTime = Math.max(0, video.currentTime - 5);
+                }
+            });
         },
 
         /**
@@ -611,6 +722,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 canvas.height = canvas.parentElement.clientHeight || 720;
             };
 
+            self.resizeCanvas = resizeCanvas;
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
 
