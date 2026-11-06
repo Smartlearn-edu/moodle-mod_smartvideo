@@ -334,10 +334,46 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     self.hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
                         self.setupQualityLevels(data.levels);
                     });
+
+                    self.hls.on(Hls.Events.ERROR, function(event, data) {
+                        if (data && data.fatal) {
+                            console.error('[SmartVideo] Fatal stream error:', data);
+                            let msg = 'Playback error: Unable to load video stream.';
+                            if (data.response && data.response.code === 403) {
+                                msg = 'Access denied: You do not have permission to stream this video.';
+                            } else if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                                msg = 'Network error: Failed to reach video streaming server.';
+                            }
+                            self.showStreamError(msg);
+                        }
+                    });
                 } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                     video.src = self.playlistUrl;
+                    video.addEventListener('error', function() {
+                        self.showStreamError('Native video playback error: Stream could not be loaded.');
+                    });
                 }
             }).catch(Notification.exception);
+        },
+
+        /**
+         * Render a visible stream error notice over the video stage.
+         *
+         * @param {string} msg
+         */
+        showStreamError: function(msg) {
+            const container = this.container;
+            let errEl = container.querySelector('.smartvideo-stream-error');
+            if (!errEl) {
+                errEl = document.createElement('div');
+                errEl.className = 'smartvideo-stream-error position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-95 text-white p-3 rounded shadow-lg text-center border border-danger';
+                errEl.style.zIndex = '35';
+                errEl.style.maxWidth = '85%';
+                const stage = container.querySelector('.smartvideo-stage-ratio') || container;
+                stage.appendChild(errEl);
+            }
+            errEl.innerHTML = '<i class="fa fa-exclamation-triangle fa-2x text-warning mb-2 d-block"></i><div class="fw-bold mb-1">' +
+                msg + '</div><button type="button" class="btn btn-sm btn-outline-light mt-2" onclick="location.reload();"><i class="fa fa-refresh me-1"></i> Retry</button>';
         },
 
         /**

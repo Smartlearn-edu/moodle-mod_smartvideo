@@ -110,11 +110,13 @@ if (!$media || $media->status !== 'ready') {
 
     $playlisturl = (new moodle_url('/local/securevideolibrary/serve.php', [
         'mediaid' => $media->id,
+        'cmid'    => (int)$cm->id,
         'file'    => 'playlist.m3u8',
     ]))->out(false);
 
     $thumbnailurl = (new moodle_url('/local/securevideolibrary/serve.php', [
         'mediaid' => $media->id,
+        'cmid'    => (int)$cm->id,
         'file'    => 'thumbnail.jpg',
     ]))->out(false);
 
