@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_smartvideo';
-$plugin->version   = 2026110519;
+$plugin->version   = 2026110520;
 $plugin->requires  = 2024100700; // Requires Moodle 5.0+.
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = 'v1.5.0';
