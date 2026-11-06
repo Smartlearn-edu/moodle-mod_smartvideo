@@ -938,18 +938,27 @@
     color: #fff !important;
 }
 
-/* Icon-only compact tabs (Chapters & Transcript) */
+/* Icon-only compact tabs for all tools */
 .smartvideo-tab-icon-only {
-    min-width: 32px;
-    height: 26px;
+    min-width: 34px;
+    height: 28px;
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    padding: 0 6px !important;
+    padding: 0 7px !important;
+    position: relative;
 }
 .smartvideo-tab-icon-only i {
+    font-size: 0.9rem;
+}
+.smartvideo-tab-icon-only:not(:has(.badge)) i {
     margin: 0 !important;
-    font-size: 0.85rem;
+}
+.smartvideo-tab-icon-only .badge {
+    padding: 2px 4px !important;
+    font-size: 0.62rem !important;
+    line-height: 1;
+    font-weight: 600;
 }
 
 /* Timeline Chapter Segments & YouTube-Style Scrubber */

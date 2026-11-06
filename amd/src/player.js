@@ -2148,6 +2148,28 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     }
                 });
             }
+
+            // Sync active tab title in header when clicking or switching tabs.
+            const activeTitleEl = sidebar.querySelector('.smartvideo-sidebar-active-tab-title');
+            const tabButtons = sidebar.querySelectorAll('.smartvideo-sidebar-tabs button[data-bs-toggle="pill"]');
+            tabButtons.forEach(function(btn) {
+                btn.addEventListener('shown.bs.tab', function(e) {
+                    if (activeTitleEl) {
+                        const title = (e.target.getAttribute('title') || '').trim();
+                        if (title) {
+                            activeTitleEl.textContent = title;
+                        }
+                    }
+                });
+                btn.addEventListener('click', function() {
+                    if (activeTitleEl) {
+                        const title = (btn.getAttribute('title') || '').trim();
+                        if (title) {
+                            activeTitleEl.textContent = title;
+                        }
+                    }
+                });
+            });
         },
 
         /**
@@ -2746,8 +2768,17 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             container.classList.add('is-sidebar-open');
 
             const tabBtn = sidebar.querySelector('#' + tabBtnId);
-            if (tabBtn && typeof tabBtn.click === 'function') {
-                tabBtn.click();
+            if (tabBtn) {
+                if (typeof tabBtn.click === 'function') {
+                    tabBtn.click();
+                }
+                const activeTitleEl = sidebar.querySelector('.smartvideo-sidebar-active-tab-title');
+                if (activeTitleEl) {
+                    const title = (tabBtn.getAttribute('title') || '').trim();
+                    if (title) {
+                        activeTitleEl.textContent = title;
+                    }
+                }
             }
 
             if (this.canvas && typeof this.resizeCanvas === 'function') {
