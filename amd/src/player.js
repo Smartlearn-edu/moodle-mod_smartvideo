@@ -3175,6 +3175,20 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 }
             });
 
+            // Allow Enter key to submit reply directly.
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('sv-qa-reply-input')) {
+                    e.preventDefault();
+                    const form = e.target.closest('.sv-qa-reply-form');
+                    if (form) {
+                        const btn = form.querySelector('.btn-submit-reply');
+                        if (btn) {
+                            btn.click();
+                        }
+                    }
+                }
+            });
+
             // Post Question from Sidebar.
             const postSidebarBtn = container.querySelector('.btn-post-qa-sidebar');
             const sidebarInput = container.querySelector('.sv-sidebar-qa-input');
@@ -3186,8 +3200,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     }
                     const includeTime = container.querySelector('#panelQA .sv-qa-include-time');
                     const timecode = (includeTime && includeTime.checked) ? Math.floor(video.currentTime) : 0;
+                    postSidebarBtn.disabled = true;
                     self.postDiscussionMessage(content, timecode, 0, function() {
                         sidebarInput.value = '';
+                        postSidebarBtn.disabled = false;
                     });
                 });
             }
@@ -3203,8 +3219,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     }
                     const includeTime = document.querySelector('#below-discussions .sv-qa-include-time');
                     const timecode = (includeTime && includeTime.checked) ? Math.floor(video.currentTime) : 0;
+                    postBelowBtn.disabled = true;
                     self.postDiscussionMessage(content, timecode, 0, function() {
                         belowInput.value = '';
+                        postBelowBtn.disabled = false;
                     });
                 });
             }
@@ -3218,8 +3236,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     const input = form ? form.querySelector('.sv-qa-reply-input') : null;
                     if (input && input.value.trim()) {
                         const content = input.value.trim();
+                        submitReplyBtn.disabled = true;
                         self.postDiscussionMessage(content, 0, parentId, function() {
                             input.value = '';
+                            submitReplyBtn.disabled = false;
                             form.classList.add('d-none');
                         });
                     }
@@ -3267,6 +3287,196 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         },
 
         /**
+         * Render a newly created discussion message or reply directly into the DOM without reloading.
+         *
+         * @param {Object} res
+         */
+        renderDiscussionMessage: function(res) {
+            const container = this.container;
+            const parentId = parseInt(res.parentid, 10) || 0;
+
+            if (parentId === 0) {
+                // New thread in Sidebar.
+                const sidebarList = container.querySelector('.smartvideo-sidebar-qa-threads');
+                if (sidebarList) {
+                    const placeholder = sidebarList.querySelector('.sv-no-discussions-placeholder, .text-white-50.text-center');
+                    if (placeholder) {
+                        placeholder.remove();
+                    }
+
+                    const threadEl = document.createElement('div');
+                    threadEl.className = 'card bg-black bg-opacity-30 border-secondary border-opacity-25 p-2 smartvideo-qa-thread';
+                    threadEl.dataset.discussionid = res.id;
+
+                    let timecodeBtn = '';
+                    if (res.hastimecode) {
+                        timecodeBtn = '<button type="button" class="btn btn-xs btn-outline-info py-0 px-1 font-monospace btn-seek-qa" data-timecode="' + res.timecode + '">' +
+                            '<i class="fa fa-play fa-xs me-1"></i>' + res.timeformatted +
+                        '</button>';
+                    }
+
+                    threadEl.innerHTML =
+                        '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                            '<div class="d-flex align-items-center gap-2">' +
+                                '<div class="sv-qa-avatar">' + res.userpicture + '</div>' +
+                                '<span class="small fw-semibold text-white">' + res.userfullname + '</span>' +
+                                timecodeBtn +
+                            '</div>' +
+                            '<div class="d-flex align-items-center gap-1">' +
+                                '<span class="text-white-50 small" style="font-size: 0.7rem;">' + res.timecreatedformatted + '</span>' +
+                                '<button type="button" class="btn btn-link text-danger p-0 ms-1 btn-delete-discussion" data-discussionid="' + res.id + '" title="Delete">' +
+                                    '<i class="fa fa-trash fa-xs"></i>' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="small text-white-50 mb-2 qa-content-text">' + res.content + '</div>' +
+                        '<div class="ps-3 border-start border-secondary border-opacity-50 ms-1 mb-2 d-flex flex-column gap-2 sv-qa-replies-container d-none"></div>' +
+                        '<div class="sv-qa-reply-box mt-1">' +
+                            '<button type="button" class="btn btn-xs btn-link text-white-50 p-0 text-decoration-none btn-toggle-reply">' +
+                                '<i class="fa fa-reply me-1"></i>Reply' +
+                            '</button>' +
+                            '<div class="sv-qa-reply-form d-none mt-2">' +
+                                '<div class="input-group input-group-sm">' +
+                                    '<input type="text" class="form-control bg-dark text-white border-secondary sv-qa-reply-input" placeholder="Write a reply...">' +
+                                    '<button class="btn btn-primary btn-submit-reply" type="button" data-parentid="' + res.id + '">' +
+                                        '<i class="fa fa-paper-plane"></i>' +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>';
+
+                    sidebarList.prepend(threadEl);
+                }
+
+                // New thread in Below area.
+                const belowList = document.querySelector('.smartvideo-below-qa-threads');
+                if (belowList) {
+                    const placeholder = belowList.querySelector('.sv-no-discussions-placeholder, .text-muted.text-center');
+                    if (placeholder) {
+                        placeholder.remove();
+                    }
+
+                    const threadEl = document.createElement('div');
+                    threadEl.className = 'card border p-3 smartvideo-qa-thread';
+                    threadEl.dataset.discussionid = res.id;
+
+                    let belowTimeBtn = '';
+                    if (res.hastimecode) {
+                        belowTimeBtn = '<button type="button" class="btn btn-xs btn-outline-info py-0 px-2 font-monospace btn-seek-qa ms-2" data-timecode="' + res.timecode + '">' +
+                            '<i class="fa fa-play fa-xs me-1"></i>' + res.timeformatted +
+                        '</button>';
+                    }
+
+                    threadEl.innerHTML =
+                        '<div class="d-flex justify-content-between align-items-center mb-2">' +
+                            '<div class="d-flex align-items-center gap-2">' +
+                                '<div class="sv-qa-avatar">' + res.userpicture + '</div>' +
+                                '<div>' +
+                                    '<span class="fw-semibold text-dark">' + res.userfullname + '</span>' +
+                                    '<span class="text-muted small ms-2">' + res.timecreatedformatted + '</span>' +
+                                '</div>' +
+                                belowTimeBtn +
+                            '</div>' +
+                            '<button type="button" class="btn btn-link text-danger p-0 btn-delete-discussion" data-discussionid="' + res.id + '" title="Delete">' +
+                                '<i class="fa fa-trash"></i>' +
+                            '</button>' +
+                        '</div>' +
+                        '<div class="text-dark mb-2 qa-content-text">' + res.content + '</div>' +
+                        '<div class="ps-3 border-start ms-2 my-2 d-flex flex-column gap-2 sv-qa-replies-container d-none"></div>' +
+                        '<div class="sv-qa-reply-box mt-1">' +
+                            '<button type="button" class="btn btn-xs btn-link text-muted p-0 text-decoration-none btn-toggle-reply">' +
+                                '<i class="fa fa-reply me-1"></i>Reply' +
+                            '</button>' +
+                            '<div class="sv-qa-reply-form d-none mt-2">' +
+                                '<div class="input-group input-group-sm">' +
+                                    '<input type="text" class="form-control sv-qa-reply-input" placeholder="Write a reply...">' +
+                                    '<button class="btn btn-primary btn-submit-reply" type="button" data-parentid="' + res.id + '">' +
+                                        '<i class="fa fa-paper-plane"></i>' +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>';
+
+                    belowList.prepend(threadEl);
+                }
+            } else {
+                // New reply in Sidebar.
+                const sidebarParent = container.querySelector('.smartvideo-sidebar-qa-threads [data-discussionid="' + parentId + '"]');
+                if (sidebarParent) {
+                    let repliesBox = sidebarParent.querySelector('.ps-3.border-start, .sv-qa-replies-container');
+                    if (!repliesBox) {
+                        repliesBox = document.createElement('div');
+                        repliesBox.className = 'ps-3 border-start border-secondary border-opacity-50 ms-1 mb-2 d-flex flex-column gap-2 sv-qa-replies-container';
+                        const replyBox = sidebarParent.querySelector('.sv-qa-reply-box');
+                        if (replyBox) {
+                            sidebarParent.insertBefore(repliesBox, replyBox);
+                        } else {
+                            sidebarParent.appendChild(repliesBox);
+                        }
+                    }
+                    repliesBox.classList.remove('d-none');
+
+                    const replyEl = document.createElement('div');
+                    replyEl.className = 'card bg-dark bg-opacity-40 border-0 p-1 rounded';
+                    replyEl.dataset.discussionid = res.id;
+                    replyEl.innerHTML =
+                        '<div class="d-flex justify-content-between align-items-center">' +
+                            '<div class="d-flex align-items-center gap-1">' +
+                                '<span class="small fw-semibold text-white">' + res.userfullname + '</span>' +
+                                '<span class="text-white-50" style="font-size: 0.7rem;">' + res.timecreatedformatted + '</span>' +
+                            '</div>' +
+                            '<button type="button" class="btn btn-link text-danger p-0 btn-delete-discussion" data-discussionid="' + res.id + '" title="Delete">' +
+                                '<i class="fa fa-trash fa-xs"></i>' +
+                            '</button>' +
+                        '</div>' +
+                        '<div class="small text-white-50 qa-content-text">' + res.content + '</div>';
+
+                    repliesBox.appendChild(replyEl);
+                }
+
+                // New reply in Below zone.
+                const belowParent = document.querySelector('.smartvideo-below-qa-threads [data-discussionid="' + parentId + '"]');
+                if (belowParent) {
+                    let repliesBox = belowParent.querySelector('.ps-3.border-start, .sv-qa-replies-container');
+                    if (!repliesBox) {
+                        repliesBox = document.createElement('div');
+                        repliesBox.className = 'ps-3 border-start ms-2 my-2 d-flex flex-column gap-2 sv-qa-replies-container';
+                        const replyBox = belowParent.querySelector('.sv-qa-reply-box');
+                        if (replyBox) {
+                            belowParent.insertBefore(repliesBox, replyBox);
+                        } else {
+                            belowParent.appendChild(repliesBox);
+                        }
+                    }
+                    repliesBox.classList.remove('d-none');
+
+                    const replyEl = document.createElement('div');
+                    replyEl.className = 'bg-light p-2 rounded';
+                    replyEl.dataset.discussionid = res.id;
+                    replyEl.innerHTML =
+                        '<div class="d-flex justify-content-between align-items-center">' +
+                            '<div class="d-flex align-items-center gap-1">' +
+                                '<span class="fw-semibold small text-dark">' + res.userfullname + '</span>' +
+                                '<span class="text-muted" style="font-size: 0.75rem;">' + res.timecreatedformatted + '</span>' +
+                            '</div>' +
+                            '<button type="button" class="btn btn-link text-danger p-0 btn-delete-discussion" data-discussionid="' + res.id + '" title="Delete">' +
+                                '<i class="fa fa-trash fa-xs"></i>' +
+                            '</button>' +
+                        '</div>' +
+                        '<div class="small text-secondary qa-content-text">' + res.content + '</div>';
+
+                    repliesBox.appendChild(replyEl);
+                }
+            }
+
+            // Update badge counts.
+            document.querySelectorAll('.smartvideo-qa-count-badge').forEach(function(badge) {
+                const count = (parseInt(badge.textContent, 10) || 0) + 1;
+                badge.textContent = count;
+            });
+        },
+
+        /**
          * Submit a new discussion question or reply via web service.
          *
          * @param {string} content
@@ -3286,10 +3496,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 }
             }])[0].then(function(res) {
                 if (res && res.status) {
+                    self.renderDiscussionMessage(res);
                     if (typeof callback === 'function') {
                         callback();
                     }
-                    window.location.reload();
                 }
             }).catch(Notification.exception);
         }
