@@ -177,43 +177,54 @@
 
                 {{! Custom Controls Bar }}
                 <div class="smartvideo-controls-bar securevideo-controls-bar bg-dark bg-opacity-95 text-white p-2" style="z-index: 45;">
-                    {{! Scrubber / Timeline Track with YouTube-Style Chapter Segments }}
+                    {{! Scrubber / Timeline Track with YouTube-Style Segmented Chapters }}
                     <div class="smartvideo-timeline-wrapper securevideo-timeline-wrapper position-relative py-1 cursor-pointer">
-                        {{! Hover preview tooltip showing Chapter Title + Time }}
+                        {{! YouTube-Style Floating Preview Tooltip }}
                         <div id="smartVideoHoverTooltip"
-                             class="smartvideo-hover-tooltip position-absolute bg-dark text-white px-2 py-1 rounded shadow small d-none border border-secondary"
-                             style="bottom: 100%; transform: translateX(-50%); white-space: nowrap; z-index: 30; pointer-events: none;">
-                            <span class="smartvideo-hover-chapter-name text-info fw-semibold me-1 d-none"></span>
-                            <span class="smartvideo-hover-time font-monospace">00:00</span>
+                             class="smartvideo-hover-tooltip position-absolute d-none text-center"
+                             style="bottom: calc(100% + 8px); transform: translateX(-50%); z-index: 30; pointer-events: none;">
+                            <div class="smartvideo-hover-chapter-name fw-semibold small text-truncate d-none"></div>
+                            <div class="smartvideo-hover-time font-monospace small">00:00</div>
                         </div>
 
-                        <div class="smartvideo-timeline-track securevideo-timeline-track bg-secondary rounded position-relative" style="height: 6px;">
-                            {{! Segmented Chapter Gap Markers overlay }}
-                            <div class="smartvideo-chapter-segments position-absolute top-0 start-0 w-100 h-100" style="pointer-events: none; z-index: 3;"></div>
+                        <div class="smartvideo-timeline-track securevideo-timeline-track position-relative">
+                            {{! Flex container for segmented chapters }}
+                            <div class="smartvideo-segments-container position-absolute top-0 start-0 w-100 h-100 d-flex" style="z-index: 1;">
+                                {{! Default continuous segment }}
+                                <div class="smartvideo-segment" style="flex: 1 1 0%;">
+                                    <div class="smartvideo-segment-bg"></div>
+                                    <div class="smartvideo-segment-buffered" style="width: 0%;"></div>
+                                    <div class="smartvideo-segment-progress" style="width: 0%;"></div>
+                                </div>
+                            </div>
 
-                            <div class="smartvideo-buffered-bar securevideo-buffered-bar bg-light bg-opacity-25 rounded position-absolute top-0 start-0 h-100" style="width: 0%;"></div>
-                            <div class="smartvideo-progress-bar securevideo-progress-bar bg-primary rounded position-absolute top-0 start-0 h-100" style="width: 0%;"></div>
-                            {{#preventseeking}}
-                            <div class="smartvideo-max-marker securevideo-max-marker position-absolute top-0 h-100 bg-warning" style="width: 3px; left: 0%;" title="{{#str}}preventseeking, mod_smartvideo{{/str}}"></div>
-                            {{/preventseeking}}
+                            {{! YouTube-Style Scrubber Thumb / Knob }}
+                            <div class="smartvideo-scrubber-thumb position-absolute top-50 rounded-circle" style="left: 0%; transform: translate(-50%, -50%); z-index: 5;"></div>
 
-                            {{! Interactive question cue markers on timeline }}
-                            {{#questions}}
-                            <div class="smartvideo-cue-marker securevideo-cue-marker position-absolute top-50 rounded-circle border border-white {{#passed}}bg-success{{/passed}}{{^passed}}bg-info{{/passed}}"
-                                 data-cueid="{{id}}"
-                                 data-timecode="{{timecode}}"
-                                 style="left: {{percent}}%; width: 10px; height: 10px; transform: translate(-50%, -50%); z-index: 5;"
-                                 title="{{title}} ({{timeformatted}})"></div>
-                            {{/questions}}
+                            {{! Overlays for markers and anti-seeking }}
+                            <div class="smartvideo-cues-overlay position-absolute top-0 start-0 w-100 h-100" style="pointer-events: none; z-index: 6;">
+                                {{#preventseeking}}
+                                <div class="smartvideo-max-marker securevideo-max-marker position-absolute top-0 h-100 bg-warning" style="width: 3px; left: 0%;" title="{{#str}}preventseeking, mod_smartvideo{{/str}}"></div>
+                                {{/preventseeking}}
 
-                            {{! In-Video Callout cue markers on timeline }}
-                            {{#callouts}}
-                            <div class="smartvideo-callout-marker position-absolute top-50 rounded-circle border border-dark bg-warning"
-                                 data-calloutid="{{id}}"
-                                 data-timecode="{{timecode}}"
-                                 style="left: {{percent}}%; width: 8px; height: 8px; transform: translate(-50%, -50%); z-index: 4;"
-                                 title="{{title}} ({{timeformatted}})"></div>
-                            {{/callouts}}
+                                {{! Interactive question cue markers on timeline }}
+                                {{#questions}}
+                                <div class="smartvideo-cue-marker securevideo-cue-marker position-absolute top-50 rounded-circle border border-white {{#passed}}bg-success{{/passed}}{{^passed}}bg-info{{/passed}}"
+                                     data-cueid="{{id}}"
+                                     data-timecode="{{timecode}}"
+                                     style="left: {{percent}}%; width: 10px; height: 10px; transform: translate(-50%, -50%);"
+                                     title="{{title}} ({{timeformatted}})"></div>
+                                {{/questions}}
+
+                                {{! In-Video Callout cue markers on timeline }}
+                                {{#callouts}}
+                                <div class="smartvideo-callout-marker position-absolute top-50 rounded-circle border border-dark bg-warning"
+                                     data-calloutid="{{id}}"
+                                     data-timecode="{{timecode}}"
+                                     style="left: {{percent}}%; width: 8px; height: 8px; transform: translate(-50%, -50%);"
+                                     title="{{title}} ({{timeformatted}})"></div>
+                                {{/callouts}}
+                            </div>
                         </div>
                     </div>
 
@@ -234,13 +245,16 @@
                                 <span class="smartvideo-current-time securevideo-current-time text-white">00:00</span> / {{durationformatted}}
                             </span>
 
-                            {{! YouTube-Style Active Chapter Pill Button }}
-                            <button type="button"
-                                    class="btn btn-sm btn-link text-white text-decoration-none smartvideo-chapter-pill d-none d-md-inline-flex align-items-center gap-1 py-0 px-2 rounded bg-white bg-opacity-10 ms-1 border border-secondary border-opacity-25"
-                                    title="{{#str}}chapters, mod_smartvideo{{/str}}">
-                                <span class="smartvideo-chapter-pill-label text-truncate" style="max-width: 160px;">{{#str}}chapters, mod_smartvideo{{/str}}</span>
-                                <i class="fa fa-caret-down fa-xs" aria-hidden="true"></i>
-                            </button>
+                            {{! YouTube-Style Inline Chapter Label }}
+                            <div class="smartvideo-chapter-inline-wrap {{^haschapters}}d-none{{/haschapters}} d-none d-sm-inline-flex align-items-center ms-2 text-white-50">
+                                <span class="smartvideo-chapter-inline-dot me-2 text-white-50">•</span>
+                                <button type="button"
+                                        class="btn btn-link p-0 text-white text-decoration-none smartvideo-chapter-inline-btn smartvideo-chapter-pill d-inline-flex align-items-center"
+                                        title="{{#str}}chapters, mod_smartvideo{{/str}}">
+                                    <span class="smartvideo-chapter-inline-title smartvideo-chapter-pill-label text-truncate fw-normal" style="max-width: 200px;">{{#str}}chapters, mod_smartvideo{{/str}}</span>
+                                    <i class="fa fa-chevron-right fa-xs smartvideo-chapter-chevron ms-1 text-white-50" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
 
                         {{! Right: Speed, Quality, Sidebar Tools Toggle, Fullscreen }}

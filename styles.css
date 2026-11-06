@@ -892,7 +892,129 @@
     color: #fff !important;
 }
 
-/* Timeline Chapter Segments */
+/* Timeline Chapter Segments & YouTube-Style Scrubber */
+.smartvideo-timeline-wrapper {
+    padding-top: 6px;
+    padding-bottom: 6px;
+    cursor: pointer;
+}
+.smartvideo-timeline-track {
+    position: relative;
+    height: 4px;
+    border-radius: 2px;
+    transition: height 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+.smartvideo-timeline-wrapper:hover .smartvideo-timeline-track,
+.smartvideo-timeline-wrapper.is-scrubbing .smartvideo-timeline-track {
+    height: 8px;
+}
+
+/* Flex Container for YouTube-Style Chapter Segments */
+.smartvideo-segments-container {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+    height: 100%;
+}
+.smartvideo-segment {
+    position: relative;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    border-radius: 2px;
+    transition: background-color 0.15s ease;
+}
+.smartvideo-segment-bg {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+.smartvideo-segment-buffered {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.4);
+    transition: width 0.1s linear;
+    pointer-events: none;
+}
+.smartvideo-segment-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background-color: #0d6efd;
+    pointer-events: none;
+}
+
+/* Scrubber Thumb (YouTube knob) */
+.smartvideo-scrubber-thumb {
+    width: 13px;
+    height: 13px;
+    background-color: #0d6efd;
+    border: 2px solid #fff;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.smartvideo-timeline-wrapper:hover .smartvideo-scrubber-thumb,
+.smartvideo-timeline-wrapper.is-scrubbing .smartvideo-scrubber-thumb {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* YouTube-Style Inline Chapter Label in Control Bar */
+.smartvideo-chapter-inline-wrap {
+    display: inline-flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+.smartvideo-chapter-inline-dot {
+    opacity: 0.6;
+    user-select: none;
+}
+.smartvideo-chapter-inline-btn {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #e2e8f0;
+    background: transparent;
+    border: none;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+.smartvideo-chapter-inline-btn:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+.smartvideo-chapter-inline-title {
+    color: inherit;
+    font-weight: 500;
+}
+.smartvideo-chapter-chevron {
+    transition: transform 0.2s ease, opacity 0.15s ease;
+    font-size: 0.65rem;
+    opacity: 0.75;
+}
+.smartvideo-chapter-inline-btn:hover .smartvideo-chapter-chevron {
+    opacity: 1;
+    transform: translateX(2px);
+}
+[dir="rtl"] .smartvideo-chapter-inline-btn:hover .smartvideo-chapter-chevron {
+    transform: translateX(-2px) scaleX(-1);
+}
+[dir="rtl"] .smartvideo-chapter-chevron {
+    transform: scaleX(-1);
+}
+
+/* Fallback divider if legacy DOM present */
 .smartvideo-chapter-divider {
     position: absolute;
     top: 0;
@@ -918,13 +1040,32 @@
     display: inline-block !important;
 }
 
-/* Timeline Hover Tooltip */
+/* Timeline Hover Tooltip - YouTube Style */
 .smartvideo-hover-tooltip {
-    transition: opacity 0.15s ease-in-out;
+    transition: opacity 0.12s ease-in-out;
     pointer-events: none;
-    font-size: 0.8rem;
-    backdrop-filter: blur(4px);
-    background-color: rgba(15, 23, 42, 0.92) !important;
+    background-color: rgba(20, 24, 33, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+    padding: 5px 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    white-space: nowrap;
+    max-width: 260px;
+}
+.smartvideo-hover-chapter-name {
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.smartvideo-hover-time {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
 }
 
 /* In-Video Callout Cards Overlay */

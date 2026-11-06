@@ -203,6 +203,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         this.chapters.sort(function(a, b) {
             return (a.timecode || 0) - (b.timecode || 0);
         });
+        this.cachedSegments = [];
 
         // Parse in-video callouts.
         let rawCallouts = container.dataset.callouts || '[]';
@@ -493,15 +494,20 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     const dur = video.duration || self.duration;
                     const hoverSec = dur > 0 ? (clickX / rect.width) * dur : 0;
 
-                    hoverTooltip.style.left = clickX + 'px';
+                    // Clamped position so tooltip stays within the container boundaries
+                    const tipWidth = hoverTooltip.offsetWidth || 100;
+                    const halfTip = tipWidth / 2;
+                    const clampedX = Math.max(halfTip + 4, Math.min(clickX, rect.width - halfTip - 4));
+                    hoverTooltip.style.left = clampedX + 'px';
                     hoverTooltip.classList.remove('d-none');
+
                     if (hoverTime) {
                         hoverTime.textContent = formatTime(hoverSec);
                     }
 
                     const chap = self.getChapterForTime(hoverSec);
-                    if (chap && hoverChapter) {
-                        hoverChapter.textContent = chap.title + ' • ';
+                    if (chap && chap.title && hoverChapter) {
+                        hoverChapter.textContent = chap.title;
                         hoverChapter.classList.remove('d-none');
                     } else if (hoverChapter) {
                         hoverChapter.classList.add('d-none');
@@ -585,7 +591,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     self.watchedIntervals.push([sec, sec + 1]);
                 }
 
-                // Update timeline progress bar.
+                // Update timeline progress bar and YouTube-style scrubber thumb.
                 if (dur > 0) {
                     const percent = (cur / dur) * 100;
                     if (progressBar) {
@@ -594,13 +600,52 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     if (maxMarker && self.preventSeeking) {
                         maxMarker.style.left = ((self.maxPosition / dur) * 100) + '%';
                     }
+                    const scrubberThumb = container.querySelector('.smartvideo-scrubber-thumb');
+                    if (scrubberThumb) {
+                        scrubberThumb.style.left = percent + '%';
+                    }
                 }
 
                 // Update buffered progress.
+                let bufferedEnd = 0;
                 if (video.buffered.length > 0 && dur > 0) {
-                    const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+                    bufferedEnd = video.buffered.end(video.buffered.length - 1);
                     if (bufferedBar) {
                         bufferedBar.style.width = ((bufferedEnd / dur) * 100) + '%';
+                    }
+                }
+
+                // Update YouTube-style discrete chapter segments.
+                if (self.cachedSegments && self.cachedSegments.length > 0) {
+                    for (let i = 0; i < self.cachedSegments.length; i++) {
+                        const seg = self.cachedSegments[i];
+                        // Progress fill:
+                        let pWidth = 0;
+                        if (cur >= seg.end) {
+                            pWidth = 100;
+                        } else if (cur <= seg.start) {
+                            pWidth = 0;
+                        } else if (seg.duration > 0) {
+                            pWidth = Math.min(100, Math.max(0, ((cur - seg.start) / seg.duration) * 100));
+                        }
+                        if (seg.progWidth !== pWidth) {
+                            seg.progEl.style.width = pWidth + '%';
+                            seg.progWidth = pWidth;
+                        }
+
+                        // Buffer fill:
+                        let bWidth = 0;
+                        if (bufferedEnd >= seg.end) {
+                            bWidth = 100;
+                        } else if (bufferedEnd <= seg.start) {
+                            bWidth = 0;
+                        } else if (seg.duration > 0) {
+                            bWidth = Math.min(100, Math.max(0, ((bufferedEnd - seg.start) / seg.duration) * 100));
+                        }
+                        if (seg.bufWidth !== bWidth) {
+                            seg.bufEl.style.width = bWidth + '%';
+                            seg.bufWidth = bWidth;
+                        }
                     }
                 }
 
@@ -1532,32 +1577,24 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             const self = this;
             const container = this.container;
             const video = this.video;
-            const chapters = this.chapters;
 
-            const pillBtn = container.querySelector('.smartvideo-chapter-pill');
-            const pillLabel = container.querySelector('.smartvideo-chapter-pill-label');
+            const pillBtn = container.querySelector('.smartvideo-chapter-pill, .smartvideo-chapter-inline-btn');
             const chapterList = container.querySelector('.smartvideo-chapters-list');
             const searchInput = container.querySelector('.smartvideo-search-chapters');
-            const segmentsContainer = container.querySelector('.smartvideo-chapter-segments');
 
-            // Render 3px segment dividers on timeline track.
-            if (segmentsContainer && chapters && chapters.length > 1) {
-                segmentsContainer.innerHTML = '';
-                const dur = this.duration || (video ? video.duration : 0);
-                if (dur > 0) {
-                    chapters.forEach(function(ch, idx) {
-                        if (idx > 0) {
-                            const pct = Math.min(100, (ch.timecode / dur) * 100);
-                            const div = document.createElement('div');
-                            div.className = 'smartvideo-chapter-divider';
-                            div.style.left = pct + '%';
-                            segmentsContainer.appendChild(div);
-                        }
-                    });
-                }
+            // Render YouTube-Style discrete segmented chapter blocks.
+            this.renderChapterSegments();
+
+            // Re-render segments if video duration becomes known later (e.g. metadata loaded)
+            if (video) {
+                const onDurationChange = function() {
+                    self.renderChapterSegments();
+                };
+                video.addEventListener('durationchange', onDurationChange);
+                video.addEventListener('loadedmetadata', onDurationChange);
             }
 
-            // Click on chapter pill opens/toggles the sidebar and focuses Chapters tab.
+            // Click on chapter inline button/pill opens/toggles the sidebar and focuses Chapters tab.
             if (pillBtn) {
                 pillBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -1623,6 +1660,162 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         },
 
         /**
+         * Dynamically construct and render YouTube-style chapter segment DOM nodes in seekbar.
+         */
+        renderChapterSegments: function() {
+            const container = this.container;
+            const segmentsContainer = container.querySelector('.smartvideo-segments-container');
+            if (!segmentsContainer) {
+                return;
+            }
+
+            const video = this.video;
+            const dur = (video && video.duration > 0) ? video.duration : (this.duration || 0);
+            const chapters = this.chapters || [];
+
+            segmentsContainer.innerHTML = '';
+            this.cachedSegments = [];
+
+            // Case 1: No chapters or zero duration -> render single continuous segment
+            if (!chapters || chapters.length === 0 || dur <= 0) {
+                const segEl = document.createElement('div');
+                segEl.className = 'smartvideo-segment';
+                segEl.style.flex = '1 1 0%';
+
+                const bgEl = document.createElement('div');
+                bgEl.className = 'smartvideo-segment-bg';
+
+                const bufEl = document.createElement('div');
+                bufEl.className = 'smartvideo-segment-buffered';
+                bufEl.style.width = '0%';
+
+                const progEl = document.createElement('div');
+                progEl.className = 'smartvideo-segment-progress';
+                progEl.style.width = '0%';
+
+                segEl.appendChild(bgEl);
+                segEl.appendChild(bufEl);
+                segEl.appendChild(progEl);
+                segmentsContainer.appendChild(segEl);
+
+                this.cachedSegments.push({
+                    start: 0,
+                    end: dur > 0 ? dur : 1,
+                    duration: dur > 0 ? dur : 1,
+                    title: '',
+                    segEl: segEl,
+                    bufEl: bufEl,
+                    progEl: progEl,
+                    progWidth: 0,
+                    bufWidth: 0
+                });
+                return;
+            }
+
+            // Case 2: Multi-chapter segmented timeline
+            const sorted = chapters.slice().sort(function(a, b) {
+                return (a.timecode || 0) - (b.timecode || 0);
+            });
+
+            const segRanges = [];
+            // If the first chapter does not begin at 0, create an introductory segment 0 to start of first chapter
+            if (sorted[0].timecode > 0) {
+                segRanges.push({
+                    title: sorted[0].title || '',
+                    start: 0,
+                    end: sorted[0].timecode,
+                    duration: sorted[0].timecode
+                });
+            }
+
+            for (let i = 0; i < sorted.length; i++) {
+                const start = sorted[i].timecode;
+                const nextStart = (i + 1 < sorted.length) ? sorted[i + 1].timecode : dur;
+                const end = Math.max(start + 0.1, nextStart > start ? nextStart : (dur > start ? dur : start + 1));
+                const segDur = Math.max(0.1, end - start);
+                segRanges.push({
+                    title: sorted[i].title,
+                    start: start,
+                    end: end,
+                    duration: segDur
+                });
+            }
+
+            const self = this;
+            segRanges.forEach(function(s) {
+                const segEl = document.createElement('div');
+                segEl.className = 'smartvideo-segment';
+                segEl.style.flex = s.duration + ' 1 0%';
+                segEl.dataset.start = s.start;
+                segEl.dataset.end = s.end;
+                segEl.dataset.title = s.title;
+
+                const bgEl = document.createElement('div');
+                bgEl.className = 'smartvideo-segment-bg';
+
+                const bufEl = document.createElement('div');
+                bufEl.className = 'smartvideo-segment-buffered';
+                bufEl.style.width = '0%';
+
+                const progEl = document.createElement('div');
+                progEl.className = 'smartvideo-segment-progress';
+                progEl.style.width = '0%';
+
+                segEl.appendChild(bgEl);
+                segEl.appendChild(bufEl);
+                segEl.appendChild(progEl);
+                segmentsContainer.appendChild(segEl);
+
+                self.cachedSegments.push({
+                    start: s.start,
+                    end: s.end,
+                    duration: s.duration,
+                    title: s.title,
+                    segEl: segEl,
+                    bufEl: bufEl,
+                    progEl: progEl,
+                    progWidth: 0,
+                    bufWidth: 0
+                });
+            });
+
+            // Trigger an immediate progress calculation to sync with current video time
+            if (video && video.currentTime > 0) {
+                const cur = video.currentTime;
+                let bEnd = 0;
+                if (video.buffered.length > 0) {
+                    bEnd = video.buffered.end(video.buffered.length - 1);
+                }
+                for (let i = 0; i < this.cachedSegments.length; i++) {
+                    const seg = this.cachedSegments[i];
+                    if (cur >= seg.end) {
+                        seg.progEl.style.width = '100%';
+                        seg.progWidth = 100;
+                    } else if (cur <= seg.start) {
+                        seg.progEl.style.width = '0%';
+                        seg.progWidth = 0;
+                    } else if (seg.duration > 0) {
+                        const pct = Math.min(100, Math.max(0, ((cur - seg.start) / seg.duration) * 100));
+                        seg.progEl.style.width = pct + '%';
+                        seg.progWidth = pct;
+                    }
+
+                    if (bEnd >= seg.end) {
+                        seg.bufEl.style.width = '100%';
+                        seg.bufWidth = 100;
+                    } else if (bEnd <= seg.start) {
+                        seg.bufEl.style.width = '0%';
+                        seg.bufWidth = 0;
+                    } else if (seg.duration > 0) {
+                        const bPct = Math.min(100, Math.max(0, ((bEnd - seg.start) / seg.duration) * 100));
+                        seg.bufEl.style.width = bPct + '%';
+                        seg.bufWidth = bPct;
+                    }
+                }
+            }
+        },
+
+        /**
          * Get the chapter active at a given timecode.
          *
          * @param {number} time
@@ -1654,10 +1847,17 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 return;
             }
 
-            // Update chapter pill in control bar.
-            const pillLabel = this.container.querySelector('.smartvideo-chapter-pill-label');
-            if (pillLabel && pillLabel.textContent !== chap.title) {
-                pillLabel.textContent = chap.title;
+            // Update chapter pill and inline button in control bar.
+            const pillLabels = this.container.querySelectorAll('.smartvideo-chapter-pill-label, .smartvideo-chapter-inline-title');
+            pillLabels.forEach(function(pillLabel) {
+                if (pillLabel.textContent !== chap.title) {
+                    pillLabel.textContent = chap.title;
+                }
+            });
+
+            const inlineWrap = this.container.querySelector('.smartvideo-chapter-inline-wrap');
+            if (inlineWrap && inlineWrap.classList.contains('d-none')) {
+                inlineWrap.classList.remove('d-none');
             }
 
             // Update active state in sidebar list.
