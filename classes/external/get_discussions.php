@@ -69,22 +69,27 @@ class get_discussions extends external_api {
         $records = $DB->get_records('smartvideo_discussions', ['instanceid' => $smartvideo->id], 'timecreated ASC');
 
         $users = [];
+        if (!empty($records)) {
+            $userids = array_unique(array_filter(array_map(function($rec) {
+                return (int)$rec->userid;
+            }, $records)));
+
+            if (!empty($userids)) {
+                if (class_exists('\core_user\fields')) {
+                    $required = \core_user\fields::for_userpic()->get_required_fields();
+                    $fieldlist = implode(', ', $required);
+                } else {
+                    $fieldlist = '*';
+                }
+                $users = $DB->get_records_list('user', 'id', $userids, '', $fieldlist);
+            }
+        }
+
         $discussions = [];
         $repliesByParent = [];
 
         foreach ($records as $rec) {
-            if (!isset($users[$rec->userid])) {
-                if (class_exists('\core_user\fields')) {
-                    $required = \core_user\fields::for_name()->with_userpic()->get_required_fields();
-                    $fieldlist = implode(', ', array_unique(array_merge(['id', 'email', 'picture', 'imagealt'], $required)));
-                    $u = $DB->get_record('user', ['id' => $rec->userid], $fieldlist);
-                } else {
-                    $u = $DB->get_record('user', ['id' => $rec->userid]);
-                }
-                $users[$rec->userid] = $u;
-            }
-
-            $u = $users[$rec->userid];
+            $u = $users[$rec->userid] ?? null;
             $userfullname = $u ? fullname($u) : 'User';
             $userpicture = $u ? $OUTPUT->user_picture($u, ['size' => 30]) : '';
 

@@ -335,19 +335,26 @@ if (!$media || $media->status !== 'ready') {
     // Fetch timestamped Q&A discussions.
     $discrecords = $DB->get_records('smartvideo_discussions', ['instanceid' => $smartvideo->id], 'timecreated ASC');
     $discusers = [];
+    if (!empty($discrecords)) {
+        $userids = array_unique(array_filter(array_map(function($disc) {
+            return (int)$disc->userid;
+        }, $discrecords)));
+
+        if (!empty($userids)) {
+            if (class_exists('\core_user\fields')) {
+                $required = \core_user\fields::for_userpic()->get_required_fields();
+                $fieldlist = implode(', ', $required);
+            } else {
+                $fieldlist = '*';
+            }
+            $discusers = $DB->get_records_list('user', 'id', $userids, '', $fieldlist);
+        }
+    }
+
     $topdiscussions = [];
     $repliesmap = [];
     foreach ($discrecords as $disc) {
-        if (!isset($discusers[$disc->userid])) {
-            if (class_exists('\core_user\fields')) {
-                $required = \core_user\fields::for_name()->with_userpic()->get_required_fields();
-                $fieldlist = implode(', ', array_unique(array_merge(['id', 'email', 'picture', 'imagealt'], $required)));
-                $discusers[$disc->userid] = $DB->get_record('user', ['id' => $disc->userid], $fieldlist);
-            } else {
-                $discusers[$disc->userid] = $DB->get_record('user', ['id' => $disc->userid]);
-            }
-        }
-        $u = $discusers[$disc->userid];
+        $u = $discusers[$disc->userid] ?? null;
         $dm = floor($disc->timecode / 60);
         $ds = $disc->timecode % 60;
         $dformatted = ($disc->timecode > 0) ? sprintf('%02d:%02d', $dm, $ds) : '';
