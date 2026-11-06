@@ -332,14 +332,38 @@
                 </div>
             </div>
 
-            {{! ZONE 2: Workstation Sidebar (Collapsible, Split-View on >=960px & Fullscreen, Overlay on Mobile) }}
-            <aside class="smartvideo-sidebar d-flex flex-column bg-dark text-white user-select-text d-none"
+            {{! ZONE 2: Workstation Sidebar (Collapsible, Resizable Split-View on >=960px & Fullscreen, Overlay on Mobile) }}
+            <aside class="smartvideo-sidebar d-flex flex-column bg-dark text-white user-select-text d-none position-relative"
                    aria-label="{{#str}}workstation_tools, mod_smartvideo{{/str}}">
-                {{! Sidebar Header with Tabs & Mode Controls }}
-                <div class="smartvideo-sidebar-header d-flex justify-content-between align-items-center p-2 border-bottom border-secondary border-opacity-25 bg-black bg-opacity-40">
-                    <ul class="nav nav-pills smartvideo-sidebar-tabs gap-1 flex-nowrap overflow-x-auto" role="tablist">
+                {{! Draggable Resize Handle on leading edge }}
+                <div class="smartvideo-sidebar-resizer" role="separator" aria-orientation="vertical" title="{{#str}}resize_sidebar, mod_smartvideo{{/str}}">
+                    <div class="smartvideo-sidebar-resizer-line"></div>
+                </div>
+
+                {{! Sidebar Header with 2-Row Tabs & Mode Controls }}
+                <div class="smartvideo-sidebar-header p-2 border-bottom border-secondary border-opacity-25 bg-black bg-opacity-40">
+                    {{! Top Utility Row: Title + Mode Toggle & Close buttons }}
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-semibold text-white-50 text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                            {{#str}}workstation_tools, mod_smartvideo{{/str}}
+                        </span>
+                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                            {{! Split View vs Overlay mode toggle button }}
+                            <button type="button" class="btn btn-sm btn-link text-white p-0 px-1 smartvideo-btn-sidebar-mode" title="{{#str}}sidebar_split_mode, mod_smartvideo{{/str}}">
+                                <i class="fa fa-table-columns" aria-hidden="true"></i>
+                            </button>
+                            {{! Close button }}
+                            <button type="button" class="btn btn-sm btn-link text-white p-0 px-1 smartvideo-btn-sidebar-close" title="{{#str}}close_sidebar, mod_smartvideo{{/str}}">
+                                <i class="fa fa-times" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{! Tabs container wrapping cleanly into 2 rows without horizontal scrollbar }}
+                    <ul class="nav nav-pills smartvideo-sidebar-tabs d-flex flex-wrap gap-1 align-items-center m-0" role="tablist">
+                        {{! 1. Chapters: Icon-only button to reduce space }}
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active py-1 px-2 btn-sm text-white"
+                            <button class="nav-link active py-1 px-2 btn-sm text-white smartvideo-tab-icon-only"
                                     id="tabBtnChapters"
                                     data-bs-toggle="pill"
                                     data-bs-target="#panelChapters"
@@ -347,11 +371,12 @@
                                     role="tab"
                                     aria-selected="true"
                                     title="{{#str}}chapters, mod_smartvideo{{/str}}">
-                                <i class="fa fa-list-ol me-1"></i><span class="d-none d-sm-inline">{{#str}}chapters, mod_smartvideo{{/str}}</span>
+                                <i class="fa fa-list-ol" aria-hidden="true"></i>
                             </button>
                         </li>
+                        {{! 2. Transcript: Icon-only button to reduce space }}
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link py-1 px-2 btn-sm text-white"
+                            <button class="nav-link py-1 px-2 btn-sm text-white smartvideo-tab-icon-only"
                                     id="tabBtnTranscript"
                                     data-bs-toggle="pill"
                                     data-bs-target="#panelTranscript"
@@ -359,11 +384,12 @@
                                     role="tab"
                                     aria-selected="false"
                                     title="{{#str}}transcript, mod_smartvideo{{/str}}">
-                                <i class="fa fa-align-left me-1"></i><span class="d-none d-sm-inline">{{#str}}transcript, mod_smartvideo{{/str}}</span>
+                                <i class="fa fa-align-left" aria-hidden="true"></i>
                             </button>
                         </li>
+                        {{! 3. Notes }}
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link py-1 px-2 btn-sm text-white"
+                            <button class="nav-link py-1 px-2 btn-sm text-white d-inline-flex align-items-center gap-1"
                                     id="tabBtnNotes"
                                     data-bs-toggle="pill"
                                     data-bs-target="#panelNotes"
@@ -371,49 +397,14 @@
                                     role="tab"
                                     aria-selected="false"
                                     title="{{#str}}notes, mod_smartvideo{{/str}}">
-                                <i class="fa fa-pencil me-1"></i><span class="d-none d-sm-inline">{{#str}}notes, mod_smartvideo{{/str}}</span>
-                                <span class="badge bg-secondary smartvideo-notes-count-badge rounded-pill ms-1">{{notecount}}</span>
+                                <i class="fa fa-pencil" aria-hidden="true"></i>
+                                <span>{{#str}}notes, mod_smartvideo{{/str}}</span>
+                                <span class="badge bg-secondary smartvideo-notes-count-badge rounded-pill">{{notecount}}</span>
                             </button>
                         </li>
+                        {{! 4. Discussions / Q&A }}
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link py-1 px-2 btn-sm text-white"
-                                    id="tabBtnCalc"
-                                    data-bs-toggle="pill"
-                                    data-bs-target="#panelCalc"
-                                    type="button"
-                                    role="tab"
-                                    aria-selected="false"
-                                    title="{{#str}}calculator, mod_smartvideo{{/str}}">
-                                <i class="fa fa-calculator me-1"></i><span class="d-none d-sm-inline">{{#str}}calculator, mod_smartvideo{{/str}}</span>
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-1 px-2 btn-sm text-white"
-                                    id="tabBtnReport"
-                                    data-bs-toggle="pill"
-                                    data-bs-target="#panelReport"
-                                    type="button"
-                                    role="tab"
-                                    aria-selected="false"
-                                    title="{{#str}}medicalreport, mod_smartvideo{{/str}}">
-                                <i class="fa fa-stethoscope me-1"></i><span class="d-none d-sm-inline">{{#str}}medicalreport, mod_smartvideo{{/str}}</span>
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-1 px-2 btn-sm text-white"
-                                    id="tabBtnResources"
-                                    data-bs-toggle="pill"
-                                    data-bs-target="#panelResources"
-                                    type="button"
-                                    role="tab"
-                                    aria-selected="false"
-                                    title="{{#str}}resources, mod_smartvideo{{/str}}">
-                                <i class="fa fa-paperclip me-1"></i><span class="d-none d-sm-inline">{{#str}}resources, mod_smartvideo{{/str}}</span>
-                                <span class="badge bg-secondary smartvideo-resource-count-badge rounded-pill ms-1">{{resourcecount}}</span>
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-1 px-2 btn-sm text-white"
+                            <button class="nav-link py-1 px-2 btn-sm text-white d-inline-flex align-items-center gap-1"
                                     id="tabBtnQA"
                                     data-bs-toggle="pill"
                                     data-bs-target="#panelQA"
@@ -421,21 +412,55 @@
                                     role="tab"
                                     aria-selected="false"
                                     title="{{#str}}discussions, mod_smartvideo{{/str}}">
-                                <i class="fa fa-comments me-1"></i><span class="d-none d-sm-inline">{{#str}}discussions, mod_smartvideo{{/str}}</span>
-                                <span class="badge bg-secondary smartvideo-qa-count-badge rounded-pill ms-1">{{discussioncount}}</span>
+                                <i class="fa fa-comments" aria-hidden="true"></i>
+                                <span>{{#str}}discussions, mod_smartvideo{{/str}}</span>
+                                <span class="badge bg-secondary smartvideo-qa-count-badge rounded-pill">{{discussioncount}}</span>
+                            </button>
+                        </li>
+                        {{! 5. Calculator }}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-1 px-2 btn-sm text-white d-inline-flex align-items-center gap-1"
+                                    id="tabBtnCalc"
+                                    data-bs-toggle="pill"
+                                    data-bs-target="#panelCalc"
+                                    type="button"
+                                    role="tab"
+                                    aria-selected="false"
+                                    title="{{#str}}calculator, mod_smartvideo{{/str}}">
+                                <i class="fa fa-calculator" aria-hidden="true"></i>
+                                <span>{{#str}}calculator, mod_smartvideo{{/str}}</span>
+                            </button>
+                        </li>
+                        {{! 6. Medical / Case Report }}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-1 px-2 btn-sm text-white d-inline-flex align-items-center gap-1"
+                                    id="tabBtnReport"
+                                    data-bs-toggle="pill"
+                                    data-bs-target="#panelReport"
+                                    type="button"
+                                    role="tab"
+                                    aria-selected="false"
+                                    title="{{#str}}medicalreport, mod_smartvideo{{/str}}">
+                                <i class="fa fa-stethoscope" aria-hidden="true"></i>
+                                <span>{{#str}}medicalreport, mod_smartvideo{{/str}}</span>
+                            </button>
+                        </li>
+                        {{! 7. Handouts & Resources }}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-1 px-2 btn-sm text-white d-inline-flex align-items-center gap-1"
+                                    id="tabBtnResources"
+                                    data-bs-toggle="pill"
+                                    data-bs-target="#panelResources"
+                                    type="button"
+                                    role="tab"
+                                    aria-selected="false"
+                                    title="{{#str}}resources, mod_smartvideo{{/str}}">
+                                <i class="fa fa-paperclip" aria-hidden="true"></i>
+                                <span>{{#str}}resources, mod_smartvideo{{/str}}</span>
+                                <span class="badge bg-secondary smartvideo-resource-count-badge rounded-pill">{{resourcecount}}</span>
                             </button>
                         </li>
                     </ul>
-                    <div class="d-flex align-items-center gap-1 flex-shrink-0 ms-1">
-                        {{! Split View vs Overlay mode toggle button }}
-                        <button type="button" class="btn btn-sm btn-link text-white p-1 smartvideo-btn-sidebar-mode" title="{{#str}}sidebar_split_mode, mod_smartvideo{{/str}}">
-                            <i class="fa fa-table-columns" aria-hidden="true"></i>
-                        </button>
-                        {{! Close button }}
-                        <button type="button" class="btn btn-sm btn-link text-white p-1 smartvideo-btn-sidebar-close" title="{{#str}}close_sidebar, mod_smartvideo{{/str}}">
-                            <i class="fa fa-times" aria-hidden="true"></i>
-                        </button>
-                    </div>
                 </div>
 
                 {{! Sidebar Content Body }}

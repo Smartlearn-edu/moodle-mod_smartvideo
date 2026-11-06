@@ -196,6 +196,7 @@ $string['sidebar_overlay_mode'] = 'Overlay view';
 $string['dock_to_sidebar'] = 'Dock to Sidebar';
 $string['move_below'] = 'Move Below Video';
 $string['close_sidebar'] = 'Close Sidebar';
+$string['resize_sidebar'] = 'Drag to resize sidebar';
 
 // Chapters & Table of Contents.
 $string['chapters'] = 'Chapters';

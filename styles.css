@@ -836,18 +836,58 @@
 
 /* Workstation Sidebar */
 .smartvideo-sidebar {
-    width: 340px;
+    --smartvideo-sidebar-width: 360px;
+    width: var(--smartvideo-sidebar-width, 360px);
+    min-width: 280px;
     background-color: #0f172a !important;
     border-inline-start: 1px solid rgba(255, 255, 255, 0.12);
     z-index: 35;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Sidebar Drag-to-Resize Handle */
+.smartvideo-sidebar-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    inset-inline-start: -4px;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 55;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    user-select: none;
+    transition: background-color 0.15s ease;
+}
+.smartvideo-sidebar-resizer-line {
+    width: 2px;
+    height: 38px;
+    border-radius: 1px;
+    background-color: rgba(255, 255, 255, 0.25);
+    transition: background-color 0.2s ease, height 0.2s ease, width 0.2s ease;
+}
+.smartvideo-sidebar-resizer:hover .smartvideo-sidebar-resizer-line,
+.smartvideo-sidebar-resizer.is-dragging .smartvideo-sidebar-resizer-line {
+    background-color: #0d6efd;
+    height: 100%;
+    width: 3px;
+}
+.smartvideo-player-container.is-resizing-sidebar {
+    user-select: none !important;
+}
+.smartvideo-player-container.is-resizing-sidebar iframe,
+.smartvideo-player-container.is-resizing-sidebar video {
+    pointer-events: none !important;
+}
+
 /* Desktop Split-View (when container >= 960px and not forced overlay mode) */
 @container (min-width: 960px) {
     .smartvideo-player-container:not(.is-sidebar-overlay) .smartvideo-sidebar:not(.d-none) {
         display: flex !important;
-        flex: 0 0 340px !important;
+        flex: 0 0 var(--smartvideo-sidebar-width, 360px) !important;
+        width: var(--smartvideo-sidebar-width, 360px) !important;
         position: relative !important;
         height: 100% !important;
     }
@@ -861,7 +901,7 @@
         position: absolute !important;
         inset-block: 0 !important;
         inset-inline-end: 0 !important;
-        width: 340px !important;
+        width: var(--smartvideo-sidebar-width, 360px) !important;
         max-width: 85% !important;
         z-index: 48 !important;
         backdrop-filter: blur(14px) !important;
@@ -873,8 +913,8 @@
 /* Fullscreen workstation split view */
 .smartvideo-player-container.is-fullscreen:not(.is-sidebar-overlay) .smartvideo-sidebar:not(.d-none) {
     display: flex !important;
-    flex: 0 0 360px !important;
-    width: 360px !important;
+    flex: 0 0 var(--smartvideo-sidebar-width, 380px) !important;
+    width: var(--smartvideo-sidebar-width, 380px) !important;
     height: 100vh !important;
     position: relative !important;
     z-index: 46 !important;
@@ -882,14 +922,34 @@
 
 /* Sidebar header pills & buttons */
 .smartvideo-sidebar-tabs .nav-link {
-    font-size: 0.8rem;
+    font-size: 0.76rem;
     font-weight: 500;
     color: #94a3b8 !important;
     border-radius: 4px;
+    padding: 3px 7px !important;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.smartvideo-sidebar-tabs .nav-link:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
 }
 .smartvideo-sidebar-tabs .nav-link.active {
     background-color: #0d6efd !important;
     color: #fff !important;
+}
+
+/* Icon-only compact tabs (Chapters & Transcript) */
+.smartvideo-tab-icon-only {
+    min-width: 32px;
+    height: 26px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px !important;
+}
+.smartvideo-tab-icon-only i {
+    margin: 0 !important;
+    font-size: 0.85rem;
 }
 
 /* Timeline Chapter Segments & YouTube-Style Scrubber */

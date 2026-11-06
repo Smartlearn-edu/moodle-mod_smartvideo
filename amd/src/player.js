@@ -2050,6 +2050,104 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     }
                 });
             }
+
+            // Setup Draggable Sidebar Resizer.
+            const resizer = sidebar.querySelector('.smartvideo-sidebar-resizer');
+            if (resizer) {
+                try {
+                    const savedWidth = parseInt(localStorage.getItem('smartvideo_sidebar_width'), 10);
+                    if (savedWidth && savedWidth >= 280 && savedWidth <= 900) {
+                        sidebar.style.setProperty('--smartvideo-sidebar-width', savedWidth + 'px');
+                    }
+                } catch (e) {}
+
+                let isDragging = false;
+                let startX = 0;
+                let startWidth = 0;
+
+                const onMouseDown = function(e) {
+                    e.preventDefault();
+                    isDragging = true;
+                    startX = e.clientX;
+                    startWidth = sidebar.getBoundingClientRect().width;
+
+                    resizer.classList.add('is-dragging');
+                    container.classList.add('is-resizing-sidebar');
+                    document.body.style.userSelect = 'none';
+                    document.body.style.cursor = 'col-resize';
+
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                };
+
+                const onMouseMove = function(e) {
+                    if (!isDragging) {
+                        return;
+                    }
+                    const containerRect = container.getBoundingClientRect();
+                    const isRtl = document.documentElement.dir === 'rtl' || container.closest('[dir="rtl"]') !== null;
+                    const delta = isRtl ? (e.clientX - startX) : (startX - e.clientX);
+                    let newWidth = startWidth + delta;
+
+                    const minWidth = 280;
+                    const maxWidth = Math.max(minWidth, Math.min(850, containerRect.width - 320));
+                    newWidth = Math.max(minWidth, Math.min(newWidth, maxWidth));
+
+                    sidebar.style.setProperty('--smartvideo-sidebar-width', newWidth + 'px');
+
+                    if (self.canvas && typeof self.resizeCanvas === 'function') {
+                        self.resizeCanvas();
+                    }
+                };
+
+                const onMouseUp = function() {
+                    if (!isDragging) {
+                        return;
+                    }
+                    isDragging = false;
+                    resizer.classList.remove('is-dragging');
+                    container.classList.remove('is-resizing-sidebar');
+                    document.body.style.userSelect = '';
+                    document.body.style.cursor = '';
+
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+
+                    try {
+                        const finalWidth = Math.round(sidebar.getBoundingClientRect().width);
+                        localStorage.setItem('smartvideo_sidebar_width', finalWidth);
+                    } catch (e) {}
+
+                    if (self.canvas && typeof self.resizeCanvas === 'function') {
+                        self.resizeCanvas();
+                    }
+                };
+
+                resizer.addEventListener('mousedown', onMouseDown);
+
+                resizer.addEventListener('touchstart', function(e) {
+                    if (e.touches && e.touches[0]) {
+                        onMouseDown({
+                            preventDefault: function() { e.preventDefault(); },
+                            clientX: e.touches[0].clientX
+                        });
+                    }
+                }, { passive: false });
+
+                window.addEventListener('touchmove', function(e) {
+                    if (isDragging && e.touches && e.touches[0]) {
+                        onMouseMove({
+                            clientX: e.touches[0].clientX
+                        });
+                    }
+                }, { passive: true });
+
+                window.addEventListener('touchend', function() {
+                    if (isDragging) {
+                        onMouseUp();
+                    }
+                });
+            }
         },
 
         /**
