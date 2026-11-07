@@ -320,13 +320,12 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 height: '100%',
                 playerVars: {
                     autoplay: 0,
-                    controls: 0,
+                    controls: 1,
                     rel: 0,
-                    showinfo: 0,
-                    modestbranding: 1,
                     playsinline: 1,
-                    disablekb: 1,
-                    iv_load_policy: 3
+                    disablekb: 0,
+                    enablejsapi: 1,
+                    origin: window.location.origin
                 },
                 events: {
                     onReady: function(e) {
@@ -443,11 +442,20 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         if (window.YT && window.YT.Player) {
             initYT();
         } else {
+            const prevReady = window.onYouTubeIframeAPIReady;
+            window.onYouTubeIframeAPIReady = function() {
+                if (typeof prevReady === 'function') {
+                    try { prevReady(); } catch (e) { /* ignore */ }
+                }
+                initYT();
+            };
             loadExternalScript('https://www.youtube.com/iframe_api').then(function() {
                 const checkInterval = setInterval(function() {
                     if (window.YT && window.YT.Player) {
                         clearInterval(checkInterval);
-                        initYT();
+                        if (!ytPlayer) {
+                            initYT();
+                        }
                     }
                 }, 100);
             });
@@ -1277,24 +1285,39 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     togglePlay();
                 });
             }
-            if (self.clickShield) {
-                self.clickShield.addEventListener('click', function() {
-                    togglePlay();
-                });
-                self.clickShield.addEventListener('dblclick', function() {
-                    toggleFullscreen();
-                });
-            } else if (video && typeof video.addEventListener === 'function') {
-                video.addEventListener('click', function(e) {
-                    if (e.target === video) {
+            // If YouTube provider, comply with YouTube Developer Terms & Policies (Section III.E):
+            // 1. Never obscure or hide YouTube features, branding, or native player controls.
+            // 2. Allow user clicks and touch events to pass directly to YouTube (pointer-events: none on clickShield).
+            // 3. Hide center big play overlay as YouTube has its own native controls and play state.
+            if (self.videoType === 'youtube') {
+                if (self.clickShield) {
+                    self.clickShield.style.pointerEvents = 'none';
+                    self.clickShield.classList.add('pe-none', 'd-none');
+                }
+                if (centerOverlay) {
+                    centerOverlay.classList.add('d-none');
+                    centerOverlay.style.pointerEvents = 'none';
+                }
+            } else {
+                if (self.clickShield) {
+                    self.clickShield.addEventListener('click', function() {
                         togglePlay();
-                    }
-                });
-                video.addEventListener('dblclick', function(e) {
-                    if (e.target === video) {
+                    });
+                    self.clickShield.addEventListener('dblclick', function() {
                         toggleFullscreen();
-                    }
-                });
+                    });
+                } else if (video && typeof video.addEventListener === 'function') {
+                    video.addEventListener('click', function(e) {
+                        if (e.target === video) {
+                            togglePlay();
+                        }
+                    });
+                    video.addEventListener('dblclick', function(e) {
+                        if (e.target === video) {
+                            toggleFullscreen();
+                        }
+                    });
+                }
             }
 
             // Initial pause state.

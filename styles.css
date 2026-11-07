@@ -357,6 +357,24 @@
     pointer-events: auto;
 }
 
+/* YouTube Provider Compliance (Terms of Service & Developer Policies):
+   Never obscure, block, or hide YouTube features, branding, or player controls */
+.smartvideo-player-container[data-videotype="youtube"] .smartvideo-click-shield {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+.smartvideo-player-container[data-videotype="youtube"] .smartvideo-center-overlay {
+    display: none !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+}
+
+.smartvideo-player-container[data-videotype="youtube"]:fullscreen .smartvideo-controls-bar,
+.smartvideo-player-container[data-videotype="youtube"].is-fullscreen .smartvideo-controls-bar {
+    display: none !important;
+}
+
 .smartvideo-picker-item,
 .securevideo-picker-item {
     transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
