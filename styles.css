@@ -377,9 +377,13 @@
 .smartvideo-player-container[data-videotype="youtube"]:fullscreen .smartvideo-controls-bar,
 .smartvideo-player-container[data-videotype="youtube"].is-fullscreen .smartvideo-controls-bar,
 .smartvideo-player-container[data-videotype="vimeo"]:fullscreen .smartvideo-controls-bar,
-.smartvideo-player-container[data-videotype="vimeo"].is-fullscreen .smartvideo-controls-bar,
-.smartvideo-player-container[data-videotype="screenpal"]:fullscreen .smartvideo-controls-bar,
-.smartvideo-player-container[data-videotype="screenpal"].is-fullscreen .smartvideo-controls-bar {
+.smartvideo-player-container[data-videotype="vimeo"].is-fullscreen .smartvideo-controls-bar {
+    display: none !important;
+}
+
+/* ScreenPal provider has its own full internal player control bar:
+   Hide SmartVideo's bottom control bar completely to avoid duplicate controls */
+.smartvideo-player-container[data-videotype="screenpal"] .smartvideo-controls-bar {
     display: none !important;
 }
 
