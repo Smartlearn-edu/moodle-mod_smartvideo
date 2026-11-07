@@ -361,7 +361,7 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
             }
 
             // HLS stream loader if available.
-            require(['local_securevideolibrary/hls'], function(Hls) {
+            require(['local_securevideolibrary/hls-lazy'], function(Hls) {
                 const HlsClass = Hls || window.Hls;
                 const containerData = document.getElementById('smartVideoContainer') ||
                                       document.getElementById('secureVideoContainer') ||

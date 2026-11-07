@@ -35,7 +35,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 return;
             }
 
-            require(['local_securevideolibrary/hls'], function(HlsModule) {
+            require(['local_securevideolibrary/hls-lazy'], function(HlsModule) {
                 const Hls = HlsModule || window.Hls;
                 if (Hls) {
                     resolve(Hls);
