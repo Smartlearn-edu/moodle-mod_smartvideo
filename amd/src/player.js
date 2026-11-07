@@ -128,6 +128,807 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
     }
 
     /**
+     * Dynamically inject a script tag if not already loaded.
+     *
+     * @param {string} src
+     * @return {Promise<void>}
+     */
+    function loadExternalScript(src) {
+        return new Promise(function(resolve, reject) {
+            const existing = document.querySelector('script[src="' + src + '"]');
+            if (existing) {
+                if (existing.dataset.loaded === 'true' || window.YT || window.Vimeo || window.playerjs || window.dailymotion || window.VdoPlayer) {
+                    resolve();
+                    return;
+                }
+                existing.addEventListener('load', function() {
+                    resolve();
+                });
+                existing.addEventListener('error', function(err) {
+                    reject(err);
+                });
+                return;
+            }
+
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            s.onload = function() {
+                s.dataset.loaded = 'true';
+                resolve();
+            };
+            s.onerror = function(err) {
+                reject(err);
+            };
+            document.head.appendChild(s);
+        });
+    }
+
+    /**
+     * Create base event-driven facade mimicking HTML5 video element.
+     *
+     * @param {HTMLElement} mountEl
+     * @param {number} initialDuration
+     * @return {Object}
+     */
+    function createBaseAdapter(mountEl, initialDuration) {
+        const listeners = {};
+        let curTime = 0;
+        let dur = initialDuration || 0;
+        let isPaused = true;
+        let isMuted = false;
+        let vol = 1.0;
+        let rate = 1.0;
+
+        return {
+            element: mountEl,
+            scrollIntoView: function(opts) {
+                if (mountEl && typeof mountEl.scrollIntoView === 'function') {
+                    mountEl.scrollIntoView(opts);
+                }
+            },
+            addEventListener: function(event, fn) {
+                if (!listeners[event]) {
+                    listeners[event] = [];
+                }
+                listeners[event].push(fn);
+            },
+            removeEventListener: function(event, fn) {
+                if (!listeners[event]) {
+                    return;
+                }
+                listeners[event] = listeners[event].filter(function(cb) {
+                    return cb !== fn;
+                });
+            },
+            dispatchEvent: function(event, detail) {
+                const cbs = listeners[event] || [];
+                const evtObj = {
+                    type: event,
+                    target: this,
+                    currentTarget: this,
+                    detail: detail || {}
+                };
+                cbs.forEach(function(fn) {
+                    try {
+                        fn(evtObj);
+                    } catch (e) {
+                        console.error('[SmartVideo Adapter Error]', event, e);
+                    }
+                });
+            },
+            get currentTime() {
+                return curTime;
+            },
+            set currentTime(val) {
+                curTime = Math.max(0, parseFloat(val) || 0);
+                this.dispatchEvent('seeking');
+                this.dispatchEvent('timeupdate');
+            },
+            get duration() {
+                return dur;
+            },
+            set duration(val) {
+                dur = Math.max(0, parseFloat(val) || 0);
+                this.dispatchEvent('durationchange');
+            },
+            get paused() {
+                return isPaused;
+            },
+            set paused(val) {
+                isPaused = !!val;
+            },
+            get muted() {
+                return isMuted;
+            },
+            set muted(val) {
+                isMuted = !!val;
+                this.dispatchEvent('volumechange');
+            },
+            get volume() {
+                return vol;
+            },
+            set volume(val) {
+                vol = Math.max(0, Math.min(1, parseFloat(val) || 0));
+                this.dispatchEvent('volumechange');
+            },
+            get playbackRate() {
+                return rate;
+            },
+            set playbackRate(val) {
+                rate = parseFloat(val) || 1.0;
+                this.dispatchEvent('ratechange');
+            },
+            get buffered() {
+                const self = this;
+                return {
+                    length: 1,
+                    start: function() { return 0; },
+                    end: function() { return self.duration || 0; }
+                };
+            },
+            play: function() {
+                this.paused = false;
+                this.dispatchEvent('play');
+                return Promise.resolve();
+            },
+            pause: function() {
+                this.paused = true;
+                this.dispatchEvent('pause');
+            },
+            destroy: function() {}
+        };
+    }
+
+    /**
+     * YouTube Adapter using YouTube IFrame Player API.
+     */
+    function createYouTubeAdapter(mountEl, url, initialDuration) {
+        const adapter = createBaseAdapter(mountEl, initialDuration);
+        let ytPlayer = null;
+        let updateTimer = null;
+
+        let videoId = url;
+        const match = /(?:youtube\.com|youtu\.be|youtube-nocookie\.com)\/(?:embed\/|watch\?v=|\/)?([a-zA-Z0-9_-]{11})/i.exec(url);
+        if (match && match[1]) {
+            videoId = match[1];
+        }
+
+        const containerId = 'smartvideo_yt_' + Math.random().toString(36).substring(2, 9);
+        mountEl.innerHTML = '<div id="' + containerId + '" class="w-100 h-100"></div>';
+
+        function startTimer() {
+            stopTimer();
+            updateTimer = setInterval(function() {
+                if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+                    adapter.currentTime = ytPlayer.getCurrentTime();
+                    adapter.dispatchEvent('timeupdate');
+                }
+            }, 250);
+        }
+
+        function stopTimer() {
+            if (updateTimer) {
+                clearInterval(updateTimer);
+                updateTimer = null;
+            }
+        }
+
+        function initYT() {
+            ytPlayer = new window.YT.Player(containerId, {
+                videoId: videoId,
+                width: '100%',
+                height: '100%',
+                playerVars: {
+                    autoplay: 0,
+                    controls: 0,
+                    rel: 0,
+                    showinfo: 0,
+                    modestbranding: 1,
+                    playsinline: 1,
+                    disablekb: 1,
+                    iv_load_policy: 3
+                },
+                events: {
+                    onReady: function(e) {
+                        if (e.target && typeof e.target.getDuration === 'function') {
+                            const d = e.target.getDuration();
+                            if (d > 0) {
+                                adapter.duration = d;
+                            }
+                        }
+                        adapter.dispatchEvent('loadedmetadata');
+                    },
+                    onStateChange: function(e) {
+                        if (e.data === window.YT.PlayerState.PLAYING) {
+                            adapter.paused = false;
+                            startTimer();
+                            adapter.dispatchEvent('play');
+                        } else if (e.data === window.YT.PlayerState.PAUSED) {
+                            adapter.paused = true;
+                            stopTimer();
+                            adapter.dispatchEvent('pause');
+                        } else if (e.data === window.YT.PlayerState.ENDED) {
+                            adapter.paused = true;
+                            stopTimer();
+                            adapter.dispatchEvent('ended');
+                        }
+                    },
+                    onError: function(e) {
+                        adapter.dispatchEvent('error', {error: e.data});
+                    }
+                }
+            });
+        }
+
+        adapter.play = function() {
+            if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+                ytPlayer.playVideo();
+            }
+            adapter.paused = false;
+            return Promise.resolve();
+        };
+
+        adapter.pause = function() {
+            if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                ytPlayer.pauseVideo();
+            }
+            adapter.paused = true;
+        };
+
+        Object.defineProperty(adapter, 'currentTime', {
+            get: function() {
+                if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+                    return ytPlayer.getCurrentTime();
+                }
+                return 0;
+            },
+            set: function(val) {
+                if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+                    ytPlayer.seekTo(val, true);
+                }
+                adapter.dispatchEvent('seeking');
+                adapter.dispatchEvent('timeupdate');
+            }
+        });
+
+        Object.defineProperty(adapter, 'muted', {
+            get: function() {
+                return ytPlayer && typeof ytPlayer.isMuted === 'function' ? ytPlayer.isMuted() : false;
+            },
+            set: function(val) {
+                if (ytPlayer) {
+                    val ? ytPlayer.mute() : ytPlayer.unMute();
+                }
+                adapter.dispatchEvent('volumechange');
+            }
+        });
+
+        Object.defineProperty(adapter, 'volume', {
+            get: function() {
+                return ytPlayer && typeof ytPlayer.getVolume === 'function' ? (ytPlayer.getVolume() / 100) : 1;
+            },
+            set: function(val) {
+                if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
+                    ytPlayer.setVolume(val * 100);
+                }
+                adapter.dispatchEvent('volumechange');
+            }
+        });
+
+        Object.defineProperty(adapter, 'playbackRate', {
+            get: function() {
+                return ytPlayer && typeof ytPlayer.getPlaybackRate === 'function' ? ytPlayer.getPlaybackRate() : 1;
+            },
+            set: function(val) {
+                if (ytPlayer && typeof ytPlayer.setPlaybackRate === 'function') {
+                    ytPlayer.setPlaybackRate(val);
+                }
+                adapter.dispatchEvent('ratechange');
+            }
+        });
+
+        adapter.destroy = function() {
+            stopTimer();
+            if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+                ytPlayer.destroy();
+            }
+        };
+
+        if (window.YT && window.YT.Player) {
+            initYT();
+        } else {
+            loadExternalScript('https://www.youtube.com/iframe_api').then(function() {
+                const checkInterval = setInterval(function() {
+                    if (window.YT && window.YT.Player) {
+                        clearInterval(checkInterval);
+                        initYT();
+                    }
+                }, 100);
+            });
+        }
+
+        return adapter;
+    }
+
+    /**
+     * Vimeo Adapter using Vimeo Player SDK.
+     */
+    function createVimeoAdapter(mountEl, url, initialDuration) {
+        const adapter = createBaseAdapter(mountEl, initialDuration);
+        let vimeoPlayer = null;
+        let vimeoCurrentTime = 0;
+
+        mountEl.innerHTML = '';
+
+        loadExternalScript('https://player.vimeo.com/api/player.js').then(function() {
+            vimeoPlayer = new window.Vimeo.Player(mountEl, {
+                url: url,
+                controls: false,
+                responsive: true,
+                dnt: true
+            });
+
+            vimeoPlayer.on('loaded', function() {
+                vimeoPlayer.getDuration().then(function(d) {
+                    adapter.duration = d;
+                    adapter.dispatchEvent('loadedmetadata');
+                });
+            });
+
+            vimeoPlayer.on('play', function() {
+                adapter.paused = false;
+                adapter.dispatchEvent('play');
+            });
+
+            vimeoPlayer.on('pause', function() {
+                adapter.paused = true;
+                adapter.dispatchEvent('pause');
+            });
+
+            vimeoPlayer.on('ended', function() {
+                adapter.paused = true;
+                adapter.dispatchEvent('ended');
+            });
+
+            vimeoPlayer.on('timeupdate', function(data) {
+                vimeoCurrentTime = data.seconds;
+                adapter.dispatchEvent('timeupdate');
+            });
+
+            vimeoPlayer.on('seeked', function(data) {
+                vimeoCurrentTime = data.seconds;
+                adapter.dispatchEvent('seeking');
+                adapter.dispatchEvent('timeupdate');
+            });
+
+            vimeoPlayer.on('error', function(err) {
+                adapter.dispatchEvent('error', {error: err});
+            });
+        });
+
+        adapter.play = function() {
+            adapter.paused = false;
+            return vimeoPlayer ? vimeoPlayer.play() : Promise.resolve();
+        };
+
+        adapter.pause = function() {
+            adapter.paused = true;
+            if (vimeoPlayer) {
+                vimeoPlayer.pause();
+            }
+        };
+
+        Object.defineProperty(adapter, 'currentTime', {
+            get: function() {
+                return vimeoCurrentTime;
+            },
+            set: function(val) {
+                vimeoCurrentTime = val;
+                if (vimeoPlayer) {
+                    vimeoPlayer.setCurrentTime(val);
+                }
+                adapter.dispatchEvent('seeking');
+                adapter.dispatchEvent('timeupdate');
+            }
+        });
+
+        Object.defineProperty(adapter, 'playbackRate', {
+            get: function() {
+                return 1.0;
+            },
+            set: function(val) {
+                if (vimeoPlayer && typeof vimeoPlayer.setPlaybackRate === 'function') {
+                    vimeoPlayer.setPlaybackRate(val);
+                }
+                adapter.dispatchEvent('ratechange');
+            }
+        });
+
+        Object.defineProperty(adapter, 'muted', {
+            get: function() {
+                return false;
+            },
+            set: function(val) {
+                if (vimeoPlayer) {
+                    vimeoPlayer.setMuted(!!val);
+                }
+                adapter.dispatchEvent('volumechange');
+            }
+        });
+
+        Object.defineProperty(adapter, 'volume', {
+            get: function() {
+                return 1.0;
+            },
+            set: function(val) {
+                if (vimeoPlayer) {
+                    vimeoPlayer.setVolume(val);
+                }
+                adapter.dispatchEvent('volumechange');
+            }
+        });
+
+        adapter.destroy = function() {
+            if (vimeoPlayer && typeof vimeoPlayer.destroy === 'function') {
+                vimeoPlayer.destroy();
+            }
+        };
+
+        return adapter;
+    }
+
+    /**
+     * Bunny Stream Adapter using PlayerJS.
+     */
+    function createBunnyStreamAdapter(mountEl, url, initialDuration) {
+        const adapter = createBaseAdapter(mountEl, initialDuration);
+        let playerjsPlayer = null;
+        let bunnyCurrentTime = 0;
+
+        let embedUrl = url.replace(/\/watch\//, '/embed/').replace(/\/play\//, '/embed/');
+        if (embedUrl.indexOf('autoplay=') === -1) {
+            embedUrl += (embedUrl.indexOf('?') === -1 ? '?' : '&') + 'autoplay=false';
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.src = embedUrl;
+        iframe.className = 'w-100 h-100 border-0';
+        iframe.allow = 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;';
+        iframe.allowFullscreen = true;
+        mountEl.innerHTML = '';
+        mountEl.appendChild(iframe);
+
+        loadExternalScript('https://cdn.embed.ly/player-0.1.0.min.js').then(function() {
+            playerjsPlayer = new window.playerjs.Player(iframe);
+
+            playerjsPlayer.on('ready', function() {
+                playerjsPlayer.getDuration(function(d) {
+                    if (d > 0) {
+                        adapter.duration = d;
+                    }
+                    adapter.dispatchEvent('loadedmetadata');
+                });
+            });
+
+            playerjsPlayer.on('play', function() {
+                adapter.paused = false;
+                adapter.dispatchEvent('play');
+            });
+
+            playerjsPlayer.on('pause', function() {
+                adapter.paused = true;
+                adapter.dispatchEvent('pause');
+            });
+
+            playerjsPlayer.on('ended', function() {
+                adapter.paused = true;
+                adapter.dispatchEvent('ended');
+            });
+
+            playerjsPlayer.on('timeupdate', function(data) {
+                bunnyCurrentTime = data.seconds;
+                adapter.dispatchEvent('timeupdate');
+            });
+        });
+
+        adapter.play = function() {
+            adapter.paused = false;
+            if (playerjsPlayer) {
+                playerjsPlayer.play();
+            }
+            return Promise.resolve();
+        };
+
+        adapter.pause = function() {
+            adapter.paused = true;
+            if (playerjsPlayer) {
+                playerjsPlayer.pause();
+            }
+        };
+
+        Object.defineProperty(adapter, 'currentTime', {
+            get: function() {
+                return bunnyCurrentTime;
+            },
+            set: function(val) {
+                bunnyCurrentTime = val;
+                if (playerjsPlayer) {
+                    playerjsPlayer.setCurrentTime(val);
+                }
+                adapter.dispatchEvent('seeking');
+                adapter.dispatchEvent('timeupdate');
+            }
+        });
+
+        return adapter;
+    }
+
+    /**
+     * VdoCipher Adapter using VdoPlayer V2 SDK.
+     */
+    function createVdoCipherAdapter(mountEl, url, initialDuration) {
+        const adapter = createBaseAdapter(mountEl, initialDuration);
+        let vdoPlayer = null;
+        let vdoTime = 0;
+
+        let videoId = url;
+        const match = /vdocipher\.com\/dashboard\/video\/(?:embed\/|)([a-zA-Z0-9_-]+)/i.exec(url);
+        if (match && match[1]) {
+            videoId = match[1];
+        }
+
+        mountEl.innerHTML = '<div class="smartvideo-vdo-container w-100 h-100"></div>';
+        const targetContainer = mountEl.querySelector('.smartvideo-vdo-container');
+
+        const otpUrl = M.cfg.wwwroot + '/mod/smartvideo/ajax.php?action=get_vdocipher&sesskey=' +
+            encodeURIComponent(M.cfg.sesskey) + '&videoid=' + encodeURIComponent(videoId) + '&info=otp';
+
+        fetch(otpUrl).then(function(res) {
+            return res.json();
+        }).then(function(data) {
+            if (!data || data.error || !data.otp) {
+                console.error('[SmartVideo] VdoCipher OTP failed:', data);
+                return;
+            }
+
+            loadExternalScript('https://player.vdocipher.com/v2/api.js').then(function() {
+                const iframe = document.createElement('iframe');
+                iframe.src = 'https://player.vdocipher.com/v2/?otp=' + encodeURIComponent(data.otp) + '&playbackInfo=' + encodeURIComponent(data.playbackInfo);
+                iframe.className = 'w-100 h-100 border-0';
+                iframe.allow = 'encrypted-media; autoplay';
+                iframe.allowFullscreen = true;
+                targetContainer.innerHTML = '';
+                targetContainer.appendChild(iframe);
+
+                if (window.VdoPlayer) {
+                    vdoPlayer = window.VdoPlayer.getInstance(iframe);
+                    if (vdoPlayer && vdoPlayer.video) {
+                        vdoPlayer.video.addEventListener('play', function() {
+                            adapter.paused = false;
+                            adapter.dispatchEvent('play');
+                        });
+                        vdoPlayer.video.addEventListener('pause', function() {
+                            adapter.paused = true;
+                            adapter.dispatchEvent('pause');
+                        });
+                        vdoPlayer.video.addEventListener('ended', function() {
+                            adapter.paused = true;
+                            adapter.dispatchEvent('ended');
+                        });
+                        vdoPlayer.video.addEventListener('timeupdate', function() {
+                            vdoTime = vdoPlayer.video.currentTime;
+                            adapter.dispatchEvent('timeupdate');
+                        });
+                        vdoPlayer.video.addEventListener('loadedmetadata', function() {
+                            adapter.duration = vdoPlayer.video.duration;
+                            adapter.dispatchEvent('loadedmetadata');
+                        });
+                    }
+                }
+            });
+        });
+
+        adapter.play = function() {
+            adapter.paused = false;
+            if (vdoPlayer && vdoPlayer.video) {
+                vdoPlayer.video.play();
+            }
+            return Promise.resolve();
+        };
+
+        adapter.pause = function() {
+            adapter.paused = true;
+            if (vdoPlayer && vdoPlayer.video) {
+                vdoPlayer.video.pause();
+            }
+        };
+
+        Object.defineProperty(adapter, 'currentTime', {
+            get: function() {
+                return vdoPlayer && vdoPlayer.video ? vdoPlayer.video.currentTime : vdoTime;
+            },
+            set: function(val) {
+                vdoTime = val;
+                if (vdoPlayer && vdoPlayer.video) {
+                    vdoPlayer.video.currentTime = val;
+                }
+                adapter.dispatchEvent('seeking');
+                adapter.dispatchEvent('timeupdate');
+            }
+        });
+
+        return adapter;
+    }
+
+    /**
+     * Dailymotion Adapter using Dailymotion SDK.
+     */
+    function createDailymotionAdapter(mountEl, url, initialDuration) {
+        const adapter = createBaseAdapter(mountEl, initialDuration);
+        let dmPlayer = null;
+        let dmTime = 0;
+
+        let videoId = url;
+        const match = /(?:dai\.ly|dailymotion\.com)\/(?:embed\/video\/|video\/|)([^/?#]+)/i.exec(url);
+        if (match && match[1]) {
+            videoId = match[1];
+        }
+
+        const divId = 'smartvideo_dm_' + Math.random().toString(36).substring(2, 9);
+        mountEl.innerHTML = '<div id="' + divId + '" class="w-100 h-100"></div>';
+
+        loadExternalScript('https://geo.dailymotion.com/libs/player/xsyje.js').then(function() {
+            const checkDm = setInterval(function() {
+                if (window.dailymotion && window.dailymotion.createPlayer) {
+                    clearInterval(checkDm);
+                    window.dailymotion.createPlayer(divId, {
+                        video: videoId,
+                        params: {
+                            controls: false,
+                            mute: false
+                        }
+                    }).then(function(p) {
+                        dmPlayer = p;
+                        p.on('play', function() {
+                            adapter.paused = false;
+                            adapter.dispatchEvent('play');
+                        });
+                        p.on('pause', function() {
+                            adapter.paused = true;
+                            adapter.dispatchEvent('pause');
+                        });
+                        p.on('end', function() {
+                            adapter.paused = true;
+                            adapter.dispatchEvent('ended');
+                        });
+                        p.on('timeupdate', function(state) {
+                            dmTime = state ? (state.videoTime || 0) : 0;
+                            adapter.dispatchEvent('timeupdate');
+                        });
+                        if (typeof p.getState === 'function') {
+                            p.getState().then(function(st) {
+                                if (st && st.videoDuration) {
+                                    adapter.duration = st.videoDuration;
+                                    adapter.dispatchEvent('loadedmetadata');
+                                }
+                            });
+                        }
+                    });
+                }
+            }, 100);
+        });
+
+        adapter.play = function() {
+            adapter.paused = false;
+            if (dmPlayer && typeof dmPlayer.play === 'function') {
+                dmPlayer.play();
+            }
+            return Promise.resolve();
+        };
+
+        adapter.pause = function() {
+            adapter.paused = true;
+            if (dmPlayer && typeof dmPlayer.pause === 'function') {
+                dmPlayer.pause();
+            }
+        };
+
+        Object.defineProperty(adapter, 'currentTime', {
+            get: function() {
+                return dmTime;
+            },
+            set: function(val) {
+                dmTime = val;
+                if (dmPlayer && typeof dmPlayer.seek === 'function') {
+                    dmPlayer.seek(val);
+                }
+                adapter.dispatchEvent('seeking');
+                adapter.dispatchEvent('timeupdate');
+            }
+        });
+
+        return adapter;
+    }
+
+    /**
+     * Wistia Adapter using Wistia E-v1 JavaScript API.
+     */
+    function createWistiaAdapter(mountEl, url, initialDuration) {
+        const adapter = createBaseAdapter(mountEl, initialDuration);
+        let wistiaPlayer = null;
+        let wistiaTime = 0;
+
+        let videoId = url;
+        const match = /(?:[^.]+\.)*wistia\.com\/medias\/([^/?#]+)/i.exec(url);
+        if (match && match[1]) {
+            videoId = match[1];
+        }
+
+        mountEl.innerHTML = '<div class="wistia_embed wistia_async_' + videoId + ' controlsVisibleOnLoad=false playButton=false" style="height:100%;width:100%"></div>';
+
+        window._wq = window._wq || [];
+        window._wq.push({
+            id: videoId,
+            onReady: function(video) {
+                wistiaPlayer = video;
+                adapter.duration = video.duration();
+                adapter.dispatchEvent('loadedmetadata');
+
+                video.bind('play', function() {
+                    adapter.paused = false;
+                    adapter.dispatchEvent('play');
+                });
+                video.bind('pause', function() {
+                    adapter.paused = true;
+                    adapter.dispatchEvent('pause');
+                });
+                video.bind('end', function() {
+                    adapter.paused = true;
+                    adapter.dispatchEvent('ended');
+                });
+                video.bind('secondchange', function(s) {
+                    wistiaTime = s;
+                    adapter.dispatchEvent('timeupdate');
+                });
+            }
+        });
+
+        loadExternalScript('https://fast.wistia.com/assets/external/E-v1.js');
+
+        adapter.play = function() {
+            adapter.paused = false;
+            if (wistiaPlayer) {
+                wistiaPlayer.play();
+            }
+            return Promise.resolve();
+        };
+
+        adapter.pause = function() {
+            adapter.paused = true;
+            if (wistiaPlayer) {
+                wistiaPlayer.pause();
+            }
+        };
+
+        Object.defineProperty(adapter, 'currentTime', {
+            get: function() {
+                return wistiaPlayer ? wistiaPlayer.time() : wistiaTime;
+            },
+            set: function(val) {
+                wistiaTime = val;
+                if (wistiaPlayer) {
+                    wistiaPlayer.time(val);
+                }
+                adapter.dispatchEvent('seeking');
+                adapter.dispatchEvent('timeupdate');
+            }
+        });
+
+        return adapter;
+    }
+
+    /**
      * Main player controller instance.
      *
      * @param {HTMLElement} container
@@ -261,7 +1062,37 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         this.activeTrackId = (this.tracks.length > 0) ? this.tracks[0].id : -1;
         this.transcriptUserHovering = false;
 
-        this.video = container.querySelector('#smartVideoElement, #secureVideoElement, video');
+        this.videoType = container.dataset.videotype || 'securelibrary';
+        this.externalMount = container.querySelector('#smartVideoExternalMount');
+        this.clickShield = container.querySelector('#smartVideoClickShield');
+        const rawVideo = container.querySelector('#smartVideoElement, #secureVideoElement, video');
+
+        if (this.videoType !== 'securelibrary' && this.videoType !== 'html5video') {
+            if (rawVideo) {
+                rawVideo.style.display = 'none';
+            }
+            if (this.externalMount) {
+                this.externalMount.classList.remove('d-none');
+            }
+            if (this.videoType === 'youtube') {
+                this.video = createYouTubeAdapter(this.externalMount, this.playlistUrl, this.duration);
+            } else if (this.videoType === 'vimeo') {
+                this.video = createVimeoAdapter(this.externalMount, this.playlistUrl, this.duration);
+            } else if (this.videoType === 'bunnystream') {
+                this.video = createBunnyStreamAdapter(this.externalMount, this.playlistUrl, this.duration);
+            } else if (this.videoType === 'vdocipher') {
+                this.video = createVdoCipherAdapter(this.externalMount, this.playlistUrl, this.duration);
+            } else if (this.videoType === 'dailymotion') {
+                this.video = createDailymotionAdapter(this.externalMount, this.playlistUrl, this.duration);
+            } else if (this.videoType === 'wistia') {
+                this.video = createWistiaAdapter(this.externalMount, this.playlistUrl, this.duration);
+            } else {
+                this.video = rawVideo;
+            }
+        } else {
+            this.video = rawVideo;
+        }
+
         this.canvas = container.querySelector('#smartVideoWatermarkCanvas, #secureVideoWatermarkCanvas, canvas');
         this.questionOverlay = container.querySelector('#smartVideoQuestionOverlay, #secureVideoQuestionOverlay');
         this.calloutOverlay = container.querySelector('#smartVideoCalloutOverlay');
@@ -302,6 +1133,20 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         loadStream: function() {
             const self = this;
             const video = this.video;
+
+            if (this.videoType !== 'securelibrary' && this.videoType !== 'html5video') {
+                return;
+            }
+
+            if (this.videoType === 'html5video') {
+                if (this.playlistUrl && this.playlistUrl.indexOf('.m3u8') === -1) {
+                    video.src = this.playlistUrl;
+                    video.addEventListener('error', function() {
+                        self.showStreamError('Direct video playback error: Stream could not be loaded.');
+                    });
+                    return;
+                }
+            }
 
             loadHls().then(function(Hls) {
                 if (Hls.isSupported()) {
@@ -427,7 +1272,14 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     togglePlay();
                 });
             }
-            if (video) {
+            if (self.clickShield) {
+                self.clickShield.addEventListener('click', function() {
+                    togglePlay();
+                });
+                self.clickShield.addEventListener('dblclick', function() {
+                    toggleFullscreen();
+                });
+            } else if (video && typeof video.addEventListener === 'function') {
                 video.addEventListener('click', function(e) {
                     if (e.target === video) {
                         togglePlay();

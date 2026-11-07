@@ -336,6 +336,38 @@ $string['heatmap_desc'] = 'Visualizes second-by-second student retention, drop-o
 $string['retention_rate'] = 'Retention Rate';
 $string['rewatch_spikes'] = 'Re-watch Spikes';
 
+// Video Providers & Sources.
+$string['provider_securelibrary'] = 'Secure Video Library (Local Encrypted HLS)';
+$string['provider_youtube'] = 'YouTube';
+$string['provider_vimeo'] = 'Vimeo';
+$string['provider_html5video'] = 'Direct Video Link / HTML5 / HLS';
+$string['provider_bunnystream'] = 'Bunny Stream';
+$string['provider_vdocipher'] = 'VdoCipher';
+$string['provider_dailymotion'] = 'Dailymotion';
+$string['provider_wistia'] = 'Wistia';
+
+// Admin Settings.
+$string['videosources'] = 'Allowed Video Sources';
+$string['videosources_desc'] = 'Select which video hosting providers and source types are available to teachers when creating or editing Smart Video activities.';
+$string['defaultvideosource'] = 'Default Video Source';
+$string['defaultvideosource_desc'] = 'Default video source selected in the activity settings form.';
+$string['auth_vdocipher'] = 'VdoCipher API Secret Key';
+$string['auth_vdocipher_desc'] = 'Your VdoCipher Secret Key (found in your VdoCipher Dashboard under Configuration / API Keys). Required only if VdoCipher is enabled.';
+
+// Form & Activity Configuration.
+$string['sourcetype'] = 'Video Source';
+$string['sourcetype_library'] = 'Secure Video Library (Local Encrypted HLS)';
+$string['sourcetype_external'] = 'External Video URL (YouTube, Vimeo, Bunny, etc.)';
+$string['videourl'] = 'Video URL or ID';
+$string['videourl_help'] = 'Paste a URL from YouTube, Vimeo, Bunny Stream, VdoCipher, Dailymotion, Wistia, or a direct link to an MP4, WebM, or HLS (.m3u8) video stream.';
+$string['videourlplaceholder'] = 'https://www.youtube.com/watch?v=... or https://vimeo.com/... or https://.../video.mp4';
+$string['fetchingmetadata'] = 'Detecting video provider and fetching details...';
+$string['invalidvideourl'] = 'Invalid or unsupported video URL. Please check the URL and ensure the provider is enabled.';
+$string['videodetected'] = 'Detected {$a->provider}: {$a->title} ({$a->duration})';
+$string['vdocipher_apikey_missing'] = 'VdoCipher API Secret Key is not configured in site administration.';
+$string['supportedproviders'] = 'Supported Providers: YouTube, Vimeo, Bunny Stream, VdoCipher, Dailymotion, Wistia, Direct MP4/HLS';
+
+
 
 
 

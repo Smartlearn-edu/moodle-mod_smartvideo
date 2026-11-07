@@ -82,9 +82,13 @@ if ($canmanage && optional_param('resetmyattempts', 0, PARAM_INT) && confirm_ses
     redirect(new moodle_url('/mod/smartvideo/view.php', ['id' => $cm->id]));
 }
 
-// Fetch linked media record from central library.
+// Determine video source and provider.
+$videosource = !empty($smartvideo->videosource) ? $smartvideo->videosource : 'securelibrary';
+$isexternal = ($videosource !== 'securelibrary');
+
+// Fetch linked media record if using central library.
 $media = null;
-if (!empty($smartvideo->mediaid)) {
+if (!$isexternal && !empty($smartvideo->mediaid)) {
     $media = $DB->get_record('local_securevideolibrary_media', ['id' => $smartvideo->mediaid]);
 }
 
@@ -95,11 +99,26 @@ if (!empty($intro)) {
     echo $intro;
 }
 
-if (!$media || $media->status !== 'ready') {
-    if ($media && ($media->status === 'queued' || $media->status === 'processing')) {
-        echo $OUTPUT->notification(get_string('videonotready', 'mod_smartvideo'), 'info');
+$canplay = false;
+if ($isexternal) {
+    if (!empty($smartvideo->videourl)) {
+        $canplay = true;
+    }
+} else {
+    if ($media && $media->status === 'ready') {
+        $canplay = true;
+    }
+}
+
+if (!$canplay) {
+    if (!$isexternal) {
+        if ($media && ($media->status === 'queued' || $media->status === 'processing')) {
+            echo $OUTPUT->notification(get_string('videonotready', 'mod_smartvideo'), 'info');
+        } else {
+            echo $OUTPUT->notification(get_string('novideowarning', 'mod_smartvideo'), 'warning');
+        }
     } else {
-        echo $OUTPUT->notification(get_string('novideowarning', 'mod_smartvideo'), 'warning');
+        echo $OUTPUT->notification(get_string('invalidvideourl', 'mod_smartvideo'), 'warning');
     }
 } else {
     // Fetch user progress.
@@ -108,20 +127,28 @@ if (!$media || $media->status !== 'ready') {
         'userid'     => $USER->id,
     ]);
 
-    $playlisturl = (new moodle_url('/local/securevideolibrary/serve.php', [
-        'mediaid' => $media->id,
-        'cmid'    => (int)$cm->id,
-        'file'    => 'playlist.m3u8',
-    ]))->out(false);
+    if ($isexternal) {
+        $playlisturl = $smartvideo->videourl;
+        $thumbnailurl = $smartvideo->posterimage ?? '';
+        $duration = (int)($smartvideo->duration ?? 0);
+    } else {
+        $playlisturl = (new moodle_url('/local/securevideolibrary/serve.php', [
+            'mediaid' => $media->id,
+            'cmid'    => (int)$cm->id,
+            'file'    => 'playlist.m3u8',
+        ]))->out(false);
 
-    $thumbnailurl = (new moodle_url('/local/securevideolibrary/serve.php', [
-        'mediaid' => $media->id,
-        'cmid'    => (int)$cm->id,
-        'file'    => 'thumbnail.jpg',
-    ]))->out(false);
+        $thumbnailurl = (new moodle_url('/local/securevideolibrary/serve.php', [
+            'mediaid' => $media->id,
+            'cmid'    => (int)$cm->id,
+            'file'    => 'thumbnail.jpg',
+        ]))->out(false);
 
-    $mins = floor($media->duration / 60);
-    $secs = $media->duration % 60;
+        $duration = (int)$media->duration;
+    }
+
+    $mins = floor($duration / 60);
+    $secs = $duration % 60;
     $durationformatted = sprintf('%02d:%02d', $mins, $secs);
 
     $percentcompleted = $progress ? (int)$progress->percentcompleted : 0;
@@ -145,7 +172,7 @@ if (!$media || $media->status !== 'ready') {
         $qm = floor($q->timecode / 60);
         $qs = $q->timecode % 60;
         $timeformatted = sprintf('%02d:%02d', $qm, $qs);
-        $percent = ($media->duration > 0) ? min(100, round(($q->timecode / $media->duration) * 100, 2)) : 0;
+        $percent = ($duration > 0) ? min(100, round(($q->timecode / $duration) * 100, 2)) : 0;
 
         $rewindto = isset($q->rewindto) ? (int)$q->rewindto : -1;
         $questionsdata[] = [
@@ -187,7 +214,7 @@ if (!$media || $media->status !== 'ready') {
         $cmins = floor($ch->timecode / 60);
         $csecs = $ch->timecode % 60;
         $chtimeformatted = sprintf('%02d:%02d', $cmins, $csecs);
-        $chpercent = ($media->duration > 0) ? min(100, round(($ch->timecode / $media->duration) * 100, 2)) : 0;
+        $chpercent = ($duration > 0) ? min(100, round(($ch->timecode / $duration) * 100, 2)) : 0;
 
         $chaptersdata[] = [
             'id'            => (int)$ch->id,
@@ -206,7 +233,7 @@ if (!$media || $media->status !== 'ready') {
         $cmins = floor($c->timecode / 60);
         $csecs = $c->timecode % 60;
         $ctimeformatted = sprintf('%02d:%02d', $cmins, $csecs);
-        $cpercent = ($media->duration > 0) ? min(100, round(($c->timecode / $media->duration) * 100, 2)) : 0;
+        $cpercent = ($duration > 0) ? min(100, round(($c->timecode / $duration) * 100, 2)) : 0;
 
         $calloutsdata[] = [
             'id'            => (int)$c->id,
@@ -398,11 +425,13 @@ if (!$media || $media->status !== 'ready') {
     $playerdata = [
         'cmid'                 => (int)$cm->id,
         'title'                => $smartvideo->name,
+        'videotype'            => $videosource,
+        'videourl'             => $smartvideo->videourl ?? '',
         'playlisturl'          => $playlisturl,
         'thumbnailurl'         => $thumbnailurl,
-        'duration'             => (int)$media->duration,
+        'duration'             => (int)$duration,
         'durationformatted'    => $durationformatted,
-        'hasresume'            => ($lastposition > 15 && $lastposition < ($media->duration - 15)),
+        'hasresume'            => ($lastposition > 15 && $lastposition < ($duration - 15)),
         'lastposition'         => $lastposition,
         'lastposformatted'     => $lastposformatted,
         'maxposition'          => $maxposition,

@@ -11,6 +11,10 @@
         <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Activity name"/>
         <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Activity introduction/description"/>
         <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Format of intro"/>
+        <FIELD NAME="videosource" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="securelibrary" SEQUENCE="false" COMMENT="Video provider: securelibrary, youtube, vimeo, html5video, bunnystream, vdocipher, dailymotion, wistia"/>
+        <FIELD NAME="videourl" TYPE="char" LENGTH="1333" NOTNULL="false" SEQUENCE="false" COMMENT="External video URL or stream source"/>
+        <FIELD NAME="duration" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Video duration in seconds"/>
+        <FIELD NAME="posterimage" TYPE="char" LENGTH="1024" NOTNULL="false" SEQUENCE="false" COMMENT="Video thumbnail or poster URL"/>
         <FIELD NAME="mediaid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK referencing local_securevideolibrary_media.id"/>
         <FIELD NAME="watermarkenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 if dynamic watermark is enabled, 0 otherwise"/>
         <FIELD NAME="watermarkopacity" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="35" SEQUENCE="false" COMMENT="Watermark opacity percent (10-100)"/>

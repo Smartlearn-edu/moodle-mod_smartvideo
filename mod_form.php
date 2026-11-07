@@ -60,6 +60,39 @@ class mod_smartvideo_mod_form extends moodleform_mod {
         // Video Selection Section.
         $mform->addElement('header', 'videoselectionheader', get_string('videoselection', 'mod_smartvideo'));
 
+        // Check enabled providers in admin config.
+        $enabledconfig = get_config('mod_smartvideo', 'videosources');
+        if ($enabledconfig === false || $enabledconfig === null) {
+            $allowedsources = ['securelibrary', 'youtube', 'vimeo', 'html5video', 'bunnystream', 'vdocipher', 'dailymotion', 'wistia'];
+        } else {
+            $allowedsources = explode(',', $enabledconfig);
+        }
+
+        $allowlibrary = in_array('securelibrary', $allowedsources);
+        $allowexternal = (count(array_diff($allowedsources, ['securelibrary'])) > 0);
+
+        // Current record state.
+        $currentsource = $this->current->videosource ?? 'securelibrary';
+        $currenturl    = $this->current->videourl ?? '';
+        $currentdur    = $this->current->duration ?? 0;
+        $currentposter = $this->current->posterimage ?? '';
+
+        // Source type selector.
+        if ($allowlibrary && $allowexternal) {
+            $sourceradios = [];
+            $sourceradios[] = $mform->createElement('radio', 'sourcetype', '', get_string('sourcetype_library', 'mod_smartvideo'), 'securelibrary');
+            $sourceradios[] = $mform->createElement('radio', 'sourcetype', '', get_string('sourcetype_external', 'mod_smartvideo'), 'external');
+            $mform->addGroup($sourceradios, 'sourcetypegroup', get_string('sourcetype', 'mod_smartvideo'), ['<br>'], false);
+            $mform->setDefault('sourcetype', ($currentsource === 'securelibrary' ? 'securelibrary' : 'external'));
+        } else if ($allowlibrary) {
+            $mform->addElement('hidden', 'sourcetype', 'securelibrary');
+            $mform->setType('sourcetype', PARAM_ALPHAEXT);
+        } else {
+            $mform->addElement('hidden', 'sourcetype', 'external');
+            $mform->setType('sourcetype', PARAM_ALPHAEXT);
+        }
+
+        // --- SECURE LIBRARY SECTION ---
         // Hidden input storing selected media ID.
         $mform->addElement('hidden', 'mediaid', 0, ['id' => 'id_mediaid']);
         $mform->setType('mediaid', PARAM_INT);
@@ -117,6 +150,61 @@ class mod_smartvideo_mod_form extends moodleform_mod {
             . '</button>';
         $mform->addElement('static', 'selectvideobutton', '', $selectbutton);
 
+        // --- EXTERNAL VIDEO URL SECTION ---
+        $mform->addElement('hidden', 'videosource', $currentsource);
+        $mform->setType('videosource', PARAM_ALPHAEXT);
+
+        $mform->addElement('hidden', 'duration', $currentdur);
+        $mform->setType('duration', PARAM_INT);
+
+        $mform->addElement('hidden', 'posterimage', $currentposter);
+        $mform->setType('posterimage', PARAM_RAW_TRIMMED);
+
+        $mform->addElement('text', 'videourl', get_string('videourl', 'mod_smartvideo'), [
+            'size' => '80',
+            'id'   => 'id_videourl',
+            'placeholder' => get_string('videourlplaceholder', 'mod_smartvideo'),
+        ]);
+        $mform->setType('videourl', PARAM_RAW_TRIMMED);
+        $mform->addHelpButton('videourl', 'videourl', 'mod_smartvideo');
+
+        // External preview and status container.
+        $badgeshtml = '<div class="mb-2 d-flex flex-wrap gap-1 align-items-center">'
+            . '<span class="badge bg-danger">YouTube</span>'
+            . '<span class="badge bg-info text-dark">Vimeo</span>'
+            . '<span class="badge bg-warning text-dark">Bunny Stream</span>'
+            . '<span class="badge bg-primary">VdoCipher</span>'
+            . '<span class="badge bg-dark">Dailymotion</span>'
+            . '<span class="badge bg-success">Wistia</span>'
+            . '<span class="badge bg-secondary">Direct MP4 / HLS</span>'
+            . '</div>';
+
+        $extpreviewhtml = '<div id="smartvideo_external_preview" class="mb-2">';
+        if (!empty($currenturl) && $currentsource !== 'securelibrary') {
+            $mins = floor($currentdur / 60);
+            $secs = $currentdur % 60;
+            $durationformatted = sprintf('%02d:%02d', $mins, $secs);
+            $posterhtml = !empty($currentposter) ?
+                '<img src="' . s($currentposter) . '" alt="" class="w-100 h-100 object-fit-cover" style="object-fit: cover;">' :
+                '<div class="w-100 h-100 d-flex align-items-center justify-content-center bg-dark text-white"><i class="fa fa-play fa-2x"></i></div>';
+
+            $extpreviewhtml .= '
+            <div class="card border p-3 d-flex flex-row align-items-center gap-3 bg-light shadow-sm" style="max-width: 550px;">
+                <div class="ratio ratio-16x9 bg-dark rounded overflow-hidden" style="width: 140px; flex-shrink: 0;">
+                    ' . $posterhtml . '
+                </div>
+                <div class="flex-grow-1 overflow-hidden">
+                    <div class="mb-1"><span class="badge bg-primary">' . s(strtoupper($currentsource)) . '</span></div>
+                    <strong class="d-block text-truncate mb-1">' . s($this->current->name ?? 'External Video') . '</strong>
+                    ' . ($currentdur > 0 ? '<span class="badge bg-secondary mb-1">' . s($durationformatted) . '</span>' : '') . '
+                    <div class="text-muted small text-truncate">' . s($currenturl) . '</div>
+                </div>
+            </div>';
+        }
+        $extpreviewhtml .= '</div><div id="smartvideo_external_status"></div>' . $badgeshtml;
+
+        $mform->addElement('static', 'externalpreview', '', $extpreviewhtml);
+
         // -------------------------------------------------------------------------------
         // Playback & Security Options.
         $mform->addElement('header', 'playbacksecurityheader', get_string('playbacksecurity', 'mod_smartvideo'));
@@ -166,6 +254,7 @@ class mod_smartvideo_mod_form extends moodleform_mod {
         $PAGE->requires->js_call_amd('mod_smartvideo/picker', 'init', [[
             'courseid' => (int)$course->id,
         ]]);
+        $PAGE->requires->js_call_amd('mod_smartvideo/form', 'init');
 
         $mform->addElement('html', $OUTPUT->render_from_template('mod_smartvideo/picker_modal', $modaldata));
     }
@@ -230,6 +319,12 @@ class mod_smartvideo_mod_form extends moodleform_mod {
     public function data_preprocessing(&$defaultvalues): void {
         parent::data_preprocessing($defaultvalues);
 
+        if (!empty($defaultvalues['videosource']) && $defaultvalues['videosource'] !== 'securelibrary') {
+            $defaultvalues['sourcetype'] = 'external';
+        } else {
+            $defaultvalues['sourcetype'] = 'securelibrary';
+        }
+
         if (!empty($defaultvalues['completionminpercent'])) {
             $defaultvalues['completionminpercentenabled'] = 1;
         }
@@ -263,8 +358,15 @@ class mod_smartvideo_mod_form extends moodleform_mod {
     public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
 
-        if (empty($data['mediaid'])) {
-            $errors['videopreview'] = get_string('err_novideoselected', 'mod_smartvideo');
+        $sourcetype = $data['sourcetype'] ?? 'securelibrary';
+        if ($sourcetype === 'securelibrary') {
+            if (empty($data['mediaid'])) {
+                $errors['videopreview'] = get_string('err_novideoselected', 'mod_smartvideo');
+            }
+        } else {
+            if (empty(trim($data['videourl'] ?? ''))) {
+                $errors['videourl'] = get_string('invalidvideourl', 'mod_smartvideo');
+            }
         }
 
         if (!empty($data['watermarkenabled'])) {

@@ -183,5 +183,31 @@ function xmldb_smartvideo_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110507, 'smartvideo');
     }
 
+    if ($oldversion < 2026110700) {
+        $table = new xmldb_table('smartvideo');
+
+        $field = new xmldb_field('videosource', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, 'securelibrary', 'introformat');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('videourl', XMLDB_TYPE_CHAR, '1333', null, null, null, null, 'videosource');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('duration', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'videourl');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('posterimage', XMLDB_TYPE_CHAR, '1024', null, null, null, null, 'duration');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026110700, 'smartvideo');
+    }
+
     return true;
 }

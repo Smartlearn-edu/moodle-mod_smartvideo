@@ -25,6 +25,8 @@
          class="smartvideo-player-container securevideo-player-container position-relative bg-black rounded shadow-lg overflow-hidden is-paused"
          tabindex="0"
          data-cmid="{{cmid}}"
+         data-videotype="{{videotype}}"
+         data-videourl="{{videourl}}"
          data-playlisturl="{{playlisturl}}"
          data-duration="{{duration}}"
          data-lastposition="{{lastposition}}"
@@ -52,8 +54,15 @@
             {{! ZONE 1: Video Stage (16:9 in normal view, full fill in fullscreen) }}
             <div class="smartvideo-stage position-relative flex-grow-1 overflow-hidden user-select-none">
                 <div class="smartvideo-stage-ratio ratio ratio-16x9 position-relative bg-black">
+                    {{! External Provider Iframe Mount Container }}
+                    <div id="smartVideoExternalMount" class="position-absolute top-0 start-0 w-100 h-100 overflow-hidden d-none" style="z-index: 1;"></div>
+
+                    {{! Video Click Shield: captures single-click play/pause and double-click fullscreen }}
+                    <div id="smartVideoClickShield" class="smartvideo-click-shield position-absolute top-0 start-0 w-100 h-100" style="z-index: 6; pointer-events: auto;"></div>
+
                     <video id="smartVideoElement"
-                           class="w-100 h-100"
+                           class="w-100 h-100 position-relative"
+                           style="z-index: 2;"
                            playsinline
                            preload="auto"
                            poster="{{thumbnailurl}}"

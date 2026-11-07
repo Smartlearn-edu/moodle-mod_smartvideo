@@ -66,6 +66,21 @@ function smartvideo_add_instance(stdClass $data, ?mod_smartvideo_mod_form $mform
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
 
+    $sourcetype = $data->sourcetype ?? 'securelibrary';
+    if ($sourcetype === 'securelibrary' && !empty($data->mediaid)) {
+        $data->videosource = 'securelibrary';
+        $media = $DB->get_record('local_securevideolibrary_media', ['id' => $data->mediaid]);
+        if ($media) {
+            $data->duration = (int)$media->duration;
+        }
+    } else {
+        $data->mediaid = 0;
+        $data->videosource = !empty($data->videosource) ? clean_param($data->videosource, PARAM_ALPHAEXT) : 'html5video';
+        $data->videourl = clean_param($data->videourl ?? '', PARAM_RAW_TRIMMED);
+        $data->duration = isset($data->duration) ? (int)$data->duration : 0;
+        $data->posterimage = clean_param($data->posterimage ?? '', PARAM_RAW_TRIMMED);
+    }
+
     $id = $DB->insert_record('smartvideo', $data);
 
     if (!empty($data->coursemodule) && isset($data->resources_filemanager)) {
@@ -101,6 +116,21 @@ function smartvideo_update_instance(stdClass $data, ?mod_smartvideo_mod_form $mf
     $data->preventseeking   = !empty($data->preventseeking) ? 1 : 0;
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
+
+    $sourcetype = $data->sourcetype ?? 'securelibrary';
+    if ($sourcetype === 'securelibrary' && !empty($data->mediaid)) {
+        $data->videosource = 'securelibrary';
+        $media = $DB->get_record('local_securevideolibrary_media', ['id' => $data->mediaid]);
+        if ($media) {
+            $data->duration = (int)$media->duration;
+        }
+    } else {
+        $data->mediaid = 0;
+        $data->videosource = !empty($data->videosource) ? clean_param($data->videosource, PARAM_ALPHAEXT) : 'html5video';
+        $data->videourl = clean_param($data->videourl ?? '', PARAM_RAW_TRIMMED);
+        $data->duration = isset($data->duration) ? (int)$data->duration : 0;
+        $data->posterimage = clean_param($data->posterimage ?? '', PARAM_RAW_TRIMMED);
+    }
 
     $cmid = $data->coursemodule ?? 0;
     if ($cmid > 0 && isset($data->resources_filemanager)) {
