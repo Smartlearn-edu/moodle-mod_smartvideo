@@ -63,7 +63,7 @@ class mod_smartvideo_mod_form extends moodleform_mod {
         // Check enabled providers in admin config.
         $enabledconfig = get_config('mod_smartvideo', 'videosources');
         if ($enabledconfig === false || $enabledconfig === null) {
-            $allowedsources = ['securelibrary', 'youtube', 'vimeo', 'html5video', 'bunnystream', 'vdocipher', 'dailymotion', 'wistia'];
+            $allowedsources = ['securelibrary', 'youtube', 'vimeo', 'html5video', 'bunnystream', 'vdocipher', 'dailymotion', 'wistia', 'screenpal'];
         } else {
             $allowedsources = explode(',', $enabledconfig);
         }

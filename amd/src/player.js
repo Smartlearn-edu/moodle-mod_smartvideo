@@ -975,6 +975,137 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
     }
 
     /**
+     * ScreenPal Adapter using ScreenPal postMessage API.
+     */
+    function createScreenPalAdapter(mountEl, url, initialDuration) {
+        const adapter = createBaseAdapter(mountEl, initialDuration);
+        let spCurrentTime = 0;
+
+        let videoId = (url || '').trim();
+        const spRegex = /(?:go\.screenpal\.com|screencast-o-matic\.com)\/(?:player|watch|appearance)\/([a-zA-Z0-9]+)|(?:sp-embed-player["']?\s+data-id=["']([a-zA-Z0-9]+)["'])|(?:screenpal\.com\/player\/([a-zA-Z0-9]+))/i;
+        const match = spRegex.exec(videoId);
+        if (match && (match[1] || match[2] || match[3])) {
+            videoId = match[1] || match[2] || match[3];
+        }
+
+        const embedUrl = 'https://go.screenpal.com/player/' + videoId + '?width=100%&height=100%&ff=1&title=0';
+
+        mountEl.innerHTML = '<iframe src="' + embedUrl + '" class="w-100 h-100 border-0 position-absolute top-0 start-0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin" style="width: 100% !important; height: 100% !important; border: 0 !important;"></iframe>';
+        const iframe = mountEl.querySelector('iframe');
+
+        function sendCommand(cmd, data) {
+            if (iframe && iframe.contentWindow) {
+                const payload = Object.assign({ type: cmd }, data || {});
+                iframe.contentWindow.postMessage(payload, '*');
+            }
+        }
+
+        function onWindowMessage(event) {
+            if (!event.data || typeof event.data !== 'object') {
+                return;
+            }
+
+            const type = event.data.type;
+            if (!type || typeof type !== 'string') {
+                return;
+            }
+
+            // Verify message comes from ScreenPal player iframe.
+            if (event.source !== (iframe ? iframe.contentWindow : null) &&
+                (!event.origin || event.origin.indexOf('screenpal.com') === -1)) {
+                return;
+            }
+
+            if (type === 'videoPlayerReady') {
+                adapter.dispatchEvent('loadedmetadata');
+            } else if (type === 'videoPlayerPlay' || type === 'videoPlayerPlaying') {
+                adapter.paused = false;
+                adapter.dispatchEvent('play');
+            } else if (type === 'videoPlayerPause') {
+                adapter.paused = true;
+                adapter.dispatchEvent('pause');
+            } else if (type === 'videoPlayerTimeUpdate') {
+                if (typeof event.data.timestamp === 'number') {
+                    spCurrentTime = event.data.timestamp;
+                }
+                adapter.dispatchEvent('timeupdate');
+            } else if (type === 'videoPlayerSeeking') {
+                adapter.dispatchEvent('seeking');
+            } else if (type === 'videoPlayerSeeked') {
+                adapter.dispatchEvent('seeked');
+            } else if (type === 'videoPlayerEnded') {
+                adapter.paused = true;
+                adapter.dispatchEvent('ended');
+            } else if (type === 'videoPlayerRateChange') {
+                adapter.dispatchEvent('ratechange');
+            }
+        }
+
+        window.addEventListener('message', onWindowMessage);
+
+        adapter.play = function() {
+            adapter.paused = false;
+            sendCommand('playVideo');
+            return Promise.resolve();
+        };
+
+        adapter.pause = function() {
+            adapter.paused = true;
+            sendCommand('pauseVideo');
+        };
+
+        Object.defineProperty(adapter, 'currentTime', {
+            get: function() {
+                return spCurrentTime;
+            },
+            set: function(val) {
+                spCurrentTime = Math.max(0, parseFloat(val) || 0);
+                sendCommand('setVideoTimestamp', { timestamp: spCurrentTime });
+                adapter.dispatchEvent('seeking');
+                adapter.dispatchEvent('timeupdate');
+            }
+        });
+
+        Object.defineProperty(adapter, 'playbackRate', {
+            get: function() {
+                return 1.0;
+            },
+            set: function(val) {
+                sendCommand('setVideoPlaybackRate', { playbackRate: parseFloat(val) || 1.0 });
+                adapter.dispatchEvent('ratechange');
+            }
+        });
+
+        Object.defineProperty(adapter, 'muted', {
+            get: function() {
+                return false;
+            },
+            set: function(val) {
+                sendCommand(val ? 'muteVideo' : 'unmuteVideo');
+                adapter.dispatchEvent('volumechange');
+            }
+        });
+
+        Object.defineProperty(adapter, 'volume', {
+            get: function() {
+                return 1.0;
+            },
+            set: function() {
+                adapter.dispatchEvent('volumechange');
+            }
+        });
+
+        adapter.destroy = function() {
+            window.removeEventListener('message', onWindowMessage);
+            if (mountEl) {
+                mountEl.innerHTML = '';
+            }
+        };
+
+        return adapter;
+    }
+
+    /**
      * Main player controller instance.
      *
      * @param {HTMLElement} container
@@ -1134,6 +1265,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 this.video = createDailymotionAdapter(this.externalMount, this.playlistUrl, this.duration);
             } else if (this.videoType === 'wistia') {
                 this.video = createWistiaAdapter(this.externalMount, this.playlistUrl, this.duration);
+            } else if (this.videoType === 'screenpal') {
+                this.video = createScreenPalAdapter(this.externalMount, this.playlistUrl, this.duration);
             } else {
                 this.video = rawVideo;
             }
@@ -1320,11 +1453,11 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     togglePlay();
                 });
             }
-            // If YouTube or Vimeo provider:
+            // If YouTube, Vimeo, or ScreenPal provider:
             // 1. Never obscure or hide player features, branding, or native player controls.
             // 2. Allow user clicks and touch events to pass directly to video player (pointer-events: none on clickShield).
             // 3. Hide center big play overlay as native controls and play state are used.
-            if (self.videoType === 'youtube' || self.videoType === 'vimeo') {
+            if (self.videoType === 'youtube' || self.videoType === 'vimeo' || self.videoType === 'screenpal') {
                 if (self.clickShield) {
                     self.clickShield.style.pointerEvents = 'none';
                     self.clickShield.classList.add('pe-none', 'd-none');

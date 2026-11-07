@@ -357,16 +357,18 @@
     pointer-events: auto;
 }
 
-/* YouTube and Vimeo Provider Compliance:
+/* YouTube, Vimeo, and ScreenPal Provider Compliance:
    Never obscure, block, or hide features, branding, or native player controls */
 .smartvideo-player-container[data-videotype="youtube"] .smartvideo-click-shield,
-.smartvideo-player-container[data-videotype="vimeo"] .smartvideo-click-shield {
+.smartvideo-player-container[data-videotype="vimeo"] .smartvideo-click-shield,
+.smartvideo-player-container[data-videotype="screenpal"] .smartvideo-click-shield {
     display: none !important;
     pointer-events: none !important;
 }
 
 .smartvideo-player-container[data-videotype="youtube"] .smartvideo-center-overlay,
-.smartvideo-player-container[data-videotype="vimeo"] .smartvideo-center-overlay {
+.smartvideo-player-container[data-videotype="vimeo"] .smartvideo-center-overlay,
+.smartvideo-player-container[data-videotype="screenpal"] .smartvideo-center-overlay {
     display: none !important;
     pointer-events: none !important;
     opacity: 0 !important;
@@ -375,7 +377,9 @@
 .smartvideo-player-container[data-videotype="youtube"]:fullscreen .smartvideo-controls-bar,
 .smartvideo-player-container[data-videotype="youtube"].is-fullscreen .smartvideo-controls-bar,
 .smartvideo-player-container[data-videotype="vimeo"]:fullscreen .smartvideo-controls-bar,
-.smartvideo-player-container[data-videotype="vimeo"].is-fullscreen .smartvideo-controls-bar {
+.smartvideo-player-container[data-videotype="vimeo"].is-fullscreen .smartvideo-controls-bar,
+.smartvideo-player-container[data-videotype="screenpal"]:fullscreen .smartvideo-controls-bar,
+.smartvideo-player-container[data-videotype="screenpal"].is-fullscreen .smartvideo-controls-bar {
     display: none !important;
 }
 

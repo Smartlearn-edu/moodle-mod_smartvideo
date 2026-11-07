@@ -48,6 +48,9 @@ switch ($action) {
             'www.vimeo.com',
             'api.dailymotion.com',
             'www.dailymotion.com',
+            'screenpal.com',
+            'go.screenpal.com',
+            'screencast-o-matic.com',
         ];
 
         $matched = false;
@@ -108,6 +111,47 @@ switch ($action) {
         }
 
         echo $response;
+        break;
+
+    case 'get_screenpal':
+        $videoid = required_param('videoid', PARAM_ALPHANUMEXT);
+        $url = "https://go.screenpal.com/watch/{$videoid}";
+
+        $curl = new curl(['ignoresecurity' => true]);
+        $curl->setHeader('User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        $html = $curl->get($url);
+
+        $title = '';
+        $poster = '';
+        $duration = 0;
+
+        if ($html) {
+            if (preg_match('/<meta property="og:title" content="([^"]+)"/i', $html, $m)) {
+                $title = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            } elseif (preg_match('/<title>([^<]+)<\/title>/i', $html, $m)) {
+                $title = trim($m[1]);
+            }
+
+            if (preg_match('/<meta property="og:image" content="([^"]+)"/i', $html, $m)) {
+                $poster = $m[1];
+            }
+
+            if (preg_match('/class="far fa-clock"><\/i>\s*(\d{1,2}:\d{2}(?::\d{2})?)/i', $html, $m)) {
+                $parts = array_reverse(explode(':', $m[1]));
+                $secs = 0;
+                foreach ($parts as $idx => $part) {
+                    $secs += (int)$part * pow(60, $idx);
+                }
+                $duration = $secs;
+            }
+        }
+
+        echo json_encode([
+            'id'       => $videoid,
+            'title'    => $title ?: "ScreenPal Video ({$videoid})",
+            'poster'   => $poster,
+            'duration' => $duration,
+        ]);
         break;
 
     default:

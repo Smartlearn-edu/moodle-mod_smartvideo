@@ -299,7 +299,21 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             };
         }
 
-        // 7. Direct Video / HTML5 (.mp4, .webm, .m3u8, .mpd).
+        // 7. ScreenPal (formerly Screencast-O-Matic).
+        const spRegex = /(?:go\.screenpal\.com|screencast-o-matic\.com)\/(?:player|watch|appearance)\/([a-zA-Z0-9]+)|(?:sp-embed-player["']?\s+data-id=["']([a-zA-Z0-9]+)["'])|(?:screenpal\.com\/player\/([a-zA-Z0-9]+))/i;
+        const spMatch = spRegex.exec(url);
+        if (spMatch && (spMatch[1] || spMatch[2] || spMatch[3])) {
+            const spId = spMatch[1] || spMatch[2] || spMatch[3];
+            return {
+                provider: 'screenpal',
+                name: 'ScreenPal',
+                badgeClass: 'bg-primary',
+                id: spId,
+                cleanUrl: 'https://go.screenpal.com/watch/' + spId
+            };
+        }
+
+        // 8. Direct Video / HTML5 (.mp4, .webm, .m3u8, .mpd).
         if (/\.(mp4|webm|ogv|m3u8|mpd)(\?.*)?$/i.test(url) || url.startsWith('http://') || url.startsWith('https://')) {
             return {
                 provider: 'html5video',
@@ -489,6 +503,36 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 return;
             }
 
+            if (provider === 'screenpal') {
+                const spUrl = M.cfg.wwwroot + '/mod/smartvideo/ajax.php?action=get_screenpal&sesskey=' +
+                    encodeURIComponent(M.cfg.sesskey) + '&videoid=' + encodeURIComponent(detected.id);
+
+                fetch(spUrl).then(function(res) {
+                    return res.ok ? res.json() : null;
+                }).then(function(data) {
+                    if (data && !data.error) {
+                        resolve({
+                            title: data.title || ('ScreenPal Video (' + detected.id + ')'),
+                            poster: data.poster || '',
+                            duration: data.duration || 0
+                        });
+                    } else {
+                        resolve({
+                            title: 'ScreenPal Video (' + detected.id + ')',
+                            poster: '',
+                            duration: 0
+                        });
+                    }
+                }).catch(function() {
+                    resolve({
+                        title: 'ScreenPal Video (' + detected.id + ')',
+                        poster: '',
+                        duration: 0
+                    });
+                });
+                return;
+            }
+
             // HTML5 direct link.
             const tempVid = document.createElement('video');
             tempVid.preload = 'metadata';
@@ -544,7 +588,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         // Auto-fill activity name if empty or default placeholder.
         if (nameInput && meta.title) {
             const curVal = nameInput.value.trim();
-            if (!curVal || curVal === 'External Video' || curVal.startsWith('Vimeo Video') || curVal.startsWith('YouTube Video')) {
+            if (!curVal || curVal === 'External Video' || curVal.startsWith('Vimeo Video') || curVal.startsWith('YouTube Video') || curVal.startsWith('ScreenPal Video')) {
                 nameInput.value = meta.title;
             }
         }
@@ -558,6 +602,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             } else if (detected.provider === 'youtube') {
                 embedHtml = '<div class="ratio ratio-16x9 bg-black rounded overflow-hidden shadow-sm mb-3" style="max-width: 600px;">' +
                     '<iframe src="https://www.youtube.com/embed/' + detected.id + '?rel=0&playsinline=1" class="w-100 h-100 border-0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>' +
+                    '</div>';
+            } else if (detected.provider === 'screenpal') {
+                embedHtml = '<div class="ratio ratio-16x9 bg-black rounded overflow-hidden shadow-sm mb-3" style="max-width: 600px;">' +
+                    '<iframe src="https://go.screenpal.com/player/' + detected.id + '?width=100%&height=100%&ff=1&title=0" class="w-100 h-100 border-0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin"></iframe>' +
                     '</div>';
             }
 

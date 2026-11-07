@@ -36,6 +36,7 @@ if ($ADMIN->fulltree) {
         'vdocipher'     => get_string('provider_vdocipher', 'mod_smartvideo'),
         'dailymotion'   => get_string('provider_dailymotion', 'mod_smartvideo'),
         'wistia'        => get_string('provider_wistia', 'mod_smartvideo'),
+        'screenpal'     => get_string('provider_screenpal', 'mod_smartvideo'),
     ];
 
     $defaultsources = array_keys($providers);
@@ -58,6 +59,7 @@ if ($ADMIN->fulltree) {
         'vdocipher'     => get_string('provider_vdocipher', 'mod_smartvideo'),
         'dailymotion'   => get_string('provider_dailymotion', 'mod_smartvideo'),
         'wistia'        => get_string('provider_wistia', 'mod_smartvideo'),
+        'screenpal'     => get_string('provider_screenpal', 'mod_smartvideo'),
     ];
 
     $settings->add(new admin_setting_configselect(

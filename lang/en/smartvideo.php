@@ -345,6 +345,7 @@ $string['provider_bunnystream'] = 'Bunny Stream';
 $string['provider_vdocipher'] = 'VdoCipher';
 $string['provider_dailymotion'] = 'Dailymotion';
 $string['provider_wistia'] = 'Wistia';
+$string['provider_screenpal'] = 'ScreenPal';
 
 // Admin Settings.
 $string['videosources'] = 'Allowed Video Sources';
