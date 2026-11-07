@@ -311,6 +311,7 @@ $string['deletesubtitlesconfirm'] = 'Are you sure you want to delete this subtit
 
 // Handouts & Resources.
 $string['resources'] = 'Handouts & Resources';
+$string['resources_help'] = 'Upload supplementary files such as PDF slides, lecture notes, or handouts. These will appear in the Handouts & Resources tab beneath the video player for students to download.';
 $string['resources_desc'] = 'Lecture handouts, slides, and reference files attached to this activity.';
 $string['noresources'] = 'No handouts or files attached to this video.';
 $string['downloadfile'] = 'Download File';
