@@ -472,79 +472,96 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         let vimeoPlayer = null;
         let vimeoCurrentTime = 0;
 
-        mountEl.innerHTML = '';
+        let videoId = url;
+        let hash = '';
+        const match = /(?:vimeo\.com)\/(?:video\/|channels\/(?:\w+\/)?|groups\/[^/]*\/videos\/|album\/\d+\/video\/|)?(\d+)(?:\/([a-zA-Z0-9]+))?/i.exec(url);
+        if (match && match[1]) {
+            videoId = match[1];
+            hash = match[2] || '';
+        }
+        if (!hash) {
+            const hMatch = /[?&]h=([a-zA-Z0-9]+)/i.exec(url);
+            if (hMatch && hMatch[1]) {
+                hash = hMatch[1];
+            }
+        }
+
+        let embedUrl = 'https://player.vimeo.com/video/' + videoId + '?dnt=1&playsinline=1';
+        if (hash) {
+            embedUrl += '&h=' + hash;
+        }
+
+        // Render direct iframe with strict-origin referrerpolicy to avoid oEmbed 403 blocks.
+        mountEl.innerHTML = '<iframe src="' + embedUrl + '" class="w-100 h-100 border-0 position-absolute top-0 start-0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin" style="width: 100% !important; height: 100% !important; border: 0 !important;"></iframe>';
+        const iframe = mountEl.querySelector('iframe');
 
         loadExternalScript('https://player.vimeo.com/api/player.js').then(function() {
-            vimeoPlayer = new window.Vimeo.Player(mountEl, {
-                url: url,
-                controls: true,
-                responsive: true,
-                dnt: true,
-                playsinline: true
-            });
+            if (window.Vimeo && window.Vimeo.Player && iframe) {
+                try {
+                    vimeoPlayer = new window.Vimeo.Player(iframe);
 
-            // Set strict-origin referrer policy so domain-restricted Vimeo videos load properly.
-            const ifr = mountEl.querySelector('iframe');
-            if (ifr) {
-                ifr.setAttribute('referrerpolicy', 'strict-origin');
-            }
+                    const updateDuration = function() {
+                        vimeoPlayer.getDuration().then(function(d) {
+                            if (d > 0) {
+                                adapter.duration = d;
+                            }
+                            adapter.dispatchEvent('loadedmetadata');
+                        }).catch(function() {
+                            adapter.dispatchEvent('loadedmetadata');
+                        });
+                    };
 
-            vimeoPlayer.on('loaded', function() {
-                const iframe = mountEl.querySelector('iframe');
-                if (iframe) {
-                    iframe.setAttribute('referrerpolicy', 'strict-origin');
+                    vimeoPlayer.ready().then(updateDuration).catch(function() {});
+                    vimeoPlayer.on('loaded', updateDuration);
+
+                    vimeoPlayer.on('play', function() {
+                        adapter.paused = false;
+                        adapter.dispatchEvent('play');
+                    });
+
+                    vimeoPlayer.on('pause', function() {
+                        adapter.paused = true;
+                        adapter.dispatchEvent('pause');
+                    });
+
+                    vimeoPlayer.on('ended', function() {
+                        adapter.paused = true;
+                        adapter.dispatchEvent('ended');
+                    });
+
+                    vimeoPlayer.on('timeupdate', function(data) {
+                        vimeoCurrentTime = data ? data.seconds : 0;
+                        adapter.dispatchEvent('timeupdate');
+                    });
+
+                    vimeoPlayer.on('seeked', function(data) {
+                        vimeoCurrentTime = data ? data.seconds : 0;
+                        adapter.dispatchEvent('seeking');
+                        adapter.dispatchEvent('timeupdate');
+                    });
+
+                    vimeoPlayer.on('error', function(err) {
+                        console.warn('[SmartVideo] Vimeo player error:', err);
+                        adapter.dispatchEvent('error', {error: err});
+                    });
+                } catch (e) {
+                    console.warn('[SmartVideo] Vimeo SDK attach error:', e);
                 }
-                vimeoPlayer.getDuration().then(function(d) {
-                    if (d > 0) {
-                        adapter.duration = d;
-                    }
-                    adapter.dispatchEvent('loadedmetadata');
-                }).catch(function() {
-                    adapter.dispatchEvent('loadedmetadata');
-                });
-            });
-
-            vimeoPlayer.on('play', function() {
-                adapter.paused = false;
-                adapter.dispatchEvent('play');
-            });
-
-            vimeoPlayer.on('pause', function() {
-                adapter.paused = true;
-                adapter.dispatchEvent('pause');
-            });
-
-            vimeoPlayer.on('ended', function() {
-                adapter.paused = true;
-                adapter.dispatchEvent('ended');
-            });
-
-            vimeoPlayer.on('timeupdate', function(data) {
-                vimeoCurrentTime = data ? data.seconds : 0;
-                adapter.dispatchEvent('timeupdate');
-            });
-
-            vimeoPlayer.on('seeked', function(data) {
-                vimeoCurrentTime = data ? data.seconds : 0;
-                adapter.dispatchEvent('seeking');
-                adapter.dispatchEvent('timeupdate');
-            });
-
-            vimeoPlayer.on('error', function(err) {
-                console.warn('[SmartVideo] Vimeo player error:', err);
-                adapter.dispatchEvent('error', {error: err});
-            });
+            }
         });
 
         adapter.play = function() {
             adapter.paused = false;
-            return vimeoPlayer ? vimeoPlayer.play() : Promise.resolve();
+            if (vimeoPlayer && typeof vimeoPlayer.play === 'function') {
+                return vimeoPlayer.play().catch(function() {});
+            }
+            return Promise.resolve();
         };
 
         adapter.pause = function() {
             adapter.paused = true;
-            if (vimeoPlayer) {
-                vimeoPlayer.pause();
+            if (vimeoPlayer && typeof vimeoPlayer.pause === 'function') {
+                vimeoPlayer.pause().catch(function() {});
             }
         };
 
@@ -554,8 +571,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             },
             set: function(val) {
                 vimeoCurrentTime = val;
-                if (vimeoPlayer) {
-                    vimeoPlayer.setCurrentTime(val);
+                if (vimeoPlayer && typeof vimeoPlayer.setCurrentTime === 'function') {
+                    vimeoPlayer.setCurrentTime(val).catch(function() {});
                 }
                 adapter.dispatchEvent('seeking');
                 adapter.dispatchEvent('timeupdate');
@@ -568,7 +585,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             },
             set: function(val) {
                 if (vimeoPlayer && typeof vimeoPlayer.setPlaybackRate === 'function') {
-                    vimeoPlayer.setPlaybackRate(val);
+                    vimeoPlayer.setPlaybackRate(val).catch(function() {});
                 }
                 adapter.dispatchEvent('ratechange');
             }
@@ -579,8 +596,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 return false;
             },
             set: function(val) {
-                if (vimeoPlayer) {
-                    vimeoPlayer.setMuted(!!val);
+                if (vimeoPlayer && typeof vimeoPlayer.setMuted === 'function') {
+                    vimeoPlayer.setMuted(!!val).catch(function() {});
                 }
                 adapter.dispatchEvent('volumechange');
             }
@@ -591,8 +608,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 return 1.0;
             },
             set: function(val) {
-                if (vimeoPlayer) {
-                    vimeoPlayer.setVolume(val);
+                if (vimeoPlayer && typeof vimeoPlayer.setVolume === 'function') {
+                    vimeoPlayer.setVolume(val).catch(function() {});
                 }
                 adapter.dispatchEvent('volumechange');
             }
@@ -600,7 +617,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
 
         adapter.destroy = function() {
             if (vimeoPlayer && typeof vimeoPlayer.destroy === 'function') {
-                vimeoPlayer.destroy();
+                vimeoPlayer.destroy().catch(function() {});
             }
         };
 
@@ -1102,6 +1119,8 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             }
             if (this.externalMount) {
                 this.externalMount.classList.remove('d-none');
+                this.externalMount.style.display = 'block';
+                this.externalMount.style.zIndex = '5';
             }
             if (this.videoType === 'youtube') {
                 this.video = createYouTubeAdapter(this.externalMount, this.playlistUrl, this.duration);
