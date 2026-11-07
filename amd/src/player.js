@@ -301,7 +301,6 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             stopTimer();
             updateTimer = setInterval(function() {
                 if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
-                    adapter.currentTime = ytPlayer.getCurrentTime();
                     adapter.dispatchEvent('timeupdate');
                 }
             }, 250);
@@ -342,6 +341,12 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     onStateChange: function(e) {
                         if (e.data === window.YT.PlayerState.PLAYING) {
                             adapter.paused = false;
+                            if (ytPlayer && typeof ytPlayer.getDuration === 'function') {
+                                const d = ytPlayer.getDuration();
+                                if (d > 0 && d !== adapter.duration) {
+                                    adapter.duration = d;
+                                }
+                            }
                             startTimer();
                             adapter.dispatchEvent('play');
                         } else if (e.data === window.YT.PlayerState.PAUSED) {
