@@ -477,14 +477,29 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         loadExternalScript('https://player.vimeo.com/api/player.js').then(function() {
             vimeoPlayer = new window.Vimeo.Player(mountEl, {
                 url: url,
-                controls: false,
+                controls: true,
                 responsive: true,
-                dnt: true
+                dnt: true,
+                playsinline: true
             });
 
+            // Set strict-origin referrer policy so domain-restricted Vimeo videos load properly.
+            const ifr = mountEl.querySelector('iframe');
+            if (ifr) {
+                ifr.setAttribute('referrerpolicy', 'strict-origin');
+            }
+
             vimeoPlayer.on('loaded', function() {
+                const iframe = mountEl.querySelector('iframe');
+                if (iframe) {
+                    iframe.setAttribute('referrerpolicy', 'strict-origin');
+                }
                 vimeoPlayer.getDuration().then(function(d) {
-                    adapter.duration = d;
+                    if (d > 0) {
+                        adapter.duration = d;
+                    }
+                    adapter.dispatchEvent('loadedmetadata');
+                }).catch(function() {
                     adapter.dispatchEvent('loadedmetadata');
                 });
             });
@@ -505,17 +520,18 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             });
 
             vimeoPlayer.on('timeupdate', function(data) {
-                vimeoCurrentTime = data.seconds;
+                vimeoCurrentTime = data ? data.seconds : 0;
                 adapter.dispatchEvent('timeupdate');
             });
 
             vimeoPlayer.on('seeked', function(data) {
-                vimeoCurrentTime = data.seconds;
+                vimeoCurrentTime = data ? data.seconds : 0;
                 adapter.dispatchEvent('seeking');
                 adapter.dispatchEvent('timeupdate');
             });
 
             vimeoPlayer.on('error', function(err) {
+                console.warn('[SmartVideo] Vimeo player error:', err);
                 adapter.dispatchEvent('error', {error: err});
             });
         });
@@ -1285,11 +1301,11 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     togglePlay();
                 });
             }
-            // If YouTube provider, comply with YouTube Developer Terms & Policies (Section III.E):
-            // 1. Never obscure or hide YouTube features, branding, or native player controls.
-            // 2. Allow user clicks and touch events to pass directly to YouTube (pointer-events: none on clickShield).
-            // 3. Hide center big play overlay as YouTube has its own native controls and play state.
-            if (self.videoType === 'youtube') {
+            // If YouTube or Vimeo provider:
+            // 1. Never obscure or hide player features, branding, or native player controls.
+            // 2. Allow user clicks and touch events to pass directly to video player (pointer-events: none on clickShield).
+            // 3. Hide center big play overlay as native controls and play state are used.
+            if (self.videoType === 'youtube' || self.videoType === 'vimeo') {
                 if (self.clickShield) {
                     self.clickShield.style.pointerEvents = 'none';
                     self.clickShield.classList.add('pe-none', 'd-none');

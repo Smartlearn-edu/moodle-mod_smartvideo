@@ -60,6 +60,155 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
     }
 
     /**
+     * Load an external JS script asynchronously once.
+     *
+     * @param {string} src
+     * @return {Promise<void>}
+     */
+    function loadExternalScript(src) {
+        return new Promise(function(resolve, reject) {
+            const existing = document.querySelector('script[src="' + src + '"]');
+            if (existing) {
+                if (existing.dataset.loaded === 'true' || window.Vimeo) {
+                    resolve();
+                    return;
+                }
+                existing.addEventListener('load', function() { resolve(); });
+                existing.addEventListener('error', function(err) { reject(err); });
+                return;
+            }
+
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            s.onload = function() {
+                s.dataset.loaded = 'true';
+                resolve();
+            };
+            s.onerror = function(err) {
+                reject(err);
+            };
+            document.head.appendChild(s);
+        });
+    }
+
+    /**
+     * Fetch Vimeo metadata using Vimeo Player SDK.
+     *
+     * @param {string} fullUrl
+     * @param {string} videoId
+     * @param {Object|null} oembedData
+     * @return {Promise<Object>}
+     */
+    function fetchVimeoSdkMetadata(fullUrl, videoId, oembedData) {
+        return new Promise(function(resolve) {
+            loadExternalScript('https://player.vimeo.com/api/player.js').then(function() {
+                const tempDiv = document.createElement('div');
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.top = '-9999px';
+                tempDiv.style.width = '320px';
+                tempDiv.style.height = '180px';
+                document.body.appendChild(tempDiv);
+
+                let resolved = false;
+                let vPlayer = null;
+
+                const cleanup = function() {
+                    try {
+                        if (vPlayer && typeof vPlayer.destroy === 'function') {
+                            vPlayer.destroy();
+                        }
+                    } catch (e) {
+                        // Ignore.
+                    }
+                    if (tempDiv.parentNode) {
+                        tempDiv.parentNode.removeChild(tempDiv);
+                    }
+                };
+
+                const finish = function(meta) {
+                    if (!resolved) {
+                        resolved = true;
+                        cleanup();
+                        resolve(meta);
+                    }
+                };
+
+                setTimeout(function() {
+                    finish({
+                        title: (oembedData && oembedData.title) || ('Vimeo Video (' + videoId + ')'),
+                        poster: (oembedData && oembedData.thumbnail_url) || '',
+                        duration: (oembedData && oembedData.duration) || 0
+                    });
+                }, 5000);
+
+                try {
+                    vPlayer = new window.Vimeo.Player(tempDiv, {
+                        url: fullUrl,
+                        width: 320,
+                        controls: true,
+                        dnt: true
+                    });
+
+                    const ifr = tempDiv.querySelector('iframe');
+                    if (ifr) {
+                        ifr.setAttribute('referrerpolicy', 'strict-origin');
+                    }
+
+                    vPlayer.on('loaded', function() {
+                        const iframe = tempDiv.querySelector('iframe');
+                        if (iframe) {
+                            iframe.setAttribute('referrerpolicy', 'strict-origin');
+                        }
+                        Promise.all([
+                            vPlayer.getVideoTitle().catch(function() { return ''; }),
+                            vPlayer.getDuration().catch(function() { return 0; })
+                        ]).then(function(results) {
+                            const title = results[0] || (oembedData && oembedData.title) || ('Vimeo Video (' + videoId + ')');
+                            const duration = Math.round(results[1] || 0);
+                            const poster = (oembedData && oembedData.thumbnail_url) ?
+                                oembedData.thumbnail_url.replace(/_\d+x\d+/, '_640x360') : '';
+
+                            finish({
+                                title: title,
+                                poster: poster,
+                                duration: duration
+                            });
+                        }).catch(function() {
+                            finish({
+                                title: (oembedData && oembedData.title) || ('Vimeo Video (' + videoId + ')'),
+                                poster: (oembedData && oembedData.thumbnail_url) || '',
+                                duration: (oembedData && oembedData.duration) || 0
+                            });
+                        });
+                    });
+
+                    vPlayer.on('error', function() {
+                        finish({
+                            title: (oembedData && oembedData.title) || ('Vimeo Video (' + videoId + ')'),
+                            poster: (oembedData && oembedData.thumbnail_url) || '',
+                            duration: (oembedData && oembedData.duration) || 0
+                        });
+                    });
+                } catch (e) {
+                    finish({
+                        title: (oembedData && oembedData.title) || ('Vimeo Video (' + videoId + ')'),
+                        poster: (oembedData && oembedData.thumbnail_url) || '',
+                        duration: (oembedData && oembedData.duration) || 0
+                    });
+                }
+            }).catch(function() {
+                resolve({
+                    title: (oembedData && oembedData.title) || ('Vimeo Video (' + videoId + ')'),
+                    poster: (oembedData && oembedData.thumbnail_url) || '',
+                    duration: (oembedData && oembedData.duration) || 0
+                });
+            });
+        });
+    }
+
+    /**
      * Detect provider from input URL.
      *
      * @param {string} rawUrl
@@ -85,7 +234,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
         }
 
         // 2. Vimeo.
-        const vimeoRegex = /(?:https?:\/\/)?(?:www\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/[^/]*\/videos\/|album\/\d+\/video\/|video\/|)(\d+)/i;
+        const vimeoRegex = /(?:https?:\/\/)?(?:www\.)?(?:player\.)?vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/[^/]*\/videos\/|album\/\d+\/video\/|video\/|)(\d+)/i;
         const vimeoMatch = vimeoRegex.exec(url);
         if (vimeoMatch && vimeoMatch[1]) {
             return {
@@ -93,7 +242,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 name: 'Vimeo',
                 badgeClass: 'bg-info text-dark',
                 id: vimeoMatch[1],
-                cleanUrl: 'https://vimeo.com/' + vimeoMatch[1]
+                cleanUrl: url
             };
         }
 
@@ -196,32 +345,21 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             }
 
             if (provider === 'vimeo') {
-                const proxyUrl = M.cfg.wwwroot + '/mod/smartvideo/ajax.php?action=get_from_url&sesskey=' +
-                    encodeURIComponent(M.cfg.sesskey) + '&url=' +
-                    encodeURIComponent('https://vimeo.com/api/oembed.json?url=' + encodeURIComponent(detected.cleanUrl));
-
-                fetch(proxyUrl).then(function(res) {
+                const oembedApi = 'https://vimeo.com/api/oembed.json?url=' + encodeURIComponent(detected.cleanUrl);
+                fetch(oembedApi).then(function(res) {
                     return res.ok ? res.json() : null;
                 }).then(function(data) {
-                    if (data && !data.error) {
+                    if (data && data.title && data.duration) {
                         resolve({
-                            title: data.title || 'Vimeo Video',
+                            title: data.title,
                             poster: (data.thumbnail_url || '').replace(/_\d+x\d+/, '_640x360'),
-                            duration: data.duration || 0
+                            duration: Math.round(data.duration || 0)
                         });
-                    } else {
-                        resolve({
-                            title: 'Vimeo Video (' + detected.id + ')',
-                            poster: '',
-                            duration: 0
-                        });
+                        return;
                     }
+                    fetchVimeoSdkMetadata(detected.cleanUrl, detected.id, data).then(resolve);
                 }).catch(function() {
-                    resolve({
-                        title: 'Vimeo Video (' + detected.id + ')',
-                        poster: '',
-                        duration: 0
-                    });
+                    fetchVimeoSdkMetadata(detected.cleanUrl, detected.id, null).then(resolve);
                 });
                 return;
             }
@@ -403,24 +541,38 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             posterimageInput.value = meta.poster || '';
         }
 
-        // Auto-fill activity name if empty.
-        if (nameInput && !nameInput.value.trim() && meta.title) {
-            nameInput.value = meta.title;
+        // Auto-fill activity name if empty or default placeholder.
+        if (nameInput && meta.title) {
+            const curVal = nameInput.value.trim();
+            if (!curVal || curVal === 'External Video' || curVal.startsWith('Vimeo Video') || curVal.startsWith('YouTube Video')) {
+                nameInput.value = meta.title;
+            }
         }
 
         if (previewContainer) {
+            let embedHtml = '';
+            if (detected.provider === 'vimeo') {
+                embedHtml = '<div class="ratio ratio-16x9 bg-black rounded overflow-hidden shadow-sm mb-3" style="max-width: 600px;">' +
+                    '<iframe src="https://player.vimeo.com/video/' + detected.id + '?dnt=1&playsinline=1" class="w-100 h-100 border-0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin"></iframe>' +
+                    '</div>';
+            } else if (detected.provider === 'youtube') {
+                embedHtml = '<div class="ratio ratio-16x9 bg-black rounded overflow-hidden shadow-sm mb-3" style="max-width: 600px;">' +
+                    '<iframe src="https://www.youtube.com/embed/' + detected.id + '?rel=0&playsinline=1" class="w-100 h-100 border-0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>' +
+                    '</div>';
+            }
+
             const thumbHtml = meta.poster ?
-                '<img src="' + escapeHtml(meta.poster) + '" alt="" class="w-100 h-100 object-fit-cover" style="object-fit: cover;">' :
-                '<div class="w-100 h-100 d-flex align-items-center justify-content-center bg-dark text-white"><i class="fa fa-play fa-2x" aria-hidden="true"></i></div>';
+                '<div class="ratio ratio-16x9 bg-dark rounded overflow-hidden" style="width: 140px; flex-shrink: 0;">' +
+                    '<img src="' + escapeHtml(meta.poster) + '" alt="" class="w-100 h-100 object-fit-cover" style="object-fit: cover;">' +
+                '</div>' : '';
 
             const durBadge = meta.duration > 0 ?
                 '<span class="badge bg-secondary mb-1">' + formatTime(meta.duration) + '</span>' : '';
 
             previewContainer.innerHTML =
-                '<div class="card border p-3 d-flex flex-row align-items-center gap-3 bg-light shadow-sm" style="max-width: 550px;">' +
-                    '<div class="ratio ratio-16x9 bg-dark rounded overflow-hidden" style="width: 140px; flex-shrink: 0;">' +
-                        thumbHtml +
-                    '</div>' +
+                embedHtml +
+                '<div class="card border p-3 d-flex flex-row align-items-center gap-3 bg-light shadow-sm" style="max-width: 600px;">' +
+                    thumbHtml +
                     '<div class="flex-grow-1 overflow-hidden">' +
                         '<div class="mb-1"><span class="badge ' + detected.badgeClass + '">' + escapeHtml(detected.name) + '</span></div>' +
                         '<strong class="d-block text-truncate mb-1">' + escapeHtml(meta.title) + '</strong>' +
