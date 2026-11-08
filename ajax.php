@@ -118,7 +118,9 @@ switch ($action) {
         $url = "https://go.screenpal.com/watch/{$videoid}";
 
         $curl = new curl(['ignoresecurity' => true]);
-        $curl->setHeader('User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+            . '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+        $curl->setHeader('User-Agent: ' . $ua);
         $html = $curl->get($url);
 
         $title = '';
@@ -128,7 +130,7 @@ switch ($action) {
         if ($html) {
             if (preg_match('/<meta property="og:title" content="([^"]+)"/i', $html, $m)) {
                 $title = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            } elseif (preg_match('/<title>([^<]+)<\/title>/i', $html, $m)) {
+            } else if (preg_match('/<title>([^<]+)<\/title>/i', $html, $m)) {
                 $title = trim($m[1]);
             }
 

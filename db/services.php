@@ -31,6 +31,7 @@ $functions = [
         'description' => 'Update student watch progress, bookmark and evaluate completion',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_get_course_categories' => [
         'classname'   => 'mod_smartvideo\external\get_course_categories',
@@ -38,6 +39,7 @@ $functions = [
         'description' => 'Get Question Bank categories for the current course',
         'type'        => 'read',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_get_category_questions' => [
         'classname'   => 'mod_smartvideo\external\get_category_questions',
@@ -45,6 +47,7 @@ $functions = [
         'description' => 'Get ready questions in a specific Question Bank category',
         'type'        => 'read',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_save_cuepoint' => [
         'classname'   => 'mod_smartvideo\external\save_cuepoint',
@@ -52,6 +55,7 @@ $functions = [
         'description' => 'Create or update an interactive question cuepoint on the video timeline',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_delete_cuepoint' => [
         'classname'   => 'mod_smartvideo\external\delete_cuepoint',
@@ -59,6 +63,7 @@ $functions = [
         'description' => 'Delete an interactive question cuepoint and its attempts',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_get_question_attempt' => [
         'classname'   => 'mod_smartvideo\external\get_question_attempt',
@@ -66,6 +71,7 @@ $functions = [
         'description' => 'Get or start a question attempt for in-video interactive playback',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_submit_question_attempt' => [
         'classname'   => 'mod_smartvideo\external\submit_question_attempt',
@@ -73,6 +79,7 @@ $functions = [
         'description' => 'Submit student response to in-video question and evaluate correctness',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_save_chapter' => [
         'classname'   => 'mod_smartvideo\external\save_chapter',
@@ -80,6 +87,7 @@ $functions = [
         'description' => 'Create or update a video chapter marker',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_delete_chapter' => [
         'classname'   => 'mod_smartvideo\external\delete_chapter',
@@ -87,6 +95,7 @@ $functions = [
         'description' => 'Delete a video chapter marker',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_save_callout' => [
         'classname'   => 'mod_smartvideo\external\save_callout',
@@ -94,6 +103,7 @@ $functions = [
         'description' => 'Create or update an in-video callout card',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_delete_callout' => [
         'classname'   => 'mod_smartvideo\external\delete_callout',
@@ -101,6 +111,7 @@ $functions = [
         'description' => 'Delete an in-video callout card',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_create_quick_question' => [
         'classname'   => 'mod_smartvideo\external\create_quick_question',
@@ -108,6 +119,7 @@ $functions = [
         'description' => 'Quickly create a Multiple Choice or True/False question in Question Bank and link to timeline',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_get_notes' => [
         'classname'   => 'mod_smartvideo\external\get_notes',
@@ -115,6 +127,7 @@ $functions = [
         'description' => 'Get current student notes for this video activity',
         'type'        => 'read',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_save_note' => [
         'classname'   => 'mod_smartvideo\external\save_note',
@@ -122,6 +135,7 @@ $functions = [
         'description' => 'Create or update a student timestamped note',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_delete_note' => [
         'classname'   => 'mod_smartvideo\external\delete_note',
@@ -129,6 +143,7 @@ $functions = [
         'description' => 'Delete a student note',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_get_report' => [
         'classname'   => 'mod_smartvideo\external\get_report',
@@ -136,6 +151,7 @@ $functions = [
         'description' => 'Get current student structured medical/case report',
         'type'        => 'read',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_save_report' => [
         'classname'   => 'mod_smartvideo\external\save_report',
@@ -143,6 +159,7 @@ $functions = [
         'description' => 'Save or submit a structured student medical/case report',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_get_subtitles' => [
         'classname'   => 'mod_smartvideo\external\get_subtitles',
@@ -150,6 +167,7 @@ $functions = [
         'description' => 'Get configured WebVTT subtitle tracks and parsed cues',
         'type'        => 'read',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_save_subtitles' => [
         'classname'   => 'mod_smartvideo\external\save_subtitles',
@@ -157,6 +175,7 @@ $functions = [
         'description' => 'Save or upload WebVTT subtitle content',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_delete_subtitles' => [
         'classname'   => 'mod_smartvideo\external\delete_subtitles',
@@ -164,6 +183,7 @@ $functions = [
         'description' => 'Delete a WebVTT subtitle track',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_get_discussions' => [
         'classname'   => 'mod_smartvideo\external\get_discussions',
@@ -171,6 +191,7 @@ $functions = [
         'description' => 'Get timestamped student and instructor Q&A discussions',
         'type'        => 'read',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_post_discussion' => [
         'classname'   => 'mod_smartvideo\external\post_discussion',
@@ -178,6 +199,7 @@ $functions = [
         'description' => 'Post a timestamped question or reply to discussion',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
     'mod_smartvideo_delete_discussion' => [
         'classname'   => 'mod_smartvideo\external\delete_discussion',
@@ -185,5 +207,6 @@ $functions = [
         'description' => 'Delete a discussion comment or question',
         'type'        => 'write',
         'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
 ];

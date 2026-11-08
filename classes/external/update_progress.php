@@ -81,8 +81,13 @@ class update_progress extends external_api {
         $instance = $DB->get_record('smartvideo', ['id' => $cm->instance], '*', MUST_EXIST);
         $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 
-        $media = $DB->get_record('local_securevideolibrary_media', ['id' => $instance->mediaid]);
-        $duration = $media ? (int)$media->duration : 0;
+        $videosource = !empty($instance->videosource) ? $instance->videosource : 'securelibrary';
+        if ($videosource === 'securelibrary' && !empty($instance->mediaid)) {
+            $media = $DB->get_record('local_securevideolibrary_media', ['id' => $instance->mediaid]);
+            $duration = $media ? (int)$media->duration : (int)($instance->duration ?? 0);
+        } else {
+            $duration = (int)($instance->duration ?? 0);
+        }
 
         $percentcompleted = 0;
         if ($duration > 0) {

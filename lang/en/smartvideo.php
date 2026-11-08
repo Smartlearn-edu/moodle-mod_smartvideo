@@ -391,8 +391,9 @@ $string['repetition'] = 'Repetition';
 $string['est_time'] = 'Estimated Study Time';
 $string['watchedpercent'] = 'Watched: {$a}%';
 $string['targetpercent'] = 'Target: {$a}%';
-
-
-
-
+$string['overview'] = 'Overview';
+$string['duration'] = 'Duration';
+$string['dismiss'] = 'Dismiss';
+$string['openlink'] = 'Open Link';
+$string['required'] = 'Required';
 

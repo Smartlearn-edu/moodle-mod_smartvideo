@@ -1,0 +1,566 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_smartvideo/mobileapp/course_view
+
+    Moodle Mobile App (Ionic 8 / Angular) interactive video workstation template for mod_smartvideo.
+
+    Example context (json):
+    {
+        "cmid": 42,
+        "courseid": 2,
+        "title": "Cardiac Auscultation & Clinical Assessment",
+        "intro": "<p>Watch the clinical case video and complete the checkpoint questions.</p>",
+        "hasintro": true,
+        "canplay": true,
+        "isprocessing": false,
+        "isinvalidurl": false,
+        "videotype": "securelibrary",
+        "isiframeprovider": false,
+        "embedurl": "",
+        "playlisturl": "https://example.com/local/securevideolibrary/serve.php?mediaid=1&cmid=42&file=playlist.m3u8",
+        "thumbnailurl": "https://example.com/local/securevideolibrary/serve.php?mediaid=1&cmid=42&file=thumbnail.jpg",
+        "duration": 600,
+        "durationformatted": "10:00",
+        "hasresume": true,
+        "lastposition": 120,
+        "lastposformatted": "02:00",
+        "percentcompleted": 45,
+        "completionminpercent": 80,
+        "hascompletionrule": true,
+        "watermarkenabled": true,
+        "watermarkopacity": 0.35,
+        "studentname": "Jane Doe",
+        "studentid": 105,
+        "hasresources": false,
+        "resources": []
+    }
+}}
+{{=<% %>=}}
+<div class="mod-smartvideo-mobile">
+    <core-course-module-info
+        [module]="module"
+        description="<% intro %>"
+        component="mod_smartvideo"
+        componentId="<% cmid %>"
+        [courseId]="<% courseid %>">
+    </core-course-module-info>
+
+    <%^canplay%>
+    <ion-card class="ion-margin">
+        <ion-card-content class="ion-text-center ion-padding">
+            <ion-icon name="fas-circle-exclamation" color="warning" style="font-size: 36px;"></ion-icon>
+            <%#isprocessing%>
+            <p class="ion-margin-top">{{ 'plugin.mod_smartvideo.videonotready' | translate }}</p>
+            <%/isprocessing%>
+            <%^isprocessing%>
+                <%#isinvalidurl%>
+                <p class="ion-margin-top">{{ 'plugin.mod_smartvideo.invalidvideourl' | translate }}</p>
+                <%/isinvalidurl%>
+                <%^isinvalidurl%>
+                <p class="ion-margin-top">{{ 'plugin.mod_smartvideo.novideowarning' | translate }}</p>
+                <%/isinvalidurl%>
+            <%/isprocessing%>
+        </ion-card-content>
+    </ion-card>
+    <%/canplay%>
+
+    <%#canplay%>
+    <div id="smartVideoMobileStage"
+         style="position: relative; width: 100%; background: #000; overflow: hidden; user-select: none;">
+
+        <%#isiframeprovider%>
+        <div style="position: relative; width: 100%; aspect-ratio: 16 / 9;">
+            <core-iframe [src]="'<% embedurl %>'"></core-iframe>
+        </div>
+        <%/isiframeprovider%>
+
+        <%^isiframeprovider%>
+        <div style="position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000;"
+             (click)="togglePlay()">
+            <video id="smartVideoMobileElement"
+                   playsinline="true"
+                   webkit-playsinline="true"
+                   preload="metadata"
+                   poster="<% thumbnailurl %>"
+                   controlslist="nodownload noplaybackrate"
+                   disablepictureinpicture="true"
+                   oncontextmenu="return false;"
+                   style="width: 100%; height: 100%; display: block; object-fit: contain;">
+            </video>
+
+            <%#watermarkenabled%>
+            <div [style.top.%]="CONTENT_OTHERDATA.watermarktop"
+                 [style.left.%]="CONTENT_OTHERDATA.watermarkleft"
+                 style="position: absolute; z-index: 25; pointer-events: none; padding: 3px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 11px; font-family: monospace; white-space: nowrap; opacity: <% watermarkopacity %>; transition: top 1.2s ease, left 1.2s ease;">
+                {{ CONTENT_OTHERDATA.studentlabel }}
+            </div>
+            <%/watermarkenabled%>
+
+            <div *ngIf="CONTENT_OTHERDATA.captionsenabled && CONTENT_OTHERDATA.activecaption"
+                 style="position: absolute; bottom: 52px; left: 8%; right: 8%; z-index: 20; text-align: center; pointer-events: none;">
+                <span style="background: rgba(0, 0, 0, 0.78); color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 13px; line-height: 1.4; display: inline-block;">
+                    {{ CONTENT_OTHERDATA.activecaption }}
+                </span>
+            </div>
+
+            <div *ngIf="CONTENT_OTHERDATA.showresumetoast"
+                 (click)="$event.stopPropagation()"
+                 style="position: absolute; top: 10px; left: 10px; right: 10px; z-index: 30; background: rgba(15, 23, 42, 0.94); color: #fff; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid rgba(255,255,255,0.2);">
+                <span style="font-size: 12px;">
+                    {{ 'plugin.mod_smartvideo.resumeprompt' | translate: {$a: CONTENT_OTHERDATA.lastposformatted} }}
+                </span>
+                <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                    <ion-button size="small" color="primary" (click)="resumePlayback()">
+                        {{ 'plugin.mod_smartvideo.resume' | translate }}
+                    </ion-button>
+                    <ion-button size="small" fill="outline" color="light" (click)="startOverPlayback()">
+                        {{ 'plugin.mod_smartvideo.startover' | translate }}
+                    </ion-button>
+                </div>
+            </div>
+
+            <div *ngIf="activeCallout"
+                 (click)="$event.stopPropagation()"
+                 style="position: absolute; top: 12px; right: 12px; max-width: 82%; z-index: 32; background: rgba(15, 23, 42, 0.95); color: #fff; padding: 10px 14px; border-radius: 10px; border-left: 4px solid #38bdf8; box-shadow: 0 6px 20px rgba(0,0,0,0.45);">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <strong style="font-size: 13px;">{{ activeCallout.title }}</strong>
+                    <ion-button fill="clear" size="small" color="light" (click)="dismissCallout()">
+                        <ion-icon name="fas-xmark" slot="icon-only"></ion-icon>
+                    </ion-button>
+                </div>
+                <div style="font-size: 12px; opacity: 0.92;" [innerHTML]="activeCallout.body"></div>
+                <div *ngIf="activeCallout.haslink" style="margin-top: 6px;">
+                    <ion-button size="small" color="secondary" [href]="activeCallout.linkurl" target="_blank">
+                        {{ activeCallout.linklabel || ('plugin.mod_smartvideo.openlink' | translate) }}
+                    </ion-button>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #0f172a; color: #fff; padding: 8px 12px;">
+            <div style="position: relative; height: 10px; background: rgba(255,255,255,0.2); border-radius: 5px; margin-bottom: 8px; cursor: pointer;"
+                 (click)="onSeekBarTap($event)">
+                <div [style.width.%]="CONTENT_OTHERDATA.maxpercent"
+                     style="position: absolute; top: 0; left: 0; bottom: 0; background: rgba(255,255,255,0.35); border-radius: 5px;">
+                </div>
+                <div [style.width.%]="CONTENT_OTHERDATA.progresspercent"
+                     style="position: absolute; top: 0; left: 0; bottom: 0; background: #38bdf8; border-radius: 5px;">
+                </div>
+                <div *ngFor="let q of questionsList"
+                     [style.left.%]="q.percent"
+                     [style.background]="q.passed ? '#22c55e' : '#f59e0b'"
+                     style="position: absolute; top: -2px; width: 8px; height: 14px; border-radius: 4px; transform: translateX(-50%);">
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <ion-button fill="clear" size="small" color="light" (click)="togglePlay()">
+                        <ion-icon [name]="CONTENT_OTHERDATA.isplaying ? 'fas-pause' : 'fas-play'" slot="icon-only"></ion-icon>
+                    </ion-button>
+                    <ion-button fill="clear" size="small" color="light" (click)="toggleMute()">
+                        <ion-icon [name]="CONTENT_OTHERDATA.ismuted ? 'fas-volume-xmark' : 'fas-volume-high'" slot="icon-only"></ion-icon>
+                    </ion-button>
+                    <span style="font-size: 12px; font-family: monospace;">
+                        {{ CONTENT_OTHERDATA.currenttimeformatted }} / {{ CONTENT_OTHERDATA.durationformatted }}
+                    </span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <ion-button *ngIf="cuesList && cuesList.length"
+                                fill="clear"
+                                size="small"
+                                [color]="CONTENT_OTHERDATA.captionsenabled ? 'primary' : 'light'"
+                                (click)="toggleCaptions()">
+                        <ion-icon name="fas-closed-captioning" slot="icon-only"></ion-icon>
+                    </ion-button>
+                    <ion-button fill="clear" size="small" color="light" (click)="cyclePlaybackSpeed()">
+                        {{ CONTENT_OTHERDATA.playbackrate }}x
+                    </ion-button>
+                    <ion-button fill="clear" size="small" color="light" (click)="toggleFullscreen()">
+                        <ion-icon name="fas-expand" slot="icon-only"></ion-icon>
+                    </ion-button>
+                </div>
+            </div>
+        </div>
+        <%/isiframeprovider%>
+    </div>
+
+    <ion-card *ngIf="activeQuestion" class="ion-margin" style="border: 2px solid var(--ion-color-warning);">
+        <ion-card-header>
+            <ion-card-subtitle color="warning">
+                <ion-icon name="fas-circle-question"></ion-icon>
+                {{ 'plugin.mod_smartvideo.knowledgecheck' | translate }} ({{ activeQuestion.timeformatted }})
+            </ion-card-subtitle>
+            <ion-card-title>{{ activeQuestion.title }}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+            <div class="ion-margin-bottom" [innerHTML]="activeQuestion.promptHtml"></div>
+
+            <ion-list *ngIf="activeQuestion.choices && activeQuestion.choices.length">
+                <ion-item *ngFor="let ch of activeQuestion.choices"
+                          button="true"
+                          detail="false"
+                          (click)="selectQuestionChoice(ch)">
+                    <ion-icon [name]="ch.selected ? 'fas-circle-check' : 'far-circle'"
+                              [color]="ch.selected ? 'primary' : 'medium'"
+                              slot="start">
+                    </ion-icon>
+                    <div [innerHTML]="ch.labelHtml"></div>
+                </ion-item>
+            </ion-list>
+
+            <ion-item *ngIf="activeQuestion.isTextInput">
+                <ion-input
+                    [label]="'plugin.mod_smartvideo.submitanswer' | translate"
+                    labelPlacement="floating"
+                    [(ngModel)]="activeQuestion.textValue">
+                </ion-input>
+            </ion-item>
+
+            <div *ngIf="CONTENT_OTHERDATA.questionfeedbackhtml"
+                 class="ion-padding ion-margin-top"
+                 style="border-radius: 8px; background: rgba(0, 0, 0, 0.05);">
+                <p>
+                    <strong [style.color]="CONTENT_OTHERDATA.questioniscorrect ? 'var(--ion-color-success)' : 'var(--ion-color-danger)'">
+                        {{ (CONTENT_OTHERDATA.questioniscorrect ? 'plugin.mod_smartvideo.answercorrect' : 'plugin.mod_smartvideo.answerincorrect') | translate }}
+                    </strong>
+                </p>
+                <div [innerHTML]="CONTENT_OTHERDATA.questionfeedbackhtml"></div>
+            </div>
+
+            <div class="ion-margin-top" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <ion-button *ngIf="!CONTENT_OTHERDATA.questioncancontinue"
+                            expand="block"
+                            color="primary"
+                            [disabled]="CONTENT_OTHERDATA.questionsubmitting"
+                            (click)="submitActiveQuestion()">
+                    {{ (CONTENT_OTHERDATA.questionsubmitting ? 'plugin.mod_smartvideo.submitting' : 'plugin.mod_smartvideo.submitanswer') | translate }}
+                </ion-button>
+
+                <ion-button *ngIf="CONTENT_OTHERDATA.questioncancontinue"
+                            expand="block"
+                            color="success"
+                            (click)="continueAfterQuestion()">
+                    <ion-icon name="fas-play" slot="start"></ion-icon>
+                    {{ 'plugin.mod_smartvideo.continuevideo' | translate }}
+                </ion-button>
+
+                <ion-button *ngIf="CONTENT_OTHERDATA.questionfeedbackhtml && !CONTENT_OTHERDATA.questioniscorrect"
+                            fill="outline"
+                            color="warning"
+                            (click)="retryActiveQuestion()">
+                    {{ 'plugin.mod_smartvideo.tryagain' | translate }}
+                </ion-button>
+            </div>
+        </ion-card-content>
+    </ion-card>
+
+    <ion-segment [(ngModel)]="CONTENT_OTHERDATA.activetab" scrollable="true" class="ion-margin-top">
+        <ion-segment-button value="overview">
+            <ion-label>{{ 'plugin.mod_smartvideo.overview' | translate }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="chapters">
+            <ion-label>{{ 'plugin.mod_smartvideo.chapters' | translate }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="questions">
+            <ion-label>{{ 'plugin.mod_smartvideo.questions' | translate }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="transcript">
+            <ion-label>{{ 'plugin.mod_smartvideo.transcript' | translate }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="notes">
+            <ion-label>{{ 'plugin.mod_smartvideo.notes' | translate }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="report">
+            <ion-label>{{ 'plugin.mod_smartvideo.medicalreport' | translate }}</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="discussions">
+            <ion-label>{{ 'plugin.mod_smartvideo.discussions' | translate }}</ion-label>
+        </ion-segment-button>
+    </ion-segment>
+
+    <div *ngIf="CONTENT_OTHERDATA.activetab == 'overview'" class="ion-padding">
+        <ion-card class="ion-no-margin ion-margin-bottom">
+            <ion-card-header>
+                <ion-card-subtitle>{{ 'plugin.mod_smartvideo.percentcompleted' | translate }}</ion-card-subtitle>
+                <ion-card-title>
+                    {{ 'plugin.mod_smartvideo.watchedpercent' | translate: {$a: CONTENT_OTHERDATA.percentcompleted} }}
+                </ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+                <ion-progress-bar [value]="CONTENT_OTHERDATA.percentcompleted / 100" color="success"></ion-progress-bar>
+                <%#hascompletionrule%>
+                <p class="ion-margin-top">
+                    <ion-badge color="primary">
+                        {{ 'plugin.mod_smartvideo.targetpercent' | translate: {$a: CONTENT_OTHERDATA.completionminpercent} }}
+                    </ion-badge>
+                </p>
+                <%/hascompletionrule%>
+            </ion-card-content>
+        </ion-card>
+
+        <%#hasresources%>
+        <ion-list>
+            <ion-list-header>
+                <ion-label>{{ 'plugin.mod_smartvideo.resources' | translate }}</ion-label>
+            </ion-list-header>
+            <%#resources%>
+            <core-file
+                [file]="{fileurl: '<% fileurl %>', filename: '<% filename %>', timemodified: <% timemodified %>, mimetype: '<% mimetype %>', filesize: <% filesize %>}"
+                component="mod_smartvideo"
+                componentId="<% cmid %>">
+            </core-file>
+            <%/resources%>
+        </ion-list>
+        <%/hasresources%>
+    </div>
+
+    <div *ngIf="CONTENT_OTHERDATA.activetab == 'chapters'" class="ion-padding">
+        <ion-list *ngIf="chaptersList && chaptersList.length">
+            <ion-item *ngFor="let ch of chaptersList" button="true" (click)="seekToSeconds(ch.timecode)">
+                <ion-badge slot="start" color="primary">{{ ch.timeformatted }}</ion-badge>
+                <ion-label>{{ ch.title }}</ion-label>
+            </ion-item>
+        </ion-list>
+        <p *ngIf="!chaptersList || !chaptersList.length" class="ion-text-center ion-padding">
+            {{ 'plugin.mod_smartvideo.nochapters' | translate }}
+        </p>
+    </div>
+
+    <div *ngIf="CONTENT_OTHERDATA.activetab == 'questions'" class="ion-padding">
+        <ion-list *ngIf="questionsList && questionsList.length">
+            <ion-item *ngFor="let q of questionsList" button="true" (click)="openQuestionFromList(q)">
+                <ion-badge slot="start" [color]="q.passed ? 'success' : 'warning'">{{ q.timeformatted }}</ion-badge>
+                <ion-label>
+                    <h3>{{ q.title }}</h3>
+                    <p>
+                        {{ (q.passed ? 'plugin.mod_smartvideo.questionpassed' : 'plugin.mod_smartvideo.questionpending') | translate }}
+                    </p>
+                </ion-label>
+                <ion-badge *ngIf="q.requirecorrect" slot="end" color="medium">
+                    {{ 'plugin.mod_smartvideo.required' | translate }}
+                </ion-badge>
+            </ion-item>
+        </ion-list>
+        <p *ngIf="!questionsList || !questionsList.length" class="ion-text-center ion-padding">
+            {{ 'plugin.mod_smartvideo.noquestionsconfigured' | translate }}
+        </p>
+    </div>
+
+    <div *ngIf="CONTENT_OTHERDATA.activetab == 'transcript'" class="ion-padding">
+        <ion-list *ngIf="cuesList && cuesList.length">
+            <ion-item *ngFor="let cue of cuesList" button="true" (click)="seekToSeconds(cue.start)">
+                <ion-badge slot="start" color="tertiary">{{ cue.startformatted }}</ion-badge>
+                <ion-label class="ion-text-wrap">{{ cue.text }}</ion-label>
+            </ion-item>
+        </ion-list>
+        <p *ngIf="!cuesList || !cuesList.length" class="ion-text-center ion-padding">
+            {{ 'plugin.mod_smartvideo.notranscript' | translate }}
+        </p>
+    </div>
+
+    <div *ngIf="CONTENT_OTHERDATA.activetab == 'notes'" class="ion-padding">
+        <ion-card class="ion-no-margin ion-margin-bottom">
+            <ion-card-content>
+                <ion-item>
+                    <ion-textarea
+                        [label]="'plugin.mod_smartvideo.studentnotes' | translate"
+                        labelPlacement="floating"
+                        placeholder="{{ 'plugin.mod_smartvideo.noteprompt' | translate }}"
+                        rows="3"
+                        [(ngModel)]="CONTENT_OTHERDATA.newnotecontent">
+                    </ion-textarea>
+                </ion-item>
+                <ion-button expand="block" class="ion-margin-top" (click)="saveNote()">
+                    <ion-icon name="fas-plus" slot="start"></ion-icon>
+                    {{ 'plugin.mod_smartvideo.addnote' | translate }} ({{ CONTENT_OTHERDATA.currenttimeformatted }})
+                </ion-button>
+            </ion-card-content>
+        </ion-card>
+
+        <ion-list *ngIf="notesList && notesList.length">
+            <ion-item *ngFor="let n of notesList">
+                <ion-badge slot="start" color="secondary" (click)="seekToSeconds(n.timecode)">
+                    {{ n.timeformatted }}
+                </ion-badge>
+                <ion-label class="ion-text-wrap" (click)="seekToSeconds(n.timecode)">
+                    <p>{{ n.rawcontent || n.content }}</p>
+                    <small>{{ n.timemodified * 1000 | coreFormatDate: 'strftimedaydatetime' }}</small>
+                </ion-label>
+                <ion-button fill="clear" color="danger" slot="end" (click)="deleteNote(n.id)">
+                    <ion-icon name="fas-trash" slot="icon-only"></ion-icon>
+                </ion-button>
+            </ion-item>
+        </ion-list>
+
+        <p *ngIf="!notesList || !notesList.length" class="ion-text-center ion-padding">
+            {{ 'plugin.mod_smartvideo.nonotes' | translate }}
+        </p>
+    </div>
+
+    <div *ngIf="CONTENT_OTHERDATA.activetab == 'report'" class="ion-padding">
+        <ion-card class="ion-no-margin">
+            <ion-card-header>
+                <ion-card-subtitle>
+                    <ion-badge [color]="CONTENT_OTHERDATA.reportissubmitted ? 'success' : 'warning'">
+                        {{ (CONTENT_OTHERDATA.reportissubmitted ? 'plugin.mod_smartvideo.reportsubmitted' : 'plugin.mod_smartvideo.savedraft') | translate }}
+                    </ion-badge>
+                </ion-card-subtitle>
+                <ion-card-title>{{ 'plugin.mod_smartvideo.medicalreport' | translate }}</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+                <ion-list>
+                    <ion-item>
+                        <ion-textarea
+                            [label]="'plugin.mod_smartvideo.findings' | translate"
+                            labelPlacement="floating"
+                            placeholder="{{ 'plugin.mod_smartvideo.findings_placeholder' | translate }}"
+                            rows="3"
+                            [(ngModel)]="CONTENT_OTHERDATA.reportfindings">
+                        </ion-textarea>
+                    </ion-item>
+                    <ion-item>
+                        <ion-textarea
+                            [label]="'plugin.mod_smartvideo.impression' | translate"
+                            labelPlacement="floating"
+                            placeholder="{{ 'plugin.mod_smartvideo.impression_placeholder' | translate }}"
+                            rows="2"
+                            [(ngModel)]="CONTENT_OTHERDATA.reportimpression">
+                        </ion-textarea>
+                    </ion-item>
+                    <ion-item>
+                        <ion-textarea
+                            [label]="'plugin.mod_smartvideo.differential' | translate"
+                            labelPlacement="floating"
+                            placeholder="{{ 'plugin.mod_smartvideo.differential_placeholder' | translate }}"
+                            rows="2"
+                            [(ngModel)]="CONTENT_OTHERDATA.reportdiagnosis">
+                        </ion-textarea>
+                    </ion-item>
+                    <ion-item>
+                        <ion-textarea
+                            [label]="'plugin.mod_smartvideo.recommendations' | translate"
+                            labelPlacement="floating"
+                            placeholder="{{ 'plugin.mod_smartvideo.recommendations_placeholder' | translate }}"
+                            rows="3"
+                            [(ngModel)]="CONTENT_OTHERDATA.reportrecommendations">
+                        </ion-textarea>
+                    </ion-item>
+                </ion-list>
+
+                <div class="ion-margin-top" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <ion-button size="small" fill="outline" color="tertiary" (click)="citeTimeInReport()">
+                        <ion-icon name="fas-clock" slot="start"></ion-icon>
+                        {{ 'plugin.mod_smartvideo.citetime' | translate }} ({{ CONTENT_OTHERDATA.currenttimeformatted }})
+                    </ion-button>
+                    <ion-button size="small"
+                                fill="outline"
+                                color="primary"
+                                [disabled]="CONTENT_OTHERDATA.reportsaving"
+                                (click)="saveCaseReport('draft')">
+                        {{ 'plugin.mod_smartvideo.savedraft' | translate }}
+                    </ion-button>
+                    <ion-button size="small"
+                                color="success"
+                                [disabled]="CONTENT_OTHERDATA.reportsaving"
+                                (click)="saveCaseReport('submitted')">
+                        {{ 'plugin.mod_smartvideo.submitreport' | translate }}
+                    </ion-button>
+                </div>
+            </ion-card-content>
+        </ion-card>
+    </div>
+
+    <div *ngIf="CONTENT_OTHERDATA.activetab == 'discussions'" class="ion-padding">
+        <ion-card class="ion-no-margin ion-margin-bottom">
+            <ion-card-content>
+                <ion-item>
+                    <ion-textarea
+                        [label]="'plugin.mod_smartvideo.askquestion' | translate"
+                        labelPlacement="floating"
+                        placeholder="{{ 'plugin.mod_smartvideo.questionplaceholder' | translate }}"
+                        rows="2"
+                        [(ngModel)]="CONTENT_OTHERDATA.newquestioncontent">
+                    </ion-textarea>
+                </ion-item>
+                <ion-button expand="block" class="ion-margin-top" (click)="postDiscussion(0)">
+                    <ion-icon name="fas-paper-plane" slot="start"></ion-icon>
+                    {{ 'plugin.mod_smartvideo.postquestion' | translate }} ({{ CONTENT_OTHERDATA.currenttimeformatted }})
+                </ion-button>
+            </ion-card-content>
+        </ion-card>
+
+        <div *ngIf="discussionsList && discussionsList.length">
+            <ion-card *ngFor="let d of discussionsList" class="ion-no-margin ion-margin-bottom">
+                <ion-card-header>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong>{{ d.userfullname }}</strong>
+                        <ion-badge *ngIf="d.hastimecode" color="primary" (click)="seekToSeconds(d.timecode)">
+                            {{ d.timeformatted }}
+                        </ion-badge>
+                    </div>
+                    <small>{{ d.timecreated * 1000 | coreFormatDate: 'strftimedaydatetime' }}</small>
+                </ion-card-header>
+                <ion-card-content>
+                    <p>{{ d.content }}</p>
+
+                    <div *ngIf="d.replies && d.replies.length"
+                         style="padding-left: 12px; border-left: 2px solid var(--ion-color-light); margin-top: 8px;">
+                        <div *ngFor="let r of d.replies" style="margin-bottom: 8px;">
+                            <strong>{{ r.userfullname }}</strong>
+                            <p style="margin: 2px 0;">{{ r.content }}</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <ion-button fill="clear" size="small" (click)="toggleReplyBox(d.id)">
+                            {{ 'plugin.mod_smartvideo.reply' | translate }}
+                        </ion-button>
+                        <ion-button *ngIf="d.candelete"
+                                    fill="clear"
+                                    size="small"
+                                    color="danger"
+                                    (click)="deleteDiscussion(d.id)">
+                            {{ 'core.delete' | translate }}
+                        </ion-button>
+                    </div>
+
+                    <div *ngIf="CONTENT_OTHERDATA.replyparentid == d.id" class="ion-margin-top">
+                        <ion-item>
+                            <ion-input
+                                [label]="'plugin.mod_smartvideo.reply' | translate"
+                                labelPlacement="floating"
+                                placeholder="{{ 'plugin.mod_smartvideo.replyplaceholder' | translate }}"
+                                [(ngModel)]="CONTENT_OTHERDATA.replycontent">
+                            </ion-input>
+                        </ion-item>
+                        <ion-button size="small" class="ion-margin-top" (click)="postDiscussion(d.id)">
+                            {{ 'plugin.mod_smartvideo.postreply' | translate }}
+                        </ion-button>
+                    </div>
+                </ion-card-content>
+            </ion-card>
+        </div>
+
+        <p *ngIf="!discussionsList || !discussionsList.length" class="ion-text-center ion-padding">
+            {{ 'plugin.mod_smartvideo.nodiscussions' | translate }}
+        </p>
+    </div>
+    <%/canplay%>
+</div>

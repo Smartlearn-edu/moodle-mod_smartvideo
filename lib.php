@@ -22,8 +22,6 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * List of features supported in mod_smartvideo.
  *
@@ -469,8 +467,9 @@ function smartvideo_pluginfile(
 function smartvideo_get_coursemodule_info($coursemodule) {
     global $DB;
 
-    $smartvideo = $DB->get_record('smartvideo', ['id' => $coursemodule->instance],
-        'id, name, intro, introformat, videosource, videourl, duration, posterimage, mediaid, displayinline, displayoptions, completionminpercent');
+    $fields = 'id, name, intro, introformat, videosource, videourl, duration, '
+        . 'posterimage, mediaid, displayinline, displayoptions, completionminpercent';
+    $smartvideo = $DB->get_record('smartvideo', ['id' => $coursemodule->instance], $fields);
     if (!$smartvideo) {
         return false;
     }
@@ -492,7 +491,6 @@ function smartvideo_get_coursemodule_info($coursemodule) {
 
     return $result;
 }
-
 /**
  * Dynamically updates course module info (hiding standard view link when inline card is active).
  *
@@ -513,7 +511,7 @@ function smartvideo_cm_info_dynamic(cm_info $cm): void {
         try {
             $cm->set_no_view_link();
         } catch (\Throwable $e) {
-            // Safe fallback if invoked outside dynamic lifecycle phase.
+            debugging($e->getMessage(), DEBUG_DEVELOPER);
         }
     }
 }
@@ -530,7 +528,10 @@ function smartvideo_cm_info_view(cm_info $cm): void {
     $customdata = $cm->customdata ?? [];
     $displayinline = !isset($customdata['displayinline']) || !empty($customdata['displayinline']);
 
-    if ($displayinline && (strpos($PAGE->pagetype, 'course-view-') === 0 || strpos($PAGE->bodyclasses, 'format-') !== false || $PAGE->pagelayout === 'course')) {
+    $iscoursepage = strpos($PAGE->pagetype, 'course-view-') === 0
+        || strpos($PAGE->bodyclasses, 'format-') !== false
+        || $PAGE->pagelayout === 'course';
+    if ($displayinline && $iscoursepage) {
         $cardhtml = smartvideo_render_course_card($cm);
         if (!empty($cardhtml)) {
             $cm->set_content($cardhtml);
@@ -559,14 +560,21 @@ function smartvideo_render_course_card(cm_info $cm): string {
     $videosource = $customdata['videosource'] ?? ($smartvideo->videosource ?? 'securelibrary');
     $duration = (int)($customdata['duration'] ?? ($smartvideo->duration ?? 0));
     $rawposter = $customdata['posterimage'] ?? ($smartvideo->posterimage ?? '');
-    $displayoptions = !empty($customdata['displayoptions'])
-        ? (is_array($customdata['displayoptions']) ? $customdata['displayoptions'] : json_decode($customdata['displayoptions'], true))
-        : (!empty($smartvideo->displayoptions) ? json_decode($smartvideo->displayoptions, true) : []);
+    if (!empty($customdata['displayoptions'])) {
+        $displayoptions = is_array($customdata['displayoptions'])
+            ? $customdata['displayoptions']
+            : json_decode($customdata['displayoptions'], true);
+    } else if (!empty($smartvideo->displayoptions)) {
+        $displayoptions = json_decode($smartvideo->displayoptions, true);
+    } else {
+        $displayoptions = [];
+    }
 
     $usecustomposter            = !empty($displayoptions['usecustomposterimage']);
     $horizontallayout           = isset($displayoptions['horizontallayout']) ? (int)$displayoptions['horizontallayout'] : 1;
     $showprogressbar            = isset($displayoptions['showprogressbar']) ? (int)$displayoptions['showprogressbar'] : 1;
-    $showcompletionrequirements = isset($displayoptions['showcompletionrequirements']) ? (int)$displayoptions['showcompletionrequirements'] : 1;
+    $showcompletionrequirements = isset($displayoptions['showcompletionrequirements'])
+        ? (int)$displayoptions['showcompletionrequirements'] : 1;
     $showposterimage            = isset($displayoptions['showposterimage']) ? (int)$displayoptions['showposterimage'] : 1;
     $showname                   = isset($displayoptions['showname']) ? (int)$displayoptions['showname'] : 1;
     $showcustomfields           = isset($displayoptions['showcustomfields']) ? (int)$displayoptions['showcustomfields'] : 1;
@@ -598,7 +606,9 @@ function smartvideo_render_course_card(cm_info $cm): string {
 
     // 3. Fallback for Secure Library: thumbnail.jpg from serve.php.
     if (empty($posterurl) && $videosource === 'securelibrary') {
-        $mediaid = $customdata['mediaid'] ?? ($smartvideo ? $smartvideo->mediaid : $DB->get_field('smartvideo', 'mediaid', ['id' => $cm->instance]));
+        $mediaid = $customdata['mediaid'] ?? (
+            $smartvideo ? $smartvideo->mediaid : $DB->get_field('smartvideo', 'mediaid', ['id' => $cm->instance])
+        );
         if (!empty($mediaid)) {
             $posterurl = (new moodle_url('/local/securevideolibrary/serve.php', [
                 'mediaid' => (int)$mediaid,
@@ -610,7 +620,9 @@ function smartvideo_render_course_card(cm_info $cm): string {
 
     // 4. Fallback for YouTube.
     if (empty($posterurl) && $videosource === 'youtube') {
-        $vurl = $customdata['videourl'] ?? ($smartvideo ? $smartvideo->videourl : $DB->get_field('smartvideo', 'videourl', ['id' => $cm->instance]));
+        $vurl = $customdata['videourl'] ?? (
+            $smartvideo ? $smartvideo->videourl : $DB->get_field('smartvideo', 'videourl', ['id' => $cm->instance])
+        );
         if (preg_match('/[?&]v=([a-zA-Z0-9_-]{11})|youtu\.be\/([a-zA-Z0-9_-]{11})/i', $vurl, $ym)) {
             $yid = !empty($ym[1]) ? $ym[1] : $ym[2];
             $posterurl = 'https://img.youtube.com/vi/' . $yid . '/hqdefault.jpg';
@@ -764,5 +776,4 @@ function smartvideo_get_activity_customfields(int $cmid, int $instanceid): array
 
     return $result;
 }
-
 

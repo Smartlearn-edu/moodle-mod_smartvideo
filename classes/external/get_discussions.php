@@ -70,7 +70,7 @@ class get_discussions extends external_api {
 
         $users = [];
         if (!empty($records)) {
-            $userids = array_unique(array_filter(array_map(function($rec) {
+            $userids = array_unique(array_filter(array_map(function ($rec) {
                 return (int)$rec->userid;
             }, $records)));
 
@@ -86,7 +86,7 @@ class get_discussions extends external_api {
         }
 
         $discussions = [];
-        $repliesByParent = [];
+        $repliesbyparent = [];
 
         foreach ($records as $rec) {
             $u = $users[$rec->userid] ?? null;
@@ -116,7 +116,7 @@ class get_discussions extends external_api {
             ];
 
             if ($rec->parentid > 0) {
-                $repliesByParent[$rec->parentid][] = $item;
+                $repliesbyparent[$rec->parentid][] = $item;
             } else {
                 $discussions[$rec->id] = $item;
             }
@@ -125,9 +125,9 @@ class get_discussions extends external_api {
         // Attach replies to parents.
         $result = [];
         foreach ($discussions as $id => $disc) {
-            if (isset($repliesByParent[$id])) {
-                $disc['replies'] = $repliesByParent[$id];
-                $disc['replycount'] = count($repliesByParent[$id]);
+            if (isset($repliesbyparent[$id])) {
+                $disc['replies'] = $repliesbyparent[$id];
+                $disc['replycount'] = count($repliesbyparent[$id]);
             } else {
                 $disc['replycount'] = 0;
             }
@@ -161,7 +161,12 @@ class get_discussions extends external_api {
             'timecreatedformatted' => new external_value(PARAM_TEXT, 'Formatted creation date/time'),
             'isauthor'             => new external_value(PARAM_BOOL, 'Whether current user is author'),
             'candelete'            => new external_value(PARAM_BOOL, 'Whether user can delete'),
-            'replies'              => new external_multiple_structure(new external_value(PARAM_RAW, 'Nested replies'), '', VALUE_DEFAULT, []),
+            'replies'              => new external_multiple_structure(
+                new external_value(PARAM_RAW, 'Nested replies'),
+                '',
+                VALUE_DEFAULT,
+                []
+            ),
         ]);
 
         return new external_single_structure([

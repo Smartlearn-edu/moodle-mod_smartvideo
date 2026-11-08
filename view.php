@@ -26,7 +26,7 @@ require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
 $id = optional_param('id', 0, PARAM_INT); // Course Module ID.
-$s  = optional_param('s', 0, PARAM_INT);  // smartvideo instance ID.
+$s  = optional_param('s', 0, PARAM_INT);  // Smartvideo instance ID.
 
 if ($id) {
     $cm = get_coursemodule_from_id('smartvideo', $id, 0, false, MUST_EXIST);
@@ -365,7 +365,7 @@ if (!$canplay) {
     $discrecords = $DB->get_records('smartvideo_discussions', ['instanceid' => $smartvideo->id], 'timecreated ASC');
     $discusers = [];
     if (!empty($discrecords)) {
-        $userids = array_unique(array_filter(array_map(function($disc) {
+        $userids = array_unique(array_filter(array_map(function ($disc) {
             return (int)$disc->userid;
         }, $discrecords)));
 
