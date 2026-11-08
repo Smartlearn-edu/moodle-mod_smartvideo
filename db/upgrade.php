@@ -225,5 +225,24 @@ function xmldb_smartvideo_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110800, 'smartvideo');
     }
 
+    if ($oldversion < 2026110802) {
+        $table = new xmldb_table('smartvideo');
+        $field = new xmldb_field(
+            'allowofflinedownload',
+            XMLDB_TYPE_INTEGER,
+            '1',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'preventseeking'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026110802, 'smartvideo');
+    }
+
     return true;
 }

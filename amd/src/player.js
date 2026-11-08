@@ -24,7 +24,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
     'use strict';
 
     /**
-     * Load HLS.js library locally via AMD or fallback to CDN.
+     * Load HLS.js library locally via AMD bundle.
      *
      * @return {Promise<window.Hls>}
      */
@@ -41,34 +41,11 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     resolve(Hls);
                     return;
                 }
-                loadCdn(resolve, reject);
-            }, function() {
-                loadCdn(resolve, reject);
+                reject(new Error('Local HLS.js library could not be initialized'));
+            }, function(err) {
+                reject(err || new Error('Failed to load local HLS.js bundle'));
             });
         });
-    }
-
-    /**
-     * Fallback to CDN if local bundle is not present.
-     *
-     * @param {Function} resolve
-     * @param {Function} reject
-     */
-    function loadCdn(resolve, reject) {
-        if (window.Hls) {
-            resolve(window.Hls);
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js';
-        script.onload = function() {
-            resolve(window.Hls);
-        };
-        script.onerror = function(err) {
-            reject(err);
-        };
-        document.head.appendChild(script);
     }
 
     /**

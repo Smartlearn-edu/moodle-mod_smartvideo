@@ -25,6 +25,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 $functions = [
+    'mod_smartvideo_get_offline_manifest' => [
+        'classname'   => 'mod_smartvideo\external\get_offline_manifest',
+        'methodname'  => 'execute',
+        'description' => 'Get offline video download manifest, quality tiers and pre-cached checkpoints',
+        'type'        => 'read',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
     'mod_smartvideo_update_progress' => [
         'classname'   => 'mod_smartvideo\external\update_progress',
         'methodname'  => 'execute',

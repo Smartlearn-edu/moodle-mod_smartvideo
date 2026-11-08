@@ -201,6 +201,90 @@
         <%/isiframeprovider%>
     </div>
 
+    <%#allowofflinedownload%>
+    <%^isiframeprovider%>
+    <div class="mod-smartvideo-offline-bar">
+        <!-- Offline banner when device is in offline mode -->
+        <ion-item *ngIf="CONTENT_OTHERDATA.isofflinemode" color="warning" lines="none" style="font-size: 13px;">
+            <ion-icon name="fas-plane" slot="start"></ion-icon>
+            <ion-label>{{ 'plugin.mod_smartvideo.offlinemode' | translate }}</ion-label>
+        </ion-item>
+
+        <!-- Video is downloaded and available offline -->
+        <ion-item *ngIf="CONTENT_OTHERDATA.offlinedownloaded && !CONTENT_OTHERDATA.isdownloading"
+                  color="light" lines="full">
+            <ion-icon name="fas-circle-check" color="success" slot="start"></ion-icon>
+            <ion-label>
+                <h3 style="font-weight: 600;">{{ 'plugin.mod_smartvideo.offlineready' | translate }}</h3>
+                <p>{{ CONTENT_OTHERDATA.offlinequality }} &bull; {{ CONTENT_OTHERDATA.offlinesizehuman }}</p>
+            </ion-label>
+            <ion-button slot="end" fill="clear" color="danger" (click)="confirmDeleteOffline()">
+                <ion-icon name="fas-trash" slot="icon-only"></ion-icon>
+            </ion-button>
+        </ion-item>
+
+        <!-- Downloading in progress -->
+        <ion-card *ngIf="CONTENT_OTHERDATA.isdownloading" class="ion-no-margin ion-padding">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 13px; font-weight: 600;">
+                    <ion-spinner name="crescent" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 6px;"></ion-spinner>
+                    {{ 'plugin.mod_smartvideo.downloading' | translate }} {{ CONTENT_OTHERDATA.downloadpercent }}%
+                </span>
+                <span style="font-size: 12px; color: var(--ion-color-medium);">
+                    {{ CONTENT_OTHERDATA.downloadtransferred }} / {{ CONTENT_OTHERDATA.downloadtotal }}
+                </span>
+            </div>
+            <ion-progress-bar [value]="CONTENT_OTHERDATA.downloadpercent / 100" color="primary"></ion-progress-bar>
+            <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+                <ion-button fill="clear" size="small" color="medium" (click)="cancelOfflineDownload()">
+                    {{ 'plugin.mod_smartvideo.dismiss' | translate }}
+                </ion-button>
+            </div>
+        </ion-card>
+
+        <!-- Not downloaded: Show Download button -->
+        <div *ngIf="!CONTENT_OTHERDATA.offlinedownloaded && !CONTENT_OTHERDATA.isdownloading && !showQualityPicker"
+             class="ion-padding-horizontal ion-padding-vertical" style="background: var(--ion-color-light);">
+            <ion-button expand="block" fill="outline" color="primary" size="small" (click)="openQualityPicker()">
+                <ion-icon name="fas-download" slot="start"></ion-icon>
+                {{ 'plugin.mod_smartvideo.downloadforoffline' | translate }}
+            </ion-button>
+        </div>
+
+        <!-- Quality selection list -->
+        <ion-card *ngIf="showQualityPicker && !CONTENT_OTHERDATA.isdownloading"
+                  class="ion-no-margin" style="border-top: 2px solid var(--ion-color-primary);">
+            <ion-card-header class="ion-padding-vertical ion-padding-horizontal">
+                <ion-card-subtitle color="primary" style="font-weight: 600;">
+                    <ion-icon name="fas-sliders" style="margin-right: 4px;"></ion-icon>
+                    {{ 'plugin.mod_smartvideo.selectquality' | translate }}
+                </ion-card-subtitle>
+            </ion-card-header>
+            <ion-card-content class="ion-no-padding">
+                <ion-list lines="full">
+                    <ion-item *ngFor="let tier of offlineTiers"
+                              button="true"
+                              detail="true"
+                              (click)="startOfflineDownload(tier)">
+                        <ion-icon name="fas-video" slot="start" color="primary"></ion-icon>
+                        <ion-label>
+                            <h3 style="font-weight: 600;">{{ tier.label }}</h3>
+                            <p>{{ tier.resolution }} &bull; {{ tier.totalsize }}</p>
+                        </ion-label>
+                        <ion-badge slot="end" color="primary">{{ tier.totalsize }}</ion-badge>
+                    </ion-item>
+                </ion-list>
+                <div class="ion-padding">
+                    <ion-button expand="block" fill="clear" color="medium" size="small" (click)="closeQualityPicker()">
+                        {{ 'plugin.mod_smartvideo.dismiss' | translate }}
+                    </ion-button>
+                </div>
+            </ion-card-content>
+        </ion-card>
+    </div>
+    <%/isiframeprovider%>
+    <%/allowofflinedownload%>
+
     <ion-card *ngIf="activeQuestion" class="ion-margin" style="border: 2px solid var(--ion-color-warning);">
         <ion-card-header>
             <ion-card-subtitle color="warning">

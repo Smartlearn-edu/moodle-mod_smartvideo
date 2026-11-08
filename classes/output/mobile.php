@@ -111,6 +111,9 @@ class mobile {
         $embedurl = '';
         $isiframeprovider = false;
         $duration = 0;
+        $hlsjsurl = (new moodle_url('/local/securevideolibrary/serve.php', [
+            'file' => 'hls.js',
+        ]))->out(false);
 
         if ($canplay) {
             if ($isexternal) {
@@ -418,6 +421,8 @@ class mobile {
             'studentid'            => (int)$USER->id,
             'resources'            => $resourcesdata,
             'hasresources'         => !empty($resourcesdata),
+            'allowofflinedownload' => (!isset($smartvideo->allowofflinedownload)
+                || !empty($smartvideo->allowofflinedownload)) && !$isexternal && $canplay ? 1 : 0,
         ];
 
         // All values in otherdata MUST be scalars or JSON-encoded strings.
@@ -429,6 +434,17 @@ class mobile {
             'isiframeprovider'      => $isiframeprovider ? 1 : 0,
             'playlisturl'           => $playlisturl,
             'embedurl'              => $embedurl,
+            'hlsjsurl'              => $hlsjsurl,
+            'allowofflinedownload'  => (!isset($smartvideo->allowofflinedownload)
+                || !empty($smartvideo->allowofflinedownload)) && !$isexternal && $canplay ? 1 : 0,
+            'isofflinemode'         => 0,
+            'offlinedownloaded'     => 0,
+            'isdownloading'         => 0,
+            'downloadpercent'       => 0,
+            'downloadtransferred'   => '',
+            'downloadtotal'         => '',
+            'offlinesizehuman'      => '',
+            'offlinequality'        => '',
             'duration'              => $duration,
             'durationformatted'     => $durationformatted,
             'currenttime'           => 0,

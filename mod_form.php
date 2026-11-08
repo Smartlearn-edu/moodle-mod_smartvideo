@@ -223,6 +223,10 @@ class mod_smartvideo_mod_form extends moodleform_mod {
         $mform->addHelpButton('preventseeking', 'preventseeking', 'mod_smartvideo');
         $mform->setDefault('preventseeking', 0);
 
+        $mform->addElement('checkbox', 'allowofflinedownload', get_string('allowofflinedownload', 'mod_smartvideo'));
+        $mform->addHelpButton('allowofflinedownload', 'allowofflinedownload', 'mod_smartvideo');
+        $mform->setDefault('allowofflinedownload', 1);
+
         // -------------------------------------------------------------------------------
         // Handouts & Supplementary Resources Section.
         $mform->addElement('header', 'resourcesheader', get_string('resources', 'mod_smartvideo'));

@@ -48,6 +48,7 @@ class backup_smartvideo_activity_structure_step extends backup_activity_structur
             'watermarkenabled',
             'watermarkopacity',
             'preventseeking',
+            'allowofflinedownload',
             'completionminpercent',
             'completionrequirequestions',
             'timecreated',

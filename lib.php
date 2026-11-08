@@ -61,6 +61,7 @@ function smartvideo_add_instance(stdClass $data, ?mod_smartvideo_mod_form $mform
     $data->watermarkenabled = !empty($data->watermarkenabled) ? 1 : 0;
     $data->watermarkopacity = isset($data->watermarkopacity) ? (int)$data->watermarkopacity : 35;
     $data->preventseeking   = !empty($data->preventseeking) ? 1 : 0;
+    $data->allowofflinedownload = !empty($data->allowofflinedownload) ? 1 : 0;
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
 
@@ -136,6 +137,7 @@ function smartvideo_update_instance(stdClass $data, ?mod_smartvideo_mod_form $mf
     $data->watermarkenabled = !empty($data->watermarkenabled) ? 1 : 0;
     $data->watermarkopacity = isset($data->watermarkopacity) ? (int)$data->watermarkopacity : 35;
     $data->preventseeking   = !empty($data->preventseeking) ? 1 : 0;
+    $data->allowofflinedownload = !empty($data->allowofflinedownload) ? 1 : 0;
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
 

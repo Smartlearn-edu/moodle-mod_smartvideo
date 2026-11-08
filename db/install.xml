@@ -21,6 +21,7 @@
         <FIELD NAME="watermarkenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 if dynamic watermark is enabled, 0 otherwise"/>
         <FIELD NAME="watermarkopacity" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="35" SEQUENCE="false" COMMENT="Watermark opacity percent (10-100)"/>
         <FIELD NAME="preventseeking" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 if forward seeking is locked past max watched position"/>
+        <FIELD NAME="allowofflinedownload" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 if offline video download is permitted in the mobile app, 0 otherwise"/>
         <FIELD NAME="completionminpercent" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Minimum watch percentage required for completion"/>
         <FIELD NAME="completionrequirequestions" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 if student must pass all interactive questions for completion"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
