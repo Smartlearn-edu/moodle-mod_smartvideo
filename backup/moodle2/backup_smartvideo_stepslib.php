@@ -42,6 +42,8 @@ class backup_smartvideo_activity_structure_step extends backup_activity_structur
             'videourl',
             'duration',
             'posterimage',
+            'displayinline',
+            'displayoptions',
             'mediaid',
             'watermarkenabled',
             'watermarkopacity',

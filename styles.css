@@ -1326,5 +1326,73 @@
     transform: scale(1.05);
 }
 
+/* ==========================================================================
+   Smart Video Course Page Rich Card Styles
+   ========================================================================== */
+
+/* Hide Moodle core duplicate activity icon/title line in course view when card is active */
+.path-course-view:not(.editing) .modtype_smartvideo:has(.smartvideo-course-card) .activity-basis,
+.path-course-view .modtype_smartvideo:has(.smartvideo-course-card) .activity-name-area,
+.path-course-view .modtype_smartvideo:has(.smartvideo-course-card) .activity-icon {
+    display: none !important;
+}
+
+.path-course-view .modtype_smartvideo:has(.smartvideo-course-card) .activity-item .activity-altcontent {
+    border-top: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+/* Card hover and interactive styling */
+.smartvideo-course-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background-color: var(--bs-card-bg, #fff);
+}
+
+.smartvideo-course-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Play button hover over thumbnail */
+.smartvideo-card-thumb-wrapper .smartvideo-card-play-overlay {
+    background: rgba(0, 0, 0, 0.2);
+    transition: background 0.2s ease;
+}
+
+.smartvideo-card-thumb-wrapper:hover .smartvideo-card-play-overlay {
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.smartvideo-card-thumb-wrapper .smartvideo-card-play-overlay .btn {
+    transition: transform 0.2s ease;
+}
+
+.smartvideo-card-thumb-wrapper:hover .smartvideo-card-play-overlay .btn {
+    transform: scale(1.1);
+}
+
+.smartvideo-card-title {
+    color: var(--bs-heading-color, #212529);
+    transition: color 0.15s ease-in-out;
+}
+
+.smartvideo-card-title:hover {
+    color: var(--bs-primary, #0f6cbf) !important;
+}
+
+/* Text truncate helper */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.drop-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
 
 

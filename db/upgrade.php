@@ -209,5 +209,21 @@ function xmldb_smartvideo_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110700, 'smartvideo');
     }
 
+    if ($oldversion < 2026110800) {
+        $table = new xmldb_table('smartvideo');
+
+        $field = new xmldb_field('displayinline', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'posterimage');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('displayoptions', XMLDB_TYPE_TEXT, null, null, null, null, null, 'displayinline');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026110800, 'smartvideo');
+    }
+
     return true;
 }

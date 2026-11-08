@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_smartvideo';
-$plugin->version   = 2026110705;
+$plugin->version   = 2026110800;
 $plugin->requires  = 2024100700; // Requires Moodle 5.0+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = 'v1.5.0';
+$plugin->release   = 'v1.6.0';
 $plugin->dependencies = [
     'local_securevideolibrary' => 2026102806,
 ];

@@ -15,6 +15,8 @@
         <FIELD NAME="videourl" TYPE="char" LENGTH="1333" NOTNULL="false" SEQUENCE="false" COMMENT="External video URL or stream source"/>
         <FIELD NAME="duration" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Video duration in seconds"/>
         <FIELD NAME="posterimage" TYPE="char" LENGTH="1024" NOTNULL="false" SEQUENCE="false" COMMENT="Video thumbnail or poster URL"/>
+        <FIELD NAME="displayinline" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 if rich card displayed on course page, 0 otherwise"/>
+        <FIELD NAME="displayoptions" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON encoded card display options"/>
         <FIELD NAME="mediaid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="FK referencing local_securevideolibrary_media.id"/>
         <FIELD NAME="watermarkenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 if dynamic watermark is enabled, 0 otherwise"/>
         <FIELD NAME="watermarkopacity" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="35" SEQUENCE="false" COMMENT="Watermark opacity percent (10-100)"/>

@@ -236,6 +236,57 @@ class mod_smartvideo_mod_form extends moodleform_mod {
         $mform->addHelpButton('resources_filemanager', 'resources', 'mod_smartvideo');
 
         // -------------------------------------------------------------------------------
+        // Appearance & Course Display Section.
+        $mform->addElement('header', 'appearanceheader', get_string('appearanceheader', 'mod_smartvideo'));
+
+        $mform->addElement('checkbox', 'usecustomposterimage', get_string('usecustomposterimage', 'mod_smartvideo'));
+        $mform->addHelpButton('usecustomposterimage', 'customposterimage', 'mod_smartvideo');
+        $mform->setDefault('usecustomposterimage', 0);
+
+        $posterfileoptions = [
+            'subdirs'        => 0,
+            'maxbytes'       => $course->maxbytes,
+            'maxfiles'       => 1,
+            'accepted_types' => ['image'],
+        ];
+        $mform->addElement('filemanager', 'customposter_filemanager', get_string('customposterimage', 'mod_smartvideo'), null, $posterfileoptions);
+        $mform->hideIf('customposter_filemanager', 'usecustomposterimage', 'notchecked');
+
+        $mform->addElement('checkbox', 'displayinline', get_string('displayinline', 'mod_smartvideo'));
+        $mform->addHelpButton('displayinline', 'displayinline', 'mod_smartvideo');
+        $mform->setDefault('displayinline', 1);
+
+        $mform->addElement('checkbox', 'horizontallayout', get_string('horizontallayout', 'mod_smartvideo'));
+        $mform->addHelpButton('horizontallayout', 'horizontallayout', 'mod_smartvideo');
+        $mform->setDefault('horizontallayout', 1);
+        $mform->hideIf('horizontallayout', 'displayinline', 'notchecked');
+
+        $mform->addElement('checkbox', 'showprogressbar', get_string('showprogressbar', 'mod_smartvideo'));
+        $mform->addHelpButton('showprogressbar', 'showprogressbar', 'mod_smartvideo');
+        $mform->setDefault('showprogressbar', 1);
+        $mform->hideIf('showprogressbar', 'displayinline', 'notchecked');
+
+        $mform->addElement('checkbox', 'showcompletionrequirements', get_string('showcompletionrequirements', 'mod_smartvideo'));
+        $mform->addHelpButton('showcompletionrequirements', 'showcompletionrequirements', 'mod_smartvideo');
+        $mform->setDefault('showcompletionrequirements', 1);
+        $mform->hideIf('showcompletionrequirements', 'displayinline', 'notchecked');
+
+        $mform->addElement('checkbox', 'showposterimage', get_string('showposterimage', 'mod_smartvideo'));
+        $mform->addHelpButton('showposterimage', 'showposterimage', 'mod_smartvideo');
+        $mform->setDefault('showposterimage', 1);
+        $mform->hideIf('showposterimage', 'displayinline', 'notchecked');
+
+        $mform->addElement('checkbox', 'showname', get_string('showname', 'mod_smartvideo'));
+        $mform->addHelpButton('showname', 'showname', 'mod_smartvideo');
+        $mform->setDefault('showname', 1);
+        $mform->hideIf('showname', 'displayinline', 'notchecked');
+
+        $mform->addElement('checkbox', 'showcustomfields', get_string('showcustomfields', 'mod_smartvideo'));
+        $mform->addHelpButton('showcustomfields', 'showcustomfields', 'mod_smartvideo');
+        $mform->setDefault('showcustomfields', 1);
+        $mform->hideIf('showcustomfields', 'displayinline', 'notchecked');
+
+        // -------------------------------------------------------------------------------
         // Activity Completion rules & Standard course module elements.
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
@@ -333,6 +384,21 @@ class mod_smartvideo_mod_form extends moodleform_mod {
             $defaultvalues['completionrequirequestions'] = 1;
         }
 
+        $displayopts = !empty($defaultvalues['displayoptions']) ? json_decode($defaultvalues['displayoptions'], true) : [];
+        $defaultvalues['usecustomposterimage'] = !empty($displayopts['usecustomposterimage']) ? 1 : 0;
+        $defaultvalues['horizontallayout'] = isset($displayopts['horizontallayout']) ? (int)$displayopts['horizontallayout'] : 1;
+        $defaultvalues['showprogressbar'] = isset($displayopts['showprogressbar']) ? (int)$displayopts['showprogressbar'] : 1;
+        $defaultvalues['showcompletionrequirements'] = isset($displayopts['showcompletionrequirements']) ? (int)$displayopts['showcompletionrequirements'] : 1;
+        $defaultvalues['showposterimage'] = isset($displayopts['showposterimage']) ? (int)$displayopts['showposterimage'] : 1;
+        $defaultvalues['showname'] = isset($displayopts['showname']) ? (int)$displayopts['showname'] : 1;
+        $defaultvalues['showcustomfields'] = isset($displayopts['showcustomfields']) ? (int)$displayopts['showcustomfields'] : 1;
+
+        if (isset($defaultvalues['displayinline'])) {
+            $defaultvalues['displayinline'] = (int)$defaultvalues['displayinline'];
+        } else {
+            $defaultvalues['displayinline'] = 1;
+        }
+
         if ($this->current && !empty($this->current->coursemodule)) {
             $context = context_module::instance($this->current->coursemodule);
             $draftitemid = file_get_submitted_draft_itemid('resources_filemanager');
@@ -345,6 +411,17 @@ class mod_smartvideo_mod_form extends moodleform_mod {
                 ['subdirs' => 0, 'maxfiles' => 10]
             );
             $defaultvalues['resources_filemanager'] = $draftitemid;
+
+            $posterdraftitemid = file_get_submitted_draft_itemid('customposter_filemanager');
+            file_prepare_draft_area(
+                $posterdraftitemid,
+                $context->id,
+                'mod_smartvideo',
+                'posterimage',
+                0,
+                ['subdirs' => 0, 'maxfiles' => 1]
+            );
+            $defaultvalues['customposter_filemanager'] = $posterdraftitemid;
         }
     }
 

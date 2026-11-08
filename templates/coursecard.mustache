@@ -1,0 +1,256 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_smartvideo/coursecard
+
+    Smart Video Rich Course Page Activity Card.
+
+    Context variables:
+    * cmid - Course module ID
+    * title - Activity title
+    * url - View URL for activity
+    * uservisible - Whether student has access
+    * posterimage - URL of the poster image
+    * hasduration - Boolean whether duration is known
+    * durationformatted - Formatted duration string
+    * providername - Video provider display name
+    * providerbadgeclass - Bootstrap badge color class
+    * horizontallayout - Boolean for horizontal vs overlay layout
+    * showposterimage - Boolean whether poster is shown
+    * showname - Boolean whether title is shown
+    * showprogressbar - Boolean whether progress bar is shown
+    * showcustomfields - Boolean whether custom fields are shown
+    * hascustomfields - Boolean whether any custom fields exist
+    * customfield_repetition - Value of repetition custom field
+    * customfield_est - Value of estimated study time custom field
+    * percentcompleted - Integer percentage watched (0-100)
+    * completionminpercent - Minimum watch percentage requirement
+    * hascompletionrule - Boolean whether completion target exists
+    * iscompleted - Boolean whether activity is completed
+    * completionhtml - HTML rendered by Moodle core completion
+}}
+<div class="smartvideo-course-card card border shadow-sm rounded-3 overflow-hidden my-2 w-100 {{^horizontallayout}}smartvideo-card-vertical{{/horizontallayout}}" data-cmid="{{cmid}}">
+    <div class="card-body p-2 p-md-3">
+        {{#horizontallayout}}
+        {{! HORIZONTAL RICH CARD LAYOUT (Poster on Left, Info on Right) }}
+        <div class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center">
+            {{#showposterimage}}
+            <div class="smartvideo-card-thumb-wrapper position-relative flex-shrink-0 rounded-2 overflow-hidden bg-black shadow-sm"
+                 style="width: 100%; max-width: 220px; aspect-ratio: 16 / 9;">
+                <img src="{{posterimage}}" alt="{{{title}}}" class="w-100 h-100 object-fit-cover" loading="lazy">
+
+                {{#hasduration}}
+                <span class="badge bg-dark bg-opacity-75 text-white position-absolute bottom-0 end-0 m-1 px-1 py-0 font-monospace small" style="font-size: 0.75rem; z-index: 2;">
+                    {{durationformatted}}
+                </span>
+                {{/hasduration}}
+
+                {{#uservisible}}
+                <a href="{{url}}" class="smartvideo-card-play-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-white text-decoration-none" aria-label="{{#str}}play, mod_smartvideo{{/str}}">
+                    <span class="btn btn-dark bg-opacity-60 rounded-circle p-2 d-flex align-items-center justify-content-center shadow" style="width: 38px; height: 38px;">
+                        <i class="fa fa-play fa-sm text-white" aria-hidden="true"></i>
+                    </span>
+                </a>
+                {{/uservisible}}
+            </div>
+            {{/showposterimage}}
+
+            <div class="flex-grow-1 min-w-0 d-flex flex-column justify-content-between">
+                <div>
+                    {{#showname}}
+                    <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                        {{#uservisible}}
+                        <a href="{{url}}" class="text-dark fw-bold text-decoration-none text-truncate-2 fs-6 smartvideo-card-title flex-grow-1">
+                            {{{title}}}
+                        </a>
+                        {{/uservisible}}
+                        {{^uservisible}}
+                        <span class="text-dark fw-bold text-truncate-2 fs-6 flex-grow-1">
+                            {{{title}}}
+                        </span>
+                        {{/uservisible}}
+
+                        {{#iscompleted}}
+                        <span class="text-success flex-shrink-0" title="{{#str}}completed, completion{{/str}}">
+                            <i class="fa fa-check-circle fs-5" aria-hidden="true"></i>
+                        </span>
+                        {{/iscompleted}}
+                    </div>
+                    {{/showname}}
+
+                    <div class="d-flex flex-wrap align-items-center gap-1 mb-2">
+                        <span class="badge {{providerbadgeclass}}">{{providername}}</span>
+
+                        {{#hasduration}}
+                        <span class="badge bg-light text-secondary border">
+                            <i class="fa fa-clock-o me-1" aria-hidden="true"></i>{{durationformatted}}
+                        </span>
+                        {{/hasduration}}
+
+                        {{#showcustomfields}}
+                            {{#customfield_est}}
+                            <span class="badge bg-light text-dark border" title="{{#str}}est_time, mod_smartvideo{{/str}}">
+                                <i class="fa fa-hourglass-half text-primary me-1" aria-hidden="true"></i>Est: {{customfield_est}}
+                            </span>
+                            {{/customfield_est}}
+
+                            {{#customfield_repetition}}
+                            <span class="badge bg-light text-dark border" title="{{#str}}repetition, mod_smartvideo{{/str}}">
+                                <i class="fa fa-repeat text-info me-1" aria-hidden="true"></i>Repetition: {{customfield_repetition}}
+                            </span>
+                            {{/customfield_repetition}}
+                        {{/showcustomfields}}
+
+                        {{! Reserved Hook for Future Adaptive Learning Plan }}
+                        <div class="smartvideo-adaptive-slot d-inline-block" data-cmid="{{cmid}}"></div>
+                    </div>
+                </div>
+
+                {{#completionhtml}}
+                <div class="smartvideo-completion-area mb-2">
+                    {{{completionhtml}}}
+                </div>
+                {{/completionhtml}}
+
+                {{#showprogressbar}}
+                <div class="smartvideo-card-progress-wrapper mt-auto pt-1">
+                    <div class="d-flex justify-content-between align-items-center small text-muted mb-1" style="font-size: 0.75rem;">
+                        <span>
+                            {{#iscompleted}}
+                            <strong class="text-success"><i class="fa fa-check me-1"></i>Completed ({{percentcompleted}}%)</strong>
+                            {{/iscompleted}}
+                            {{^iscompleted}}
+                            <span>Watched: <strong>{{percentcompleted}}%</strong></span>
+                            {{/iscompleted}}
+                        </span>
+                        {{#hascompletionrule}}
+                        <span>Target: {{completionminpercent}}%</span>
+                        {{/hascompletionrule}}
+                    </div>
+                    <div class="progress" style="height: 6px;" role="progressbar" aria-valuenow="{{percentcompleted}}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar {{#iscompleted}}bg-success{{/iscompleted}}{{^iscompleted}}bg-primary{{/iscompleted}}"
+                             style="width: {{percentcompleted}}%;"></div>
+                    </div>
+                </div>
+                {{/showprogressbar}}
+            </div>
+        </div>
+        {{/horizontallayout}}
+
+        {{^horizontallayout}}
+        {{! NAME OVER POSTER / VERTICAL OVERLAY CARD LAYOUT }}
+        <div class="smartvideo-card-vertical-inner position-relative">
+            {{#showposterimage}}
+            <div class="smartvideo-card-thumb-wrapper position-relative rounded-2 overflow-hidden bg-black shadow-sm mb-2"
+                 style="width: 100%; aspect-ratio: 16 / 9;">
+                <img src="{{posterimage}}" alt="{{{title}}}" class="w-100 h-100 object-fit-cover" loading="lazy">
+
+                {{! Gradient Overlay for text readability }}
+                <div class="smartvideo-card-gradient-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-between p-3"
+                     style="background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.85) 100%); z-index: 1;">
+
+                    {{#showname}}
+                    <div class="d-flex align-items-start justify-content-between gap-2">
+                        {{#uservisible}}
+                        <a href="{{url}}" class="text-white fw-bold text-decoration-none text-truncate-2 fs-6 smartvideo-card-title flex-grow-1 drop-shadow">
+                            {{{title}}}
+                        </a>
+                        {{/uservisible}}
+                        {{^uservisible}}
+                        <span class="text-white fw-bold text-truncate-2 fs-6 flex-grow-1 drop-shadow">
+                            {{{title}}}
+                        </span>
+                        {{/uservisible}}
+
+                        {{#iscompleted}}
+                        <span class="text-success flex-shrink-0" title="{{#str}}completed, completion{{/str}}">
+                            <i class="fa fa-check-circle fs-5" aria-hidden="true"></i>
+                        </span>
+                        {{/iscompleted}}
+                    </div>
+                    {{/showname}}
+
+                    <div class="d-flex justify-content-between align-items-end">
+                        <span class="badge {{providerbadgeclass}}">{{providername}}</span>
+                        {{#hasduration}}
+                        <span class="badge bg-dark bg-opacity-75 text-white font-monospace small">
+                            {{durationformatted}}
+                        </span>
+                        {{/hasduration}}
+                    </div>
+                </div>
+
+                {{#uservisible}}
+                <a href="{{url}}" class="smartvideo-card-play-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center text-white text-decoration-none" style="z-index: 2;" aria-label="{{#str}}play, mod_smartvideo{{/str}}">
+                    <span class="btn btn-dark bg-opacity-60 rounded-circle p-3 d-flex align-items-center justify-content-center shadow" style="width: 48px; height: 48px;">
+                        <i class="fa fa-play fa-lg text-white" aria-hidden="true"></i>
+                    </span>
+                </a>
+                {{/uservisible}}
+            </div>
+            {{/showposterimage}}
+
+            <div class="d-flex flex-wrap align-items-center gap-1 mb-2">
+                {{#showcustomfields}}
+                    {{#customfield_est}}
+                    <span class="badge bg-light text-dark border" title="{{#str}}est_time, mod_smartvideo{{/str}}">
+                        <i class="fa fa-hourglass-half text-primary me-1" aria-hidden="true"></i>Est: {{customfield_est}}
+                    </span>
+                    {{/customfield_est}}
+
+                    {{#customfield_repetition}}
+                    <span class="badge bg-light text-dark border" title="{{#str}}repetition, mod_smartvideo{{/str}}">
+                        <i class="fa fa-repeat text-info me-1" aria-hidden="true"></i>Repetition: {{customfield_repetition}}
+                    </span>
+                    {{/customfield_repetition}}
+                {{/showcustomfields}}
+
+                {{! Reserved Hook for Future Adaptive Learning Plan }}
+                <div class="smartvideo-adaptive-slot d-inline-block" data-cmid="{{cmid}}"></div>
+            </div>
+
+            {{#completionhtml}}
+            <div class="smartvideo-completion-area mb-2">
+                {{{completionhtml}}}
+            </div>
+            {{/completionhtml}}
+
+            {{#showprogressbar}}
+            <div class="smartvideo-card-progress-wrapper pt-1">
+                <div class="d-flex justify-content-between align-items-center small text-muted mb-1" style="font-size: 0.75rem;">
+                    <span>
+                        {{#iscompleted}}
+                        <strong class="text-success"><i class="fa fa-check me-1"></i>Completed ({{percentcompleted}}%)</strong>
+                        {{/iscompleted}}
+                        {{^iscompleted}}
+                        <span>Watched: <strong>{{percentcompleted}}%</strong></span>
+                        {{/iscompleted}}
+                    </span>
+                    {{#hascompletionrule}}
+                    <span>Target: {{completionminpercent}}%</span>
+                    {{/hascompletionrule}}
+                </div>
+                <div class="progress" style="height: 6px;" role="progressbar" aria-valuenow="{{percentcompleted}}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar {{#iscompleted}}bg-success{{/iscompleted}}{{^iscompleted}}bg-primary{{/iscompleted}}"
+                         style="width: {{percentcompleted}}%;"></div>
+                </div>
+            </div>
+            {{/showprogressbar}}
+        </div>
+        {{/horizontallayout}}
+    </div>
+</div>

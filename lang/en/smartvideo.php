@@ -366,7 +366,31 @@ $string['fetchingmetadata'] = 'Detecting video provider and fetching details...'
 $string['invalidvideourl'] = 'Invalid or unsupported video URL. Please check the URL and ensure the provider is enabled.';
 $string['videodetected'] = 'Detected {$a->provider}: {$a->title} ({$a->duration})';
 $string['vdocipher_apikey_missing'] = 'VdoCipher API Secret Key is not configured in site administration.';
-$string['supportedproviders'] = 'Supported Providers: YouTube, Vimeo, Bunny Stream, VdoCipher, Dailymotion, Wistia, Direct MP4/HLS';
+$string['supportedproviders'] = 'Supported Providers: YouTube, Vimeo, Bunny Stream, VdoCipher, Dailymotion, Wistia, ScreenPal, Direct MP4/HLS';
+
+// Appearance & Course Display.
+$string['appearanceheader'] = 'Appearance and behavior settings';
+$string['usecustomposterimage'] = 'Use custom poster image';
+$string['customposterimage'] = 'Custom poster image';
+$string['customposterimage_help'] = 'Upload a custom image file (JPG, PNG, WebP) to display as the video poster on the course page and player.';
+$string['displayinline'] = 'Display inline on course page';
+$string['displayinline_help'] = 'If enabled, displays a rich interactive card with the video poster, title, progress bar, and custom fields on the course page instead of a simple activity link.';
+$string['horizontallayout'] = 'Use horizontal layout';
+$string['horizontallayout_help'] = 'When enabled, renders the poster on the left and details on the right. When disabled, displays a vertical card with the activity name overlaid directly over the poster.';
+$string['showprogressbar'] = 'Show progress bar';
+$string['showprogressbar_help'] = 'Displays the student watch completion progress bar on the course page card.';
+$string['showcompletionrequirements'] = 'Show completion requirements';
+$string['showcompletionrequirements_help'] = 'Displays the activity completion criteria badges on the course page card.';
+$string['showposterimage'] = 'Show poster image';
+$string['showposterimage_help'] = 'Displays the video poster image on the course page card.';
+$string['showname'] = 'Show name';
+$string['showname_help'] = 'Displays the activity title link on the course card.';
+$string['showcustomfields'] = 'Show activity custom fields';
+$string['showcustomfields_help'] = 'Displays Repetition and Estimated Study Time badges on the course card if configured.';
+$string['repetition'] = 'Repetition';
+$string['est_time'] = 'Estimated Study Time';
+$string['watchedpercent'] = 'Watched: {$a}%';
+$string['targetpercent'] = 'Target: {$a}%';
 
 
 

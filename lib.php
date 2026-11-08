@@ -66,6 +66,18 @@ function smartvideo_add_instance(stdClass $data, ?mod_smartvideo_mod_form $mform
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
 
+    $data->displayinline = isset($data->displayinline) ? (int)$data->displayinline : 1;
+    $displayoptions = [
+        'usecustomposterimage'       => !empty($data->usecustomposterimage) ? 1 : 0,
+        'horizontallayout'           => isset($data->horizontallayout) ? (int)$data->horizontallayout : 1,
+        'showprogressbar'            => isset($data->showprogressbar) ? (int)$data->showprogressbar : 1,
+        'showcompletionrequirements' => isset($data->showcompletionrequirements) ? (int)$data->showcompletionrequirements : 1,
+        'showposterimage'            => isset($data->showposterimage) ? (int)$data->showposterimage : 1,
+        'showname'                   => isset($data->showname) ? (int)$data->showname : 1,
+        'showcustomfields'           => isset($data->showcustomfields) ? (int)$data->showcustomfields : 1,
+    ];
+    $data->displayoptions = json_encode($displayoptions);
+
     $sourcetype = $data->sourcetype ?? 'securelibrary';
     if ($sourcetype === 'securelibrary' && !empty($data->mediaid)) {
         $data->videosource = 'securelibrary';
@@ -83,16 +95,28 @@ function smartvideo_add_instance(stdClass $data, ?mod_smartvideo_mod_form $mform
 
     $id = $DB->insert_record('smartvideo', $data);
 
-    if (!empty($data->coursemodule) && isset($data->resources_filemanager)) {
+    if (!empty($data->coursemodule)) {
         $context = context_module::instance($data->coursemodule);
-        file_save_draft_area_files(
-            $data->resources_filemanager,
-            $context->id,
-            'mod_smartvideo',
-            'resources',
-            0,
-            ['subdirs' => 0, 'maxfiles' => 10]
-        );
+        if (isset($data->resources_filemanager)) {
+            file_save_draft_area_files(
+                $data->resources_filemanager,
+                $context->id,
+                'mod_smartvideo',
+                'resources',
+                0,
+                ['subdirs' => 0, 'maxfiles' => 10]
+            );
+        }
+        if (isset($data->customposter_filemanager)) {
+            file_save_draft_area_files(
+                $data->customposter_filemanager,
+                $context->id,
+                'mod_smartvideo',
+                'posterimage',
+                0,
+                ['subdirs' => 0, 'maxfiles' => 1]
+            );
+        }
     }
 
     return $id;
@@ -117,6 +141,18 @@ function smartvideo_update_instance(stdClass $data, ?mod_smartvideo_mod_form $mf
     $data->completionminpercent = isset($data->completionminpercent) ? (int)$data->completionminpercent : 0;
     $data->completionrequirequestions = !empty($data->completionrequirequestions) ? 1 : 0;
 
+    $data->displayinline = isset($data->displayinline) ? (int)$data->displayinline : 1;
+    $displayoptions = [
+        'usecustomposterimage'       => !empty($data->usecustomposterimage) ? 1 : 0,
+        'horizontallayout'           => isset($data->horizontallayout) ? (int)$data->horizontallayout : 1,
+        'showprogressbar'            => isset($data->showprogressbar) ? (int)$data->showprogressbar : 1,
+        'showcompletionrequirements' => isset($data->showcompletionrequirements) ? (int)$data->showcompletionrequirements : 1,
+        'showposterimage'            => isset($data->showposterimage) ? (int)$data->showposterimage : 1,
+        'showname'                   => isset($data->showname) ? (int)$data->showname : 1,
+        'showcustomfields'           => isset($data->showcustomfields) ? (int)$data->showcustomfields : 1,
+    ];
+    $data->displayoptions = json_encode($displayoptions);
+
     $sourcetype = $data->sourcetype ?? 'securelibrary';
     if ($sourcetype === 'securelibrary' && !empty($data->mediaid)) {
         $data->videosource = 'securelibrary';
@@ -133,16 +169,28 @@ function smartvideo_update_instance(stdClass $data, ?mod_smartvideo_mod_form $mf
     }
 
     $cmid = $data->coursemodule ?? 0;
-    if ($cmid > 0 && isset($data->resources_filemanager)) {
+    if ($cmid > 0) {
         $context = context_module::instance($cmid);
-        file_save_draft_area_files(
-            $data->resources_filemanager,
-            $context->id,
-            'mod_smartvideo',
-            'resources',
-            0,
-            ['subdirs' => 0, 'maxfiles' => 10]
-        );
+        if (isset($data->resources_filemanager)) {
+            file_save_draft_area_files(
+                $data->resources_filemanager,
+                $context->id,
+                'mod_smartvideo',
+                'resources',
+                0,
+                ['subdirs' => 0, 'maxfiles' => 10]
+            );
+        }
+        if (isset($data->customposter_filemanager)) {
+            file_save_draft_area_files(
+                $data->customposter_filemanager,
+                $context->id,
+                'mod_smartvideo',
+                'posterimage',
+                0,
+                ['subdirs' => 0, 'maxfiles' => 1]
+            );
+        }
     }
 
     return $DB->update_record('smartvideo', $data);
@@ -392,7 +440,7 @@ function smartvideo_pluginfile(
 
     require_login($course, true, $cm);
 
-    if ($filearea !== 'resources') {
+    if ($filearea !== 'resources' && $filearea !== 'posterimage') {
         return false;
     }
 
@@ -407,8 +455,310 @@ function smartvideo_pluginfile(
         return false;
     }
 
-    send_stored_file($file, null, 0, $forcedownload, $options);
+    $lifetime = ($filearea === 'posterimage') ? 86400 : null;
+    send_stored_file($file, $lifetime, 0, $forcedownload, $options);
     return true;
+}
+
+/**
+ * Add course module info for cached_cm_info.
+ *
+ * @param stdClass $coursemodule The coursemodule object.
+ * @return cached_cm_info|false Information object or false.
+ */
+function smartvideo_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $smartvideo = $DB->get_record('smartvideo', ['id' => $coursemodule->instance],
+        'id, name, intro, introformat, videosource, videourl, duration, posterimage, mediaid, displayinline, displayoptions, completionminpercent');
+    if (!$smartvideo) {
+        return false;
+    }
+
+    $result = new cached_cm_info();
+    $result->name = $smartvideo->name;
+    if ($coursemodule->showdescription) {
+        $result->content = format_module_intro('smartvideo', $smartvideo, $coursemodule->id, false);
+    }
+
+    $result->customdata['videosource']          = $smartvideo->videosource;
+    $result->customdata['videourl']             = $smartvideo->videourl;
+    $result->customdata['duration']             = (int)$smartvideo->duration;
+    $result->customdata['posterimage']          = $smartvideo->posterimage;
+    $result->customdata['mediaid']              = (int)$smartvideo->mediaid;
+    $result->customdata['displayinline']        = isset($smartvideo->displayinline) ? (int)$smartvideo->displayinline : 1;
+    $result->customdata['displayoptions']       = $smartvideo->displayoptions ?? '{}';
+    $result->customdata['completionminpercent'] = (int)($smartvideo->completionminpercent ?? 0);
+
+    return $result;
+}
+
+/**
+ * Dynamically updates course module info (hiding standard view link when inline card is active).
+ *
+ * @param cm_info $cm Course module information.
+ * @return void
+ */
+function smartvideo_cm_info_dynamic(cm_info $cm): void {
+    global $PAGE;
+
+    if (strpos($PAGE->bodyclasses, 'path-course-view') === false && $PAGE->pagelayout !== 'course') {
+        return;
+    }
+
+    $customdata = $cm->customdata ?? [];
+    $displayinline = !isset($customdata['displayinline']) || !empty($customdata['displayinline']);
+
+    if ($displayinline) {
+        $cm->set_no_view_link();
+    }
+}
+
+/**
+ * Callback function to render custom inline activity card on course pages.
+ *
+ * @param cm_info $cm Course module information.
+ * @return void
+ */
+function smartvideo_cm_info_view(cm_info $cm): void {
+    global $PAGE;
+
+    $customdata = $cm->customdata ?? [];
+    $displayinline = !isset($customdata['displayinline']) || !empty($customdata['displayinline']);
+
+    if ($displayinline && (strpos($PAGE->pagetype, 'course-view-') === 0 || strpos($PAGE->bodyclasses, 'format-') !== false || $PAGE->pagelayout === 'course')) {
+        $cardhtml = smartvideo_render_course_card($cm);
+        if (!empty($cardhtml)) {
+            $cm->set_content($cardhtml);
+        }
+    }
+}
+
+/**
+ * Renders the rich interactive course card for mod_smartvideo.
+ *
+ * @param cm_info $cm Course module information.
+ * @return string HTML output.
+ */
+function smartvideo_render_course_card(cm_info $cm): string {
+    global $DB, $USER, $PAGE, $OUTPUT;
+
+    $customdata = $cm->customdata ?? [];
+    $smartvideo = null;
+    if (empty($customdata) || !isset($customdata['videosource'])) {
+        $smartvideo = $DB->get_record('smartvideo', ['id' => $cm->instance]);
+        if (!$smartvideo) {
+            return '';
+        }
+    }
+
+    $videosource = $customdata['videosource'] ?? ($smartvideo->videosource ?? 'securelibrary');
+    $duration = (int)($customdata['duration'] ?? ($smartvideo->duration ?? 0));
+    $rawposter = $customdata['posterimage'] ?? ($smartvideo->posterimage ?? '');
+    $displayoptions = !empty($customdata['displayoptions'])
+        ? (is_array($customdata['displayoptions']) ? $customdata['displayoptions'] : json_decode($customdata['displayoptions'], true))
+        : (!empty($smartvideo->displayoptions) ? json_decode($smartvideo->displayoptions, true) : []);
+
+    $usecustomposter            = !empty($displayoptions['usecustomposterimage']);
+    $horizontallayout           = isset($displayoptions['horizontallayout']) ? (int)$displayoptions['horizontallayout'] : 1;
+    $showprogressbar            = isset($displayoptions['showprogressbar']) ? (int)$displayoptions['showprogressbar'] : 1;
+    $showcompletionrequirements = isset($displayoptions['showcompletionrequirements']) ? (int)$displayoptions['showcompletionrequirements'] : 1;
+    $showposterimage            = isset($displayoptions['showposterimage']) ? (int)$displayoptions['showposterimage'] : 1;
+    $showname                   = isset($displayoptions['showname']) ? (int)$displayoptions['showname'] : 1;
+    $showcustomfields           = isset($displayoptions['showcustomfields']) ? (int)$displayoptions['showcustomfields'] : 1;
+
+    $posterurl = '';
+
+    // 1. If custom poster uploaded via filemanager.
+    if ($usecustomposter) {
+        $fs = get_file_storage();
+        $context = context_module::instance($cm->id);
+        $files = $fs->get_area_files($context->id, 'mod_smartvideo', 'posterimage', 0, 'filesize DESC', false);
+        if ($files) {
+            $file = reset($files);
+            $posterurl = moodle_url::make_pluginfile_url(
+                $file->get_contextid(),
+                $file->get_component(),
+                $file->get_filearea(),
+                $file->get_itemid(),
+                $file->get_filepath(),
+                $file->get_filename()
+            )->out(false);
+        }
+    }
+
+    // 2. If no custom poster file, check rawposter URL.
+    if (empty($posterurl) && !empty($rawposter)) {
+        $posterurl = $rawposter;
+    }
+
+    // 3. Fallback for Secure Library: thumbnail.jpg from serve.php.
+    if (empty($posterurl) && $videosource === 'securelibrary') {
+        $mediaid = $customdata['mediaid'] ?? ($smartvideo ? $smartvideo->mediaid : $DB->get_field('smartvideo', 'mediaid', ['id' => $cm->instance]));
+        if (!empty($mediaid)) {
+            $posterurl = (new moodle_url('/local/securevideolibrary/serve.php', [
+                'mediaid' => (int)$mediaid,
+                'cmid'    => (int)$cm->id,
+                'file'    => 'thumbnail.jpg',
+            ]))->out(false);
+        }
+    }
+
+    // 4. Fallback for YouTube.
+    if (empty($posterurl) && $videosource === 'youtube') {
+        $vurl = $customdata['videourl'] ?? ($smartvideo ? $smartvideo->videourl : $DB->get_field('smartvideo', 'videourl', ['id' => $cm->instance]));
+        if (preg_match('/[?&]v=([a-zA-Z0-9_-]{11})|youtu\.be\/([a-zA-Z0-9_-]{11})/i', $vurl, $ym)) {
+            $yid = !empty($ym[1]) ? $ym[1] : $ym[2];
+            $posterurl = 'https://img.youtube.com/vi/' . $yid . '/hqdefault.jpg';
+        }
+    }
+
+    // 5. Ultimate fallback: generated Moodle image or default SVG.
+    if (empty($posterurl)) {
+        $posterurl = $OUTPUT->get_generated_image_for_id($cm->id);
+    }
+
+    // Duration formatting.
+    $durationformatted = '';
+    if ($duration > 0) {
+        $mins = floor($duration / 60);
+        $secs = $duration % 60;
+        $hours = floor($duration / 3600);
+        if ($hours > 0) {
+            $mins = floor(($duration % 3600) / 60);
+            $durationformatted = sprintf('%02d:%02d:%02d', $hours, $mins, $secs);
+        } else {
+            $durationformatted = sprintf('%02d:%02d', $mins, $secs);
+        }
+    }
+
+    // Provider Badge.
+    $providers = [
+        'securelibrary' => ['name' => 'Secure Library', 'class' => 'bg-secondary'],
+        'youtube'       => ['name' => 'YouTube', 'class' => 'bg-danger'],
+        'vimeo'         => ['name' => 'Vimeo', 'class' => 'bg-info text-dark'],
+        'screenpal'     => ['name' => 'ScreenPal', 'class' => 'bg-primary'],
+        'bunnystream'   => ['name' => 'Bunny Stream', 'class' => 'bg-warning text-dark'],
+        'vdocipher'     => ['name' => 'VdoCipher', 'class' => 'bg-primary'],
+        'dailymotion'   => ['name' => 'Dailymotion', 'class' => 'bg-dark'],
+        'wistia'        => ['name' => 'Wistia', 'class' => 'bg-success'],
+        'html5video'    => ['name' => 'Video', 'class' => 'bg-secondary'],
+    ];
+    $pinfo = $providers[$videosource] ?? ['name' => ucfirst($videosource), 'class' => 'bg-secondary'];
+
+    // Student Progress.
+    $percentcompleted = 0;
+    $completionminpercent = (int)($customdata['completionminpercent'] ?? ($smartvideo->completionminpercent ?? 0));
+    $iscompleted = false;
+
+    if (!isguestuser() && isloggedin()) {
+        $prog = $DB->get_record('smartvideo_progress', [
+            'instanceid' => $cm->instance,
+            'userid'     => $USER->id,
+        ]);
+        if ($prog) {
+            $percentcompleted = (int)$prog->percentcompleted;
+        }
+        if ($completionminpercent > 0 && $percentcompleted >= $completionminpercent) {
+            $iscompleted = true;
+        } else if ($percentcompleted >= 100) {
+            $iscompleted = true;
+        }
+    }
+
+    // Activity Custom Fields (Repetition & Estimated Study Time).
+    $customfields = smartvideo_get_activity_customfields($cm->id, $cm->instance);
+
+    // Completion Requirements.
+    $completionhtml = '';
+    if ($showcompletionrequirements && !isguestuser() && isloggedin()) {
+        $completiondetails = \core_completion\cm_completion_details::get_instance($cm, $USER->id);
+        $activitycompletion = new \core_course\output\activity_completion($cm, $completiondetails);
+        $renderer = $PAGE->get_renderer('core');
+        $completiondata = (array)$activitycompletion->export_for_template($renderer);
+        if (!empty($completiondata['hascompletion'])) {
+            $completionhtml = $OUTPUT->render_from_template('core_course/activity_info', $completiondata);
+        }
+    }
+
+    $templatecontext = [
+        'cmid'                       => (int)$cm->id,
+        'title'                      => format_string($cm->name),
+        'url'                        => (new moodle_url('/mod/smartvideo/view.php', ['id' => $cm->id]))->out(false),
+        'uservisible'                => (bool)$cm->uservisible,
+        'posterimage'                => $posterurl,
+        'hasduration'                => ($duration > 0),
+        'durationformatted'          => $durationformatted,
+        'providername'               => $pinfo['name'],
+        'providerbadgeclass'         => $pinfo['class'],
+        'horizontallayout'           => (bool)$horizontallayout,
+        'showposterimage'            => (bool)$showposterimage,
+        'showname'                   => (bool)$showname,
+        'showprogressbar'            => (bool)$showprogressbar,
+        'showcustomfields'           => (bool)$showcustomfields,
+        'hascustomfields'            => !empty($customfields),
+        'customfield_repetition'     => $customfields['repetition']['value'] ?? null,
+        'customfield_est'            => $customfields['est']['value'] ?? null,
+        'percentcompleted'           => $percentcompleted,
+        'completionminpercent'       => $completionminpercent,
+        'hascompletionrule'          => ($completionminpercent > 0),
+        'iscompleted'                => $iscompleted,
+        'completionhtml'             => $completionhtml,
+    ];
+
+    return $OUTPUT->render_from_template('mod_smartvideo/coursecard', $templatecontext);
+}
+
+/**
+ * Resolves activity custom fields (specifically Repetition and Estimated Study Time).
+ *
+ * @param int $cmid Course module ID.
+ * @param int $instanceid Activity instance ID.
+ * @return array Keyed by shortname ('repetition', 'est').
+ */
+function smartvideo_get_activity_customfields(int $cmid, int $instanceid): array {
+    global $DB;
+
+    $sql = "SELECT f.id, f.shortname, f.name, f.type, f.configdata,
+                   d.value, d.charvalue, d.shortcharvalue
+            FROM {customfield_field} f
+            JOIN {customfield_data} d ON d.fieldid = f.id
+            WHERE (d.instanceid = :cmid OR d.instanceid = :instanceid)
+              AND f.shortname IN ('repetition', 'est')";
+
+    $records = $DB->get_records_sql($sql, ['cmid' => $cmid, 'instanceid' => $instanceid]);
+    $result = [];
+
+    foreach ($records as $r) {
+        $val = '';
+        if (!empty($r->charvalue)) {
+            $val = $r->charvalue;
+        } else if (!empty($r->shortcharvalue)) {
+            $val = $r->shortcharvalue;
+        } else if ($r->value !== null && $r->value !== '') {
+            if ($r->type === 'select') {
+                $cfg = json_decode($r->configdata ?? '{}');
+                if (!empty($cfg->options)) {
+                    $opts = preg_split('/\r\n|\r|\n/', trim($cfg->options));
+                    $idx = (int)$r->value - 1;
+                    $val = $opts[$idx] ?? $r->value;
+                } else {
+                    $val = $r->value;
+                }
+            } else {
+                $val = $r->value;
+            }
+        }
+
+        if ($val !== '') {
+            $result[$r->shortname] = [
+                'name'  => $r->name,
+                'value' => $val,
+            ];
+        }
+    }
+
+    return $result;
 }
 
 
