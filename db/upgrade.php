@@ -244,8 +244,8 @@ function xmldb_smartvideo_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110802, 'smartvideo');
     }
 
-    if ($oldversion < 2026110803) {
-        upgrade_mod_savepoint(true, 2026110803, 'smartvideo');
+    if ($oldversion < 2026110805) {
+        upgrade_mod_savepoint(true, 2026110805, 'smartvideo');
     }
 
     return true;

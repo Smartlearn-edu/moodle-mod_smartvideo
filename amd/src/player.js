@@ -1311,6 +1311,10 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                     self.hls = new Hls({
                         debug: false,
                         enableWorker: true,
+                        startFragPrefetch: true,
+                        maxBufferLength: 15,
+                        maxMaxBufferLength: 30,
+                        progressive: true,
                         xhrSetup: function(xhr, url) {
                             xhr.withCredentials = true;
                             if (url && url.indexOf('key.php') !== -1) {
