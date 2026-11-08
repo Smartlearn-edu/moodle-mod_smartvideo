@@ -64,6 +64,7 @@ $addons = [
             ['completed', 'mod_smartvideo'],
             ['in_progress', 'mod_smartvideo'],
             ['knowledgecheck', 'mod_smartvideo'],
+            ['questions', 'mod_smartvideo'],
             ['submitanswer', 'mod_smartvideo'],
             ['submitting', 'mod_smartvideo'],
             ['answercorrect', 'mod_smartvideo'],

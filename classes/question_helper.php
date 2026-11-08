@@ -371,12 +371,13 @@ class question_helper {
      * and returns the created question ID and bank entry ID.
      *
      * @param int $courseid Course ID.
-     * @param int $categoryid Category ID (0 to use default course category).
+     * @param int $categoryid Category ID (0 to use default course/module category).
      * @param string $qtype Question type ('multichoice' or 'truefalse').
      * @param string $name Question title / name.
      * @param string $questiontext Question text prompt.
      * @param array $choices List of string choices (e.g. ['True', 'False'] or ['Option A', 'Option B']).
      * @param int $correctindex 0-based index of the correct choice.
+     * @param int $cmid Course module ID (optional, enables module-level question category creation).
      * @return array [questionid, questionbankentryid, categoryid, name]
      */
     public static function create_quick_question(
@@ -386,19 +387,113 @@ class question_helper {
         string $name,
         string $questiontext,
         array $choices,
-        int $correctindex
+        int $correctindex,
+        int $cmid = 0
     ): array {
         global $DB, $USER, $CFG;
         require_once($CFG->libdir . '/questionlib.php');
 
-        $coursecontext = context_course::instance($courseid);
-
-        if ($categoryid <= 0) {
-            $defaultcat = question_get_default_category($coursecontext->id);
-            if (!$defaultcat) {
-                // Fallback: fetch first category in course context.
-                $defaultcat = $DB->get_record('question_categories', ['contextid' => $coursecontext->id], '*', IGNORE_MULTIPLE);
+        // Check if passed category exists.
+        if ($categoryid > 0) {
+            if (!$DB->record_exists('question_categories', ['id' => $categoryid])) {
+                $categoryid = 0;
             }
+        }
+
+        // If no category specified or not found, resolve or create default category.
+        if ($categoryid <= 0) {
+            $defaultcat = null;
+
+            // 1. First priority: Activity module context (Standard in Moodle 4.3+ Question Bank).
+            if ($cmid > 0) {
+                $modcontext = \context_module::instance($cmid, IGNORE_MISSING);
+                if ($modcontext && (int)$modcontext->contextlevel === CONTEXT_MODULE) {
+                    $defaultcat = question_get_default_category($modcontext->id, true);
+                }
+            }
+
+            // 2. Second priority: Course question bank or any course module category.
+            if (!$defaultcat) {
+                $coursecontext = \context_course::instance($courseid);
+                $contextids = $coursecontext->get_parent_context_ids(true);
+
+                $modctxids = $DB->get_fieldset_sql(
+                    "SELECT ctx.id
+                       FROM {course_modules} cm
+                       JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :level
+                      WHERE cm.course = :courseid",
+                    ['level' => CONTEXT_MODULE, 'courseid' => $courseid]
+                );
+                if (!empty($modctxids)) {
+                    $contextids = array_merge($contextids, $modctxids);
+                }
+
+                if (!empty($contextids)) {
+                    [$insql, $inparams] = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED);
+                    $defaultcat = $DB->get_record_select(
+                        'question_categories',
+                        "contextid $insql AND parent <> 0",
+                        $inparams,
+                        'id ASC',
+                        '*',
+                        0,
+                        1
+                    );
+                }
+            }
+
+            // 3. Third priority: Try any course module to create a category under.
+            if (!$defaultcat) {
+                $firstcmid = $DB->get_field('course_modules', 'id', ['course' => $courseid], IGNORE_MULTIPLE);
+                if ($firstcmid) {
+                    $mctx = \context_module::instance($firstcmid, IGNORE_MISSING);
+                    if ($mctx) {
+                        $defaultcat = question_get_default_category($mctx->id, true);
+                    }
+                }
+            }
+
+            // 4. Fourth priority: Course context (for Moodle < 4.3 compatibility).
+            if (!$defaultcat) {
+                $coursecontext = \context_course::instance($courseid);
+                $topcategory = question_get_top_category($coursecontext->id, true);
+                if ($topcategory) {
+                    $defaultcat = new \stdClass();
+                    $contextname = $coursecontext->get_context_name(false, true);
+                    $defaultcat->name = shorten_text(get_string('defaultfor', 'question', $contextname), 1333);
+                    $defaultcat->info = get_string('defaultinfofor', 'question', $contextname);
+                    $defaultcat->contextid = $coursecontext->id;
+                    $defaultcat->parent = $topcategory->id;
+                    $defaultcat->sortorder = 999;
+                    $defaultcat->stamp = make_unique_id_code();
+                    $defaultcat->id = $DB->insert_record('question_categories', $defaultcat);
+                }
+            }
+
+            // 5. Ultimate fallback: Ensure at least one category exists.
+            if (!$defaultcat) {
+                $coursecontext = \context_course::instance($courseid);
+                $top = $DB->get_record('question_categories', ['contextid' => $coursecontext->id, 'parent' => 0]);
+                if (!$top) {
+                    $top = new \stdClass();
+                    $top->name = 'top';
+                    $top->contextid = $coursecontext->id;
+                    $top->parent = 0;
+                    $top->sortorder = 0;
+                    $top->stamp = make_unique_id_code();
+                    $top->id = $DB->insert_record('question_categories', $top);
+                }
+                $defaultcat = new \stdClass();
+                $contextname = $coursecontext->get_context_name(false, true);
+                $defaultcat->name = shorten_text(get_string('defaultfor', 'question', $contextname), 1333);
+                $defaultcat->info = get_string('defaultinfofor', 'question', $contextname);
+                $defaultcat->contextid = $coursecontext->id;
+                $defaultcat->parent = $top->id;
+                $defaultcat->sortorder = 999;
+                $defaultcat->stamp = make_unique_id_code();
+                $defaultcat->id = $DB->insert_record('question_categories', $defaultcat);
+            }
+
             if (!$defaultcat) {
                 throw new \moodle_exception('cannotfindcategory', 'question');
             }

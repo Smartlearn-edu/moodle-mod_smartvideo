@@ -47,6 +47,10 @@ $PAGE->set_title(get_string('timelinestudio', 'mod_smartvideo') . ': ' . $smartv
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
 
+require_once($CFG->libdir . '/questionlib.php');
+// Ensure module default question category exists so teachers can immediately add questions.
+question_get_default_category($context->id, true);
+
 // Fetch linked media record.
 $media = null;
 if (!empty($smartvideo->mediaid)) {

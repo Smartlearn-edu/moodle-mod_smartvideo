@@ -396,4 +396,3 @@ $string['duration'] = 'Duration';
 $string['dismiss'] = 'Dismiss';
 $string['openlink'] = 'Open Link';
 $string['required'] = 'Required';
-

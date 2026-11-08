@@ -776,4 +776,3 @@ function smartvideo_get_activity_customfields(int $cmid, int $instanceid): array
 
     return $result;
 }
-

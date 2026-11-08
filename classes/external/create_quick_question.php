@@ -126,7 +126,8 @@ class create_quick_question extends external_api {
             $title,
             $params['questiontext'],
             $params['choices'],
-            (int)$params['correctindex']
+            (int)$params['correctindex'],
+            (int)$cm->id
         );
 
         // 2. Link as cuepoint in smartvideo_questions.

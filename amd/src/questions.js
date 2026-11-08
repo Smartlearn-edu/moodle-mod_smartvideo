@@ -741,7 +741,7 @@ define(['core/ajax', 'core/notification', 'core/str'], function(Ajax, Notificati
                     });
                 }
                 if (quickCatSelect) {
-                    quickCatSelect.innerHTML = '<option value="0">Default Course Category</option>';
+                    quickCatSelect.innerHTML = '<option value="0">Default Category (Auto)</option>';
                     self.categories.forEach(function(cat) {
                         const opt = document.createElement('option');
                         opt.value = cat.id;
