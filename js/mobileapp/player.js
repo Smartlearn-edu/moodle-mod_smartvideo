@@ -257,17 +257,28 @@
     t.offlineManifest = null;
     t.showQualityPicker = false;
     t.offlineTiers = [];
-    t.manifestRawData = null;
+    t.manifestRawData = parseJsonSafe(t.CONTENT_OTHERDATA.offlinemanifestjson, null);
+    if (t.manifestRawData && t.manifestRawData.tiers && t.manifestRawData.tiers.length) {
+        t.offlineTiers = t.manifestRawData.tiers;
+    }
     t.downloadCancelled = false;
 
-    var callWS = function(wsName, params) {
+    var callWS = function(wsName, params, isWrite) {
         if (t.CoreSitePluginsProvider && typeof t.CoreSitePluginsProvider.callWS === 'function') {
             return t.CoreSitePluginsProvider.callWS(wsName, params, {getFromCache: false, saveToCache: false});
         }
         if (t.CoreSitesProvider) {
             var site = t.CoreSitesProvider.getCurrentSite();
             if (site) {
-                return site.write(wsName, params);
+                if (isWrite && typeof site.write === 'function') {
+                    return site.write(wsName, params);
+                }
+                if (typeof site.read === 'function') {
+                    return site.read(wsName, params, {getFromCache: false, saveToCache: false});
+                }
+                if (typeof site.write === 'function') {
+                    return site.write(wsName, params);
+                }
             }
         }
         return Promise.reject(new Error('Web service provider unavailable'));
@@ -593,9 +604,17 @@
             t.showQualityPicker = true;
             return;
         }
+        if (!t.manifestRawData && t.CONTENT_OTHERDATA.offlinemanifestjson) {
+            t.manifestRawData = parseJsonSafe(t.CONTENT_OTHERDATA.offlinemanifestjson, null);
+            if (t.manifestRawData && t.manifestRawData.tiers && t.manifestRawData.tiers.length) {
+                t.offlineTiers = t.manifestRawData.tiers;
+                t.showQualityPicker = true;
+                return;
+            }
+        }
         callWS('mod_smartvideo_get_offline_manifest', {
             cmid: Number(t.CONTENT_OTHERDATA.cmid)
-        }).then(function(res) {
+        }, false).then(function(res) {
             if (res && res.status && res.tiers && res.tiers.length) {
                 t.manifestRawData = res;
                 t.offlineTiers = res.tiers;
@@ -605,8 +624,12 @@
                     ? res.errormessage
                     : 'Unable to fetch video manifest for offline download.');
             }
-        }).catch(function() {
-            alert('Cannot fetch download options. Please check your internet connection.');
+        }).catch(function(err) {
+            var detail = '';
+            if (err) {
+                detail = err.message || err.error || err.warningmessage || (typeof err === 'string' ? err : '');
+            }
+            alert('Cannot fetch download options: ' + (detail || 'Please check your connection or server configuration.'));
         });
     };
 

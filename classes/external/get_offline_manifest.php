@@ -107,7 +107,7 @@ class get_offline_manifest extends external_api {
         }
 
         $media = $DB->get_record('local_securevideolibrary_media', ['id' => $smartvideo->mediaid]);
-        if (!$media || $media->status !== LOCAL_SECUREVIDEOLIBRARY_STATUS_READY) {
+        if (!$media || $media->status !== 'ready') {
             return [
                 'status'            => false,
                 'errormessage'      => get_string('videonotready', 'mod_smartvideo'),

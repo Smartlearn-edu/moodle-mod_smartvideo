@@ -393,6 +393,21 @@ class mobile {
             $discussionsdata[] = $dtop;
         }
 
+        $canofflinedownload = (!isset($smartvideo->allowofflinedownload)
+            || !empty($smartvideo->allowofflinedownload)) && !$isexternal && $canplay;
+
+        $offlinemanifestjson = '';
+        if ($canofflinedownload) {
+            try {
+                $manifestdata = \mod_smartvideo\external\get_offline_manifest::execute((int)$cm->id);
+                if (!empty($manifestdata['status'])) {
+                    $offlinemanifestjson = json_encode($manifestdata);
+                }
+            } catch (\Throwable $e) {
+                $offlinemanifestjson = '';
+            }
+        }
+
         $templatedata = [
             'cmid'                 => (int)$cm->id,
             'courseid'             => (int)$course->id,
@@ -421,8 +436,7 @@ class mobile {
             'studentid'            => (int)$USER->id,
             'resources'            => $resourcesdata,
             'hasresources'         => !empty($resourcesdata),
-            'allowofflinedownload' => (!isset($smartvideo->allowofflinedownload)
-                || !empty($smartvideo->allowofflinedownload)) && !$isexternal && $canplay ? 1 : 0,
+            'allowofflinedownload' => $canofflinedownload ? 1 : 0,
         ];
 
         // All values in otherdata MUST be scalars or JSON-encoded strings.
@@ -435,8 +449,8 @@ class mobile {
             'playlisturl'           => $playlisturl,
             'embedurl'              => $embedurl,
             'hlsjsurl'              => $hlsjsurl,
-            'allowofflinedownload'  => (!isset($smartvideo->allowofflinedownload)
-                || !empty($smartvideo->allowofflinedownload)) && !$isexternal && $canplay ? 1 : 0,
+            'allowofflinedownload'  => $canofflinedownload ? 1 : 0,
+            'offlinemanifestjson'   => $offlinemanifestjson,
             'isofflinemode'         => 0,
             'offlinedownloaded'     => 0,
             'isdownloading'         => 0,
