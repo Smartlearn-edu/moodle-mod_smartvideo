@@ -84,5 +84,7 @@ class restore_smartvideo_activity_structure_step extends restore_activity_struct
      */
     protected function after_execute(): void {
         $this->add_related_files('mod_smartvideo', 'intro', null);
+        $this->add_related_files('mod_smartvideo', 'resources', null);
+        $this->add_related_files('mod_smartvideo', 'posterimage', null);
     }
 }

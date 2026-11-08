@@ -510,7 +510,11 @@ function smartvideo_cm_info_dynamic(cm_info $cm): void {
     $displayinline = !isset($customdata['displayinline']) || !empty($customdata['displayinline']);
 
     if ($displayinline) {
-        $cm->set_no_view_link();
+        try {
+            $cm->set_no_view_link();
+        } catch (\Throwable $e) {
+            // Safe fallback if invoked outside dynamic lifecycle phase.
+        }
     }
 }
 

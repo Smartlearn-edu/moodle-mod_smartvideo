@@ -1330,10 +1330,13 @@
    Smart Video Course Page Rich Card Styles
    ========================================================================== */
 
-/* Hide Moodle core duplicate activity icon/title line in course view when card is active */
+/* Hide Moodle core duplicate activity icon/title line and default completion badge in course view when card is active */
 .path-course-view:not(.editing) .modtype_smartvideo:has(.smartvideo-course-card) .activity-basis,
+.path-course-view:not(.editing) .modtype_smartvideo:has(.smartvideo-course-card) .activity-completion,
+.path-course-view:not(.editing) .modtype_smartvideo:has(.smartvideo-course-card) .activity-info,
 .path-course-view .modtype_smartvideo:has(.smartvideo-course-card) .activity-name-area,
-.path-course-view .modtype_smartvideo:has(.smartvideo-course-card) .activity-icon {
+.path-course-view .modtype_smartvideo:has(.smartvideo-course-card) .activity-icon,
+.path-course-view .modtype_smartvideo:has(.smartvideo-course-card) .activity-instance.d-flex {
     display: none !important;
 }
 
