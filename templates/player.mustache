@@ -269,17 +269,14 @@
                         {{! Right: Speed, Quality, Sidebar Tools Toggle, Fullscreen }}
                         <div class="d-flex align-items-center gap-2">
                             {{! Playback Speed Dropup }}
-                            <div class="dropup">
+                            <div class="dropup position-relative">
                                 <button class="btn btn-sm btn-link text-white text-decoration-none p-1 dropdown-toggle smartvideo-btn-speed securevideo-btn-speed"
                                         type="button"
-                                        data-bs-toggle="dropdown"
-                                        data-toggle="dropdown"
-                                        data-bs-display="static"
                                         aria-expanded="false"
                                         title="{{#str}}speed, mod_smartvideo{{/str}}">
                                     <span class="smartvideo-current-speed securevideo-current-speed">1x</span>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end smartvideo-speed-menu securevideo-speed-menu">
+                                <ul class="dropdown-menu dropdown-menu-dark smartvideo-speed-menu securevideo-speed-menu">
                                     <li><button class="dropdown-item" type="button" data-speed="0.75">0.75x</button></li>
                                     <li><button class="dropdown-item active" type="button" data-speed="1.0">1x (Normal)</button></li>
                                     <li><button class="dropdown-item" type="button" data-speed="1.25">1.25x</button></li>
@@ -289,34 +286,28 @@
                             </div>
 
                             {{! Quality Dropup }}
-                            <div class="dropup smartvideo-quality-container securevideo-quality-container d-none">
+                            <div class="dropup position-relative smartvideo-quality-container securevideo-quality-container d-none">
                                 <button class="btn btn-sm btn-link text-white text-decoration-none p-1 dropdown-toggle smartvideo-btn-quality securevideo-btn-quality"
                                         type="button"
-                                        data-bs-toggle="dropdown"
-                                        data-toggle="dropdown"
-                                        data-bs-display="static"
                                         aria-expanded="false"
                                         title="{{#str}}quality, mod_smartvideo{{/str}}">
                                     <i class="fa fa-cog me-1" aria-hidden="true"></i><span class="smartvideo-current-quality securevideo-current-quality">{{#str}}auto, mod_smartvideo{{/str}}</span>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end smartvideo-quality-menu securevideo-quality-menu">
+                                <ul class="dropdown-menu dropdown-menu-dark smartvideo-quality-menu securevideo-quality-menu">
                                     <li><button class="dropdown-item active" type="button" data-level="-1">{{#str}}auto, mod_smartvideo{{/str}}</button></li>
                                 </ul>
                             </div>
 
                             {{! Closed Captions / Subtitles Dropup }}
                             {{#hassubtitles}}
-                            <div class="dropup smartvideo-captions-container">
+                            <div class="dropup position-relative smartvideo-captions-container">
                                 <button class="btn btn-sm btn-link text-white text-decoration-none p-1 dropdown-toggle smartvideo-btn-cc"
                                         type="button"
-                                        data-bs-toggle="dropdown"
-                                        data-toggle="dropdown"
-                                        data-bs-display="static"
                                         aria-expanded="false"
                                         title="{{#str}}captions, mod_smartvideo{{/str}}">
                                     <i class="fa fa-cc me-1" aria-hidden="true"></i><span class="smartvideo-current-cc font-monospace">Off</span>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end smartvideo-cc-menu">
+                                <ul class="dropdown-menu dropdown-menu-dark smartvideo-cc-menu">
                                     <li><button class="dropdown-item active" type="button" data-trackid="-1">{{#str}}captions_off, mod_smartvideo{{/str}}</button></li>
                                     {{#subtitles}}
                                     <li><button class="dropdown-item" type="button" data-trackid="{{id}}" data-lang="{{lang}}">{{label}}</button></li>

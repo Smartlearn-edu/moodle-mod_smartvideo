@@ -234,15 +234,32 @@
 }
 
 /* Dropdown menus inside controls bar in fullscreen and normal view */
+.smartvideo-controls-bar .dropup,
+.securevideo-controls-bar .dropup {
+    position: relative !important;
+}
+
 .smartvideo-controls-bar .dropup .dropdown-menu,
 .securevideo-controls-bar .dropup .dropdown-menu {
+    position: absolute !important;
     bottom: 100% !important;
     top: auto !important;
+    right: 0 !important;
+    left: auto !important;
+    min-width: 125px !important;
     margin-bottom: 0.5rem !important;
-    z-index: 1050 !important;
+    padding: 0.35rem 0 !important;
+    z-index: 1060 !important;
     background-color: #1e293b !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.85) !important;
+    display: none;
+}
+
+.smartvideo-controls-bar .dropup .dropdown-menu.show,
+.securevideo-controls-bar .dropup .dropdown-menu.show {
+    display: block !important;
 }
 
 .smartvideo-controls-bar .dropdown-item,
@@ -250,6 +267,13 @@
     color: #e2e8f0 !important;
     font-size: 0.85rem !important;
     padding: 0.4rem 1rem !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap !important;
+    width: 100% !important;
+    text-align: left !important;
+    border: none !important;
+    background: transparent !important;
 }
 
 .smartvideo-controls-bar .dropdown-item:hover,
@@ -257,21 +281,40 @@
 .smartvideo-controls-bar .dropdown-item:focus,
 .securevideo-controls-bar .dropdown-item:focus {
     background-color: #334155 !important;
-    color: #ffffff !important;
+    color: #38bdf8 !important;
 }
 
 .smartvideo-controls-bar .dropdown-item.active,
 .securevideo-controls-bar .dropdown-item.active {
-    background-color: #0d6efd !important;
+    background-color: #0284c7 !important;
     color: #ffffff !important;
     font-weight: 600 !important;
 }
 
 /* Controls bar button styling */
 .smartvideo-controls-bar .btn-link,
-.securevideo-controls-bar .btn-link {
+.securevideo-controls-bar .btn-link,
+.smartvideo-btn-speed,
+.securevideo-btn-speed,
+.smartvideo-btn-quality,
+.securevideo-btn-quality,
+.smartvideo-btn-cc {
     text-decoration: none !important;
     line-height: 1 !important;
+    color: #ffffff !important;
+    opacity: 0.95;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.smartvideo-controls-bar .btn-link:hover,
+.securevideo-controls-bar .btn-link:hover,
+.smartvideo-btn-speed:hover,
+.securevideo-btn-speed:hover,
+.smartvideo-btn-quality:hover,
+.securevideo-btn-quality:hover,
+.smartvideo-btn-cc:hover {
+    color: #38bdf8 !important;
+    opacity: 1 !important;
 }
 
 .smartvideo-controls-bar .btn-link:focus,

@@ -1744,40 +1744,60 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             const speedMenu = container.querySelector('.smartvideo-speed-menu, .securevideo-speed-menu');
             if (speedBtn && speedMenu) {
                 speedBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     e.stopPropagation();
                     const willShow = !speedMenu.classList.contains('show');
-                    container.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+                    container.querySelectorAll('.smartvideo-controls-bar .dropdown-menu.show').forEach(function(m) {
                         m.classList.remove('show');
+                    });
+                    container.querySelectorAll('.smartvideo-controls-bar [aria-expanded="true"]').forEach(function(b) {
+                        b.setAttribute('aria-expanded', 'false');
                     });
                     if (willShow) {
                         speedMenu.classList.add('show');
+                        speedBtn.setAttribute('aria-expanded', 'true');
+                    }
+                });
+
+                speedMenu.addEventListener('click', function(e) {
+                    if (!e.target.closest('.dropdown-item')) {
+                        e.stopPropagation();
                     }
                 });
             }
 
             speedItems.forEach(function(item) {
                 item.addEventListener('click', function(e) {
+                    e.preventDefault();
                     e.stopPropagation();
                     const speed = parseFloat(item.dataset.speed);
-                    video.playbackRate = speed;
+                    if (!isNaN(speed) && isFinite(speed) && speed > 0) {
+                        video.playbackRate = speed;
+                    }
                     speedItems.forEach(function(b) {
                         b.classList.remove('active');
                     });
                     item.classList.add('active');
                     const label = container.querySelector('.smartvideo-current-speed, .securevideo-current-speed');
                     if (label) {
-                        label.textContent = item.textContent;
+                        label.textContent = item.textContent.trim().split(' ')[0];
                     }
                     if (speedMenu) {
                         speedMenu.classList.remove('show');
+                    }
+                    if (speedBtn) {
+                        speedBtn.setAttribute('aria-expanded', 'false');
                     }
                 });
             });
 
             // Close dropdown menus when clicking elsewhere.
             document.addEventListener('click', function() {
-                container.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+                container.querySelectorAll('.smartvideo-controls-bar .dropdown-menu.show').forEach(function(m) {
                     m.classList.remove('show');
+                });
+                container.querySelectorAll('.smartvideo-controls-bar [aria-expanded="true"]').forEach(function(b) {
+                    b.setAttribute('aria-expanded', 'false');
                 });
             });
 
@@ -1987,13 +2007,24 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             const qualityBtn = container.querySelector('.smartvideo-btn-quality, .securevideo-btn-quality');
             if (qualityBtn) {
                 qualityBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     e.stopPropagation();
                     const willShow = !qualityMenu.classList.contains('show');
-                    container.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+                    container.querySelectorAll('.smartvideo-controls-bar .dropdown-menu.show').forEach(function(m) {
                         m.classList.remove('show');
+                    });
+                    container.querySelectorAll('.smartvideo-controls-bar [aria-expanded="true"]').forEach(function(b) {
+                        b.setAttribute('aria-expanded', 'false');
                     });
                     if (willShow) {
                         qualityMenu.classList.add('show');
+                        qualityBtn.setAttribute('aria-expanded', 'true');
+                    }
+                });
+
+                qualityMenu.addEventListener('click', function(e) {
+                    if (!e.target.closest('.dropdown-item')) {
+                        e.stopPropagation();
                     }
                 });
             }
@@ -2007,6 +2038,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 btn.textContent = (level.height ? level.height + 'p' : 'Level ' + (idx + 1));
 
                 btn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     e.stopPropagation();
                     self.hls.currentLevel = idx;
                     qualityMenu.querySelectorAll('.dropdown-item').forEach(function(b) {
@@ -2017,6 +2049,9 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                         qualityLabel.textContent = btn.textContent;
                     }
                     qualityMenu.classList.remove('show');
+                    if (qualityBtn) {
+                        qualityBtn.setAttribute('aria-expanded', 'false');
+                    }
                 });
 
                 li.appendChild(btn);
@@ -2027,6 +2062,7 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
             const autoBtn = qualityMenu.querySelector('[data-level="-1"]');
             if (autoBtn) {
                 autoBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     e.stopPropagation();
                     self.hls.currentLevel = -1;
                     qualityMenu.querySelectorAll('.dropdown-item').forEach(function(b) {
@@ -2037,6 +2073,9 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                         qualityLabel.textContent = 'Auto';
                     }
                     qualityMenu.classList.remove('show');
+                    if (qualityBtn) {
+                        qualityBtn.setAttribute('aria-expanded', 'false');
+                    }
                 });
             }
         },
@@ -3934,10 +3973,33 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                 return;
             }
 
+            ccBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const willShow = !ccMenu.classList.contains('show');
+                container.querySelectorAll('.smartvideo-controls-bar .dropdown-menu.show').forEach(function(m) {
+                    m.classList.remove('show');
+                });
+                container.querySelectorAll('.smartvideo-controls-bar [aria-expanded="true"]').forEach(function(b) {
+                    b.setAttribute('aria-expanded', 'false');
+                });
+                if (willShow) {
+                    ccMenu.classList.add('show');
+                    ccBtn.setAttribute('aria-expanded', 'true');
+                }
+            });
+
+            ccMenu.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown-item')) {
+                    e.stopPropagation();
+                }
+            });
+
             // Click listener for each item in the CC menu.
             ccMenu.querySelectorAll('.dropdown-item').forEach(function(item) {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
                     const trackId = parseInt(item.dataset.trackid, 10);
                     ccMenu.querySelectorAll('.dropdown-item').forEach(function(el) {
                         el.classList.remove('active');
@@ -3960,6 +4022,13 @@ define(['core/ajax', 'core/notification'], function(Ajax, Notification) {
                         }
                         self.activeTrackId = trackId;
                         self.loadTrackCues(trackId);
+                    }
+
+                    if (ccMenu) {
+                        ccMenu.classList.remove('show');
+                    }
+                    if (ccBtn) {
+                        ccBtn.setAttribute('aria-expanded', 'false');
                     }
                 });
             });
