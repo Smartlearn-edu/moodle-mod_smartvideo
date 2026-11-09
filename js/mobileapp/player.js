@@ -427,6 +427,54 @@
     // Bundled Local HLS.js Loader (Zero External CDN)
     // =========================================================================
 
+    var executeHlsBundle = function(code, resolve) {
+        if (!code) {
+            resolve(window.Hls || null);
+            return;
+        }
+        try {
+            var exportsObj = {};
+            var moduleObj = {exports: exportsObj};
+            // eslint-disable-next-line no-new-func
+            var fn = new Function('module', 'exports', 'define', code);
+            fn(moduleObj, exportsObj, undefined);
+            var exported = moduleObj.exports && (moduleObj.exports.default || moduleObj.exports);
+            if (exported && typeof exported.isSupported === 'function') {
+                window.Hls = exported;
+                resolve(exported);
+                return;
+            }
+        } catch (e) {}
+
+        if (window.Hls) {
+            resolve(window.Hls);
+            return;
+        }
+
+        var blob = new Blob([code], {type: 'application/javascript'});
+        var blobUrl = URL.createObjectURL(blob);
+        var script = document.createElement('script');
+        script.src = blobUrl;
+        script.onload = function() {
+            URL.revokeObjectURL(blobUrl);
+            if (!window.Hls && typeof window.require === 'function') {
+                try {
+                    window.require(['local_securevideolibrary/hls-lazy'], function(mod) {
+                        window.Hls = mod || window.Hls;
+                        resolve(window.Hls || null);
+                    });
+                    return;
+                } catch (e) {}
+            }
+            resolve(window.Hls || null);
+        };
+        script.onerror = function() {
+            URL.revokeObjectURL(blobUrl);
+            resolve(window.Hls || null);
+        };
+        document.head.appendChild(script);
+    };
+
     var loadHlsLibrary = function() {
         return new Promise(function(resolve) {
             if (window.Hls) {
@@ -436,19 +484,7 @@
 
             idbGet('assets', 'hls_bundle').then(function(asset) {
                 if (asset && asset.code) {
-                    var blob = new Blob([asset.code], {type: 'application/javascript'});
-                    var blobUrl = URL.createObjectURL(blob);
-                    var script = document.createElement('script');
-                    script.src = blobUrl;
-                    script.onload = function() {
-                        URL.revokeObjectURL(blobUrl);
-                        resolve(window.Hls || null);
-                    };
-                    script.onerror = function() {
-                        URL.revokeObjectURL(blobUrl);
-                        resolve(null);
-                    };
-                    document.head.appendChild(script);
+                    executeHlsBundle(asset.code, resolve);
                     return;
                 }
 
@@ -470,19 +506,7 @@
                         cached_at: Date.now()
                     }).catch(function() {});
 
-                    var blob = new Blob([code], {type: 'application/javascript'});
-                    var blobUrl = URL.createObjectURL(blob);
-                    var script = document.createElement('script');
-                    script.src = blobUrl;
-                    script.onload = function() {
-                        URL.revokeObjectURL(blobUrl);
-                        resolve(window.Hls || null);
-                    };
-                    script.onerror = function() {
-                        URL.revokeObjectURL(blobUrl);
-                        resolve(null);
-                    };
-                    document.head.appendChild(script);
+                    executeHlsBundle(code, resolve);
                 }).catch(function() {
                     resolve(null);
                 });
@@ -493,34 +517,66 @@
     };
 
     // =========================================================================
-    // Custom Offline IndexedDB Fragment & Key Loader for HLS.js
+    // Custom Offline IndexedDB Fragment & Key Loader for HLS.js (v1.5.17 Schema)
     // =========================================================================
 
-    function OfflineIdbLoader() {
-        this.destroy = function() {};
+    function OfflineIdbLoader(config) {
+        this.config = config;
+        this.context = null;
+        this.callbacks = null;
+        this.stats = {
+            aborted: false,
+            loaded: 0,
+            retry: 0,
+            total: 0,
+            chunkCount: 0,
+            bwEstimate: 0,
+            loading: {start: 0, first: 0, end: 0},
+            parsing: {start: 0, end: 0},
+            buffering: {start: 0, first: 0, end: 0}
+        };
+        this.destroy = function() {
+            this.callbacks = null;
+            this.context = null;
+        };
         this.abort = function() {
-            this.aborted = true;
+            this.stats.aborted = true;
             if (this.xhr) {
                 try {
                     this.xhr.abort();
                 } catch (e) {}
             }
+            if (this.callbacks && this.callbacks.onAbort) {
+                this.callbacks.onAbort(this.stats, this.context, this.xhr || null);
+            }
         };
         this.load = function(context, cfg, callbacks) {
             var self = this;
+            this.context = context;
+            this.callbacks = callbacks;
             var url = context.url || '';
-            var stats = {
-                trequest: performance.now(),
-                tfirst: performance.now(),
-                tload: performance.now(),
-                loaded: 0,
-                total: 0,
-                retry: 0,
-                chunkCount: 1,
-                bwQuote: 0
-            };
+            var now = performance.now();
+            this.stats.loading.start = now;
+            this.stats.loading.first = now;
 
-            // Intercept offline decryption key
+            // 1. Intercept offline playlist manifest in memory (auto-normalizes IV=0x prefix)
+            if (url === 'offline://playlist.m3u8' || url.indexOf('offline://playlist.m3u8') !== -1) {
+                if (t.offlineManifest && t.offlineManifest.playlisttext) {
+                    var plText = t.offlineManifest.playlisttext.replace(/,IV=(?!0x|0X)([0-9a-fA-F]+)/g, ',IV=0x$1');
+                    self.stats.loaded = plText.length;
+                    self.stats.total = plText.length;
+                    self.stats.loading.end = performance.now() + 1;
+                    self.stats.bwEstimate = 8000000;
+                    setTimeout(function() {
+                        if (!self.stats.aborted && self.callbacks) {
+                            self.callbacks.onSuccess({url: url, data: plText, code: 200}, self.stats, context, null);
+                        }
+                    }, 0);
+                    return;
+                }
+            }
+
+            // 2. Intercept offline decryption key
             if (url === 'offline://key' || url.indexOf('offline://key') !== -1) {
                 if (t.offlineManifest && t.offlineManifest.keybase64) {
                     var rawKey = atob(t.offlineManifest.keybase64);
@@ -528,37 +584,58 @@
                     for (var k = 0; k < rawKey.length; k++) {
                         keyBytes[k] = rawKey.charCodeAt(k);
                     }
-                    stats.loaded = keyBytes.byteLength;
-                    stats.total = keyBytes.byteLength;
-                    stats.tload = performance.now();
-                    callbacks.onSuccess({ url: url, data: keyBytes.buffer }, stats, context);
+                    self.stats.loaded = keyBytes.byteLength;
+                    self.stats.total = keyBytes.byteLength;
+                    self.stats.loading.end = performance.now() + 1;
+                    self.stats.bwEstimate = 8000000;
+                    setTimeout(function() {
+                        if (!self.stats.aborted && self.callbacks) {
+                            self.callbacks.onSuccess({url: url, data: keyBytes.buffer, code: 200}, self.stats, context, null);
+                        }
+                    }, 0);
                     return;
                 }
             }
 
-            // Intercept offline video segments from IndexedDB
+            // 3. Intercept offline video segments from IndexedDB
             if (url.indexOf('offline://') === 0) {
                 var segFilename = url.substring('offline://'.length).split('?')[0];
                 var segId = Number(t.CONTENT_OTHERDATA.cmid) + ':' + segFilename;
                 idbGet('segments', segId).then(function(record) {
-                    if (self.aborted) {
+                    if (self.stats.aborted || !self.callbacks) {
                         return;
                     }
                     if (record && record.data) {
-                        stats.loaded = record.data.byteLength;
-                        stats.total = record.data.byteLength;
-                        stats.tload = performance.now();
-                        callbacks.onSuccess({ url: url, data: record.data }, stats, context);
+                        self.stats.loaded = record.data.byteLength;
+                        self.stats.total = record.data.byteLength;
+                        self.stats.loading.end = performance.now() + 1;
+                        self.stats.bwEstimate = 8000000;
+                        if (self.callbacks.onProgress) {
+                            self.callbacks.onProgress(self.stats, context, record.data, null);
+                        }
+                        self.callbacks.onSuccess({url: url, data: record.data, code: 200}, self.stats, context, null);
                     } else {
-                        callbacks.onError({ code: 404, text: 'Segment not found in offline DB: ' + segFilename }, context);
+                        self.callbacks.onError(
+                            {code: 404, text: 'Segment not found in offline DB: ' + segFilename},
+                            context,
+                            null,
+                            self.stats
+                        );
                     }
                 }).catch(function(err) {
-                    callbacks.onError({ code: 500, text: 'IndexedDB read error: ' + (err ? err.message : '') }, context);
+                    if (!self.stats.aborted && self.callbacks) {
+                        self.callbacks.onError(
+                            {code: 500, text: 'IndexedDB read error: ' + (err ? err.message : '')},
+                            context,
+                            null,
+                            self.stats
+                        );
+                    }
                 });
                 return;
             }
 
-            // Fallback for online network requests
+            // 4. Fallback for standard network requests
             var xhr = new XMLHttpRequest();
             this.xhr = xhr;
             xhr.open('GET', url, true);
@@ -572,24 +649,32 @@
                 }
             }
             xhr.onload = function() {
-                if (self.aborted) {
+                if (self.stats.aborted || !self.callbacks) {
                     return;
                 }
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    var respData = xhr.response;
+                    var respData = (context.responseType && context.responseType !== 'text')
+                        ? xhr.response
+                        : xhr.responseText;
                     var len = (respData && respData.byteLength)
                         ? respData.byteLength
-                        : (xhr.responseText ? xhr.responseText.length : 0);
-                    stats.loaded = len;
-                    stats.total = len;
-                    stats.tload = performance.now();
-                    callbacks.onSuccess({ url: url, data: respData }, stats, context);
+                        : (respData ? respData.length : 0);
+                    self.stats.loaded = len;
+                    self.stats.total = len;
+                    self.stats.loading.end = performance.now() + 1;
+                    self.stats.bwEstimate = 8000000;
+                    if (self.callbacks.onProgress) {
+                        self.callbacks.onProgress(self.stats, context, respData, xhr);
+                    }
+                    self.callbacks.onSuccess({url: xhr.responseURL || url, data: respData, code: xhr.status}, self.stats, context, xhr);
                 } else {
-                    callbacks.onError({ code: xhr.status, text: xhr.statusText }, context);
+                    self.callbacks.onError({code: xhr.status, text: xhr.statusText}, context, xhr, self.stats);
                 }
             };
             xhr.onerror = function() {
-                callbacks.onError({ code: 0, text: 'Network request failed' }, context);
+                if (!self.stats.aborted && self.callbacks) {
+                    self.callbacks.onError({code: 0, text: 'Network request failed'}, context, xhr, self.stats);
+                }
             };
             xhr.send();
         };
@@ -730,6 +815,9 @@
                 t.CONTENT_OTHERDATA.offlinequality = tier.label;
                 t.CONTENT_OTHERDATA.offlinesizehuman = tier.totalsize;
                 t.CONTENT_OTHERDATA.downloadpercent = 100;
+                if (t.videoEl && (!t.hlsInstance || (t.videoEl.paused && t.videoEl.currentTime === 0))) {
+                    initVideoPlayer();
+                }
             });
         }).catch(function(err) {
             if (!t.downloadCancelled) {
@@ -1362,26 +1450,30 @@
         var cmid = Number(t.CONTENT_OTHERDATA.cmid);
 
         var attachStream = function() {
-            var isOffline = Boolean(t.CONTENT_OTHERDATA.offlinedownloaded && t.offlineManifest);
+            var isOffline = Boolean(t.CONTENT_OTHERDATA.offlinedownloaded && t.offlineManifest && t.offlineManifest.playlisttext);
 
             loadHlsLibrary().then(function(Hls) {
-                if (isOffline && t.offlineManifest && t.offlineManifest.playlisttext) {
-                    var plBlob = new Blob([t.offlineManifest.playlisttext], {type: 'application/vnd.apple.mpegurl'});
-                    var offlineUrl = URL.createObjectURL(plBlob);
+                if (t.hlsInstance) {
+                    try {
+                        t.hlsInstance.destroy();
+                    } catch (e) {}
+                    t.hlsInstance = null;
+                }
 
-                    if (Hls && Hls.isSupported()) {
-                        var hls = new Hls({
-                            enableWorker: true,
-                            loader: OfflineIdbLoader
-                        });
-                        hls.loadSource(offlineUrl);
-                        hls.attachMedia(video);
-                        t.hlsInstance = hls;
-                        return;
-                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = offlineUrl;
-                        return;
-                    }
+                if (isOffline && Hls && Hls.isSupported()) {
+                    var hls = new Hls({
+                        enableWorker: false,
+                        loader: OfflineIdbLoader
+                    });
+                    hls.loadSource('offline://playlist.m3u8');
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        if (data && data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                            hls.recoverMediaError();
+                        }
+                    });
+                    t.hlsInstance = hls;
+                    return;
                 }
 
                 var isM3u8 = streamUrl.indexOf('.m3u8') !== -1 || t.CONTENT_OTHERDATA.videotype === 'securelibrary';
@@ -1392,8 +1484,7 @@
 
                 if (Hls && Hls.isSupported()) {
                     var onlineHls = new Hls({
-                        enableWorker: true,
-                        loader: OfflineIdbLoader,
+                        enableWorker: false,
                         xhrSetup: function(xhr, url) {
                             if (url && url.indexOf('key.php') !== -1) {
                                 var match = /[?&]token=([a-fA-F0-9]+)/.exec(url);
@@ -1405,6 +1496,11 @@
                     });
                     onlineHls.loadSource(streamUrl);
                     onlineHls.attachMedia(video);
+                    onlineHls.on(Hls.Events.ERROR, function(event, data) {
+                        if (data && data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                            onlineHls.recoverMediaError();
+                        }
+                    });
                     t.hlsInstance = onlineHls;
                 } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                     video.src = streamUrl;

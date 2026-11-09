@@ -163,7 +163,8 @@ class get_offline_manifest extends external_api {
 
         $keyraw = !empty($media->encryptionkey) ? hex2bin($media->encryptionkey) : '';
         $keybase64 = base64_encode($keyraw);
-        $ivhex = $media->encryptioniv ?? '';
+        $ivraw = trim($media->encryptioniv ?? '');
+        $ivhex = ($ivraw !== '' && stripos($ivraw, '0x') !== 0) ? ('0x' . $ivraw) : $ivraw;
 
         $duration = (int)$media->duration;
         $mins = (int)floor($duration / 60);

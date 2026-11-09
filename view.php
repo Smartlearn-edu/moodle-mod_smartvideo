@@ -132,25 +132,16 @@ if (!$canplay) {
         $thumbnailurl = $smartvideo->posterimage ?? '';
         $duration = (int)($smartvideo->duration ?? 0);
     } else {
-        $mstoken = \local_securevideolibrary\token_manager::generate_mobile_stream_token(
-            (int)$USER->id,
-            (int)$media->id,
-            (int)$cm->id,
-            86400
-        );
-
         $playlisturl = (new moodle_url('/local/securevideolibrary/serve.php', [
             'mediaid' => $media->id,
             'cmid'    => (int)$cm->id,
             'file'    => 'playlist.m3u8',
-            'mstoken' => $mstoken,
         ]))->out(false);
 
         $thumbnailurl = (new moodle_url('/local/securevideolibrary/serve.php', [
             'mediaid' => $media->id,
             'cmid'    => (int)$cm->id,
             'file'    => 'thumbnail.jpg',
-            'mstoken' => $mstoken,
         ]))->out(false);
 
         $duration = (int)$media->duration;
