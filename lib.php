@@ -40,6 +40,8 @@ function smartvideo_supports(string $feature): ?bool {
             return true;
         case FEATURE_BACKUP_MOODLE2:
             return true;
+        case FEATURE_USES_QUESTIONS:
+            return true;
         default:
             return null;
     }
